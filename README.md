@@ -32,6 +32,7 @@ Changes made here never reach Akon V2, and the other way round.
 index.html        the whole front end (ES5, pure ASCII, short lines)
 brand.js          brand name, mark, tagline, colours (rebrand here)
 logo.png, favicon.png, apple-touch-icon.png
+rain.webm, rain.mp4  rain loop behind the sign-in screens (rain-poster.jpg = still)
 fonts/            Anton (headings, OFL licensed, self-hosted)
 vercel.json       security headers (CSP, frame-deny, permissions)
 .vercelignore     keeps dev/test/docs off the live site
