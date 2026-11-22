@@ -47,10 +47,7 @@ html = html
     b64('fonts/cinzel.woff2') + ')')
   .replace(/<title>[^<]*<\/title>/, '<title>' + (require(R('brand.js')).name || 'Vault') + ' demo</title>')
   .replace('<script src="/brand.js"></script>', '<script>' + fs.readFileSync(R('brand.js'), 'utf8') + '</script>')
-  .split('src="/logo.png"').join('src="" data-logo')
-  .split('url(/logo.png)').join('url(' + logo + ')')
-  .split('url(/wall.png)').join('url(data:image/png;base64,' + b64('wall.png') + ')')
-  .split('url(/grain.png)').join('url(data:image/png;base64,' + b64('grain.png') + ')');
+  .split('src="/logo.png"').join('src="" data-logo');
 
 const demoCss = `
 <style>

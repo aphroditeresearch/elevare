@@ -209,8 +209,7 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 }
 @property --ang { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
 .door {
-  background: url(/wall.png) 0 0 / 512px repeat,
-    radial-gradient(120% 90% at 50% 120%, #050a18 0%, #020308 60%);
+  background: radial-gradient(120% 90% at 50% 120%, #050a18 0%, #020308 60%);
 }
 .glow {
   position: absolute; left: 0; top: 0; z-index: 1; width: 420px;
@@ -228,8 +227,10 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   -webkit-text-stroke: 1px rgba(var(--red2-rgb),.20);
 }
 /* spark field (one canvas per door, drawn only while that door is shown) */
-.door .bigv { z-index: 1; }
-.door .floor { display: none; }
+.sparks {
+  position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+  pointer-events: none;
+}
 /* receding light grid on the floor */
 .floor {
   position: absolute; left: -50%; right: -50%; bottom: -10%; height: 60%;
@@ -273,25 +274,6 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   position: relative; z-index: 2; filter: none; animation: none; }
 .float { position: relative; z-index: 2; width: 100%; display: flex;
   justify-content: center; }
-/* "painted on the wall": the logo, a light that follows the cursor and the
-   wall's grain are clipped to the logo's own shape, so the paint is lit by
-   the same light as the wall and carries its texture. Nothing moves. */
-.paint { overflow: hidden; isolation: isolate;
-  -webkit-mask: url(/logo.png) center / contain no-repeat;
-  mask: url(/logo.png) center / contain no-repeat; }
-.paint .lamp {
-  position: absolute; left: 0; top: 0; width: 560px; height: 560px;
-  margin: -280px 0 0 -280px; border-radius: 50%; pointer-events: none;
-  will-change: transform; mix-blend-mode: screen;
-  background: radial-gradient(closest-side, rgba(140,195,255,.34),
-    rgba(var(--red2-rgb),.12) 50%, rgba(var(--red2-rgb),0) 100%);
-  transform: translate3d(-999px, -999px, 0);
-}
-.paint .grain {
-  position: absolute; inset: 0; pointer-events: none;
-  background: url(/grain.png) 0 0 / 256px repeat;
-  mix-blend-mode: overlay; opacity: .6;
-}
 .entry {
   position: relative; padding: 46px 44px 38px; max-width: 460px;
   justify-self: center; width: 100%;
@@ -1053,6 +1035,7 @@ select.in { -webkit-appearance: none; appearance: none; }
 
 <!-- Chrome-only wall -->
 <section id="v-wall" class="view door">
+  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
   <i class="glow" aria-hidden="true"></i>
   <div class="floor" aria-hidden="true"></div>
   <div class="frame" aria-hidden="true">
@@ -1078,6 +1061,7 @@ select.in { -webkit-appearance: none; appearance: none; }
 
 <!-- Sign in: logo on the left, Discord entry on the right -->
 <section id="v-login" class="view door">
+  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
   <i class="glow" aria-hidden="true"></i>
   <div class="floor" aria-hidden="true"></div>
   <div class="frame" aria-hidden="true">
@@ -1086,10 +1070,8 @@ select.in { -webkit-appearance: none; appearance: none; }
   <span class="bigv" aria-hidden="true">V2</span>
   <div class="duo">
     <div class="emblem">
-      <div class="float paint" id="emblem-float">
+      <div class="float" id="emblem-float">
         <img class="logo" src="/logo.png" alt="Elevare">
-        <i class="lamp" aria-hidden="true"></i>
-        <i class="grain" aria-hidden="true"></i>
       </div>
     </div>
     <div class="entry">
@@ -1114,6 +1096,7 @@ select.in { -webkit-appearance: none; appearance: none; }
 
 <!-- Community rules (agree before entering) -->
 <section id="v-agree" class="view door">
+  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
   <i class="glow" aria-hidden="true"></i>
   <div class="floor" aria-hidden="true"></div>
   <div class="frame" aria-hidden="true">
@@ -1136,6 +1119,7 @@ select.in { -webkit-appearance: none; appearance: none; }
 
 <!-- Timed out -->
 <section id="v-timeout" class="view door">
+  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
   <i class="glow" aria-hidden="true"></i>
   <div class="floor" aria-hidden="true"></div>
   <div class="frame" aria-hidden="true">
@@ -1392,6 +1376,70 @@ select.in { -webkit-appearance: none; appearance: none; }
       x[i].setAttribute('aria-label', BN);
     }
   })();
+  // ---------- front door sparks + logo parallax ----------
+  (function () {
+    var calm = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return;
+    var cv = null, cx = null, parts = [], W = 0, H = 0, R = 1, last = 0;
+    var rgb = (getComputedStyle(document.documentElement)
+      .getPropertyValue('--red2-rgb') || '79, 163, 255').replace(/\s/g, '');
+    // one soft dot drawn once per colour, then stamped (fast)
+    function sprite(core) {
+      var c = document.createElement('canvas'); c.width = c.height = 64;
+      var x = c.getContext('2d');
+      var g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, 'rgba(' + core + ',1)');
+      g.addColorStop(0.35, 'rgba(' + rgb + ',.35)');
+      g.addColorStop(1, 'rgba(' + rgb + ',0)');
+      x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+      return c;
+    }
+    var SPR = { blue: sprite(rgb), hot: sprite('255,255,255') };
+    function spark(fresh) {
+      return {
+        x: Math.random() * W,
+        y: fresh ? Math.random() * H : H + 10 * Math.random(),
+        r: 0.6 + Math.random() * 1.9,
+        vy: 0.25 + Math.random() * 0.9,
+        vx: (Math.random() - 0.5) * 0.25,
+        w: Math.random() * 6.28, hot: Math.random() < 0.18,
+        life: 0.4 + Math.random() * 0.6
+      };
+    }
+    function fit(c) {
+      R = 1; // soft dots: full resolution not needed, much cheaper
+      W = c.clientWidth; H = c.clientHeight;
+      c.width = Math.round(W * R); c.height = Math.round(H * R);
+      cx = c.getContext('2d'); cx.setTransform(R, 0, 0, R, 0, 0);
+      parts = [];
+      var n = Math.min(70, Math.round(W * H / 18000));
+      for (var k = 0; k < n; k++) parts.push(spark(true));
+    }
+    function frame(t) {
+      window.requestAnimationFrame(frame);
+      if (t - last < 30) return;
+      last = t;
+      var on = document.querySelector('.view.door.on .sparks');
+      if (!on) { cv = null; return; }
+      if (on !== cv || on.clientWidth !== W || on.clientHeight !== H) {
+        cv = on; fit(on);
+      }
+      cx.clearRect(0, 0, W, H);
+      cx.globalCompositeOperation = 'lighter';
+      for (var k = 0; k < parts.length; k++) {
+        var p = parts[k];
+        p.y -= p.vy; p.w += 0.03; p.x += p.vx + Math.sin(p.w) * 0.3;
+        if (p.y < -20) { parts[k] = spark(false); continue; }
+        var fade = Math.min(1, p.y / H * 1.6) * p.life;
+        cx.globalAlpha = fade * (0.6 + 0.4 * Math.sin(p.w * 3));
+        var d = p.r * 10;
+        cx.drawImage(p.hot ? SPR.hot : SPR.blue, p.x - d / 2, p.y - d / 2, d, d);
+      }
+      cx.globalAlpha = 1;
+    }
+    window.requestAnimationFrame(frame);
+  })();
   var DEV = DEMO || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   var SEP = DEMO ? '-' : '/';
   function toDoor(e) {
@@ -1432,8 +1480,6 @@ select.in { -webkit-appearance: none; appearance: none; }
         .replace(/^\s+|\s+$/g, '');
     }
   }
-  var CALM = window.matchMedia &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function show(id) {
     var v = document.querySelectorAll('.view');
     for (var i = 0; i < v.length; i++) setCls(v[i], 'on', v[i].id === id);
@@ -3393,12 +3439,6 @@ select.in { -webkit-appearance: none; appearance: none; }
       var b = g.parentNode.getBoundingClientRect();
       g.style.transform = 'translate3d(' + (gx - b.left) + 'px,' +
         (gy - b.top) + 'px,0)';
-      var lp = document.querySelector('.view.door.on .lamp');
-      if (lp) {
-        var c = lp.parentNode.getBoundingClientRect();
-        lp.style.transform = 'translate3d(' + (gx - c.left) + 'px,' +
-          (gy - c.top) + 'px,0)';
-      }
     }
     document.addEventListener('mousemove', function (e) {
       if (ME) return;
