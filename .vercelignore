@@ -1,0 +1,6 @@
+dev/
+test/
+dist/
+*.md
+.env*
+.gitignore
