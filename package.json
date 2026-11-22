@@ -1,0 +1,13 @@
+{
+  "name": "elevare",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Locked-down Discord-gated video vault (Vercel + Upstash + VdoCipher). Brand settings in brand.js; see NEW-BRAND.md",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "node dev/server.js",
+    "test": "node test/run.js",
+    "check": "node test/check.js",
+    "demo": "node dev/build-demo.js"
+  }
+}

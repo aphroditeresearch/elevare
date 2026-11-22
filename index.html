@@ -1,0 +1,3716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="strict-origin">
+<meta name="theme-color" content="#04050a">
+<title>Elevare</title>
+<link rel="icon" href="/favicon.png" type="image/png">
+<script src="/brand.js"></script>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/fonts/cinzel.woff2" as="font" type="font/woff2"
+  crossorigin>
+<style>
+@font-face {
+  font-family: "Anton"; font-style: normal; font-weight: 400;
+  font-display: swap; src: url(/fonts/anton.woff2) format("woff2");
+}
+:root {
+  --bg: #07090e;
+  --panel: #0d1018;
+  --ink: #f2f5fb;
+  --soft: #c3c9d6;
+  --muted: #8790a3;
+  --dim: #586074;
+  --line: #1b2030;
+  --line2: #283044;
+  --red: #1f6bff;
+  --red2: #4fa3ff;
+  --red-rgb: 31, 107, 255;
+  --red2-rgb: 79, 163, 255;
+  --ok: #8fae86;
+  --err: #e0464d;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    "Segoe UI", Roboto, Arial, sans-serif;
+  --display: "Anton", "Impact", "Arial Narrow", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; min-height: 100%;
+  background: var(--bg); color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
+body { height: 100%; }
+img { -webkit-user-drag: none; user-drag: none; pointer-events: none; }
+button { font-family: inherit; }
+input, textarea, select { -webkit-user-select: text; user-select: text; }
+[hidden] { display: none !important; }
+.view { display: none; min-height: 100vh; }
+.view.on { display: flex; }
+
+/* ---------- front door ---------- */
+.door {
+  position: relative; overflow: hidden;
+  flex-direction: column; align-items: center;
+  justify-content: center; text-align: center;
+  padding: 72px 24px;
+  background:
+    radial-gradient(60% 55% at 50% 46%, #0e1630 0%, #07090e 55%,
+      #04050a 100%);
+}
+.door .stack {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center;
+  animation: rise .9s cubic-bezier(.2,.7,.2,1) both;
+}
+/* thin inset frame with corner ticks */
+.frame {
+  position: absolute; inset: 28px; z-index: 1; pointer-events: none;
+  border: 1px solid rgba(242,245,251,.05);
+  animation: fadein 1.4s ease both;
+}
+.frame i {
+  position: absolute; width: 18px; height: 18px;
+  border: 0 solid rgba(242,245,251,.38);
+}
+.frame .tl { left: -1px; top: -1px; border-left-width: 1px;
+  border-top-width: 1px; }
+.frame .tr { right: -1px; top: -1px; border-right-width: 1px;
+  border-top-width: 1px; }
+.frame .bl { left: -1px; bottom: -1px; border-left-width: 1px;
+  border-bottom-width: 1px; }
+.frame .br { right: -1px; bottom: -1px; border-right-width: 1px;
+  border-bottom-width: 1px; }
+/* giant outlined V2, echoing the lecture numbers inside */
+.bigv {
+  position: absolute; z-index: 0; right: -3vw; bottom: -17vh;
+  font-family: var(--display); font-size: 74vh; line-height: 1;
+  color: transparent; -webkit-text-stroke: 1px rgba(var(--red2-rgb),.16);
+  pointer-events: none;
+  animation: drift 1.8s cubic-bezier(.2,.7,.2,1) both;
+}
+/* soft light that follows the cursor */
+.door:before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 45%),
+    rgba(var(--red2-rgb),.07), transparent 60%);
+  transition: background .2s linear;
+}
+.rule b { animation: beat 3.2s ease-in-out infinite; }
+@keyframes beat {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--red2-rgb),0); }
+  50% { box-shadow: 0 0 0 5px rgba(var(--red2-rgb),.16); }
+}
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+@keyframes drift {
+  from { opacity: 0; transform: translateY(4vh); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .door .stack, .frame, .bigv, .rule b, .play, .segs i.pop,
+  .node.pop .mk, .live i { animation: none; }
+}
+.logo { width: 280px; max-width: 66vw; height: auto; display: block; }
+.rule {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; width: 232px; max-width: 58vw; margin-top: 28px;
+}
+.rule i { flex: 1; height: 1px; }
+.rule i:first-child {
+  background: linear-gradient(90deg, transparent, #636d84);
+}
+.rule i:last-child {
+  background: linear-gradient(90deg, #636d84, transparent);
+}
+.rule b { width: 6px; height: 6px; background: var(--red); flex: none; }
+.tag {
+  margin: 24px 0 0; font-size: 11px; font-weight: 500;
+  letter-spacing: .36em; text-transform: uppercase; color: var(--muted);
+  padding-left: .36em;
+}
+.blurb {
+  margin: 24px 0 0; max-width: 360px; font-size: 14px;
+  line-height: 1.7; color: #a3abbc;
+}
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 12px; width: 320px; max-width: 84vw; height: 48px;
+  margin-top: 56px; border: 0; border-radius: 0;
+  background: var(--ink); color: #07090e; text-decoration: none;
+  font: 700 12px/1 var(--sans); letter-spacing: .22em;
+  text-transform: uppercase; cursor: pointer;
+  transition: background .2s ease, transform .2s ease;
+}
+.btn:hover { background: #ffffff;
+  box-shadow: 0 0 0 6px rgba(242,245,251,.06); }
+.btn:active { transform: translateY(1px); }
+.btn svg { width: 14px; height: 14px; flex: none; }
+.btn.busy { opacity: .6; pointer-events: none; }
+.err {
+  margin-top: 18px; font-size: 13px;
+  color: var(--err); max-width: 360px; line-height: 1.5;
+}
+.err:empty { display: none; }
+/* rules agreement + timeout */
+.agree { max-width: 560px; }
+.rules {
+  list-style: none; counter-reset: r; margin: 30px 0 0; padding: 0;
+  text-align: left; width: 100%;
+}
+.rules li {
+  counter-increment: r; position: relative; padding: 14px 0 14px 40px;
+  border-top: 1px solid var(--line); color: var(--soft); font-size: 14px;
+  line-height: 1.6;
+}
+.rules li:last-child { border-bottom: 1px solid var(--line); }
+.rules li:before {
+  content: counter(r, decimal-leading-zero); position: absolute; left: 0;
+  top: 14px; font-family: var(--display); font-size: 18px; line-height: 1.2;
+  color: var(--red2);
+}
+.codebox {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  margin-top: 26px; padding: 18px 28px; border: 1px solid var(--line2);
+}
+.codebox span { font-size: 10px; letter-spacing: .3em; color: var(--muted);
+  text-transform: uppercase; }
+.codebox b { font-family: var(--display); font-weight: 400; font-size: 40px;
+  letter-spacing: .08em; color: var(--ink); line-height: 1; }
+.codebox em { font-style: normal; font-size: 12px; color: var(--dim); }
+.chk {
+  display: flex; align-items: flex-start; gap: 12px; margin-top: 26px;
+  font-size: 14px; color: var(--soft); text-align: left; cursor: pointer;
+}
+.chk input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--red);
+  flex: none; cursor: pointer; }
+.agree .btn { margin-top: 26px; }
+.btn:disabled { opacity: .35; cursor: default; }
+.btn:disabled:hover { background: var(--ink); box-shadow: none; }
+.ag-out {
+  margin-top: 18px; background: none; border: 0; cursor: pointer;
+  color: var(--muted); font: 500 11px var(--sans); letter-spacing: .22em;
+  text-transform: uppercase; padding: 6px 0;
+}
+.ag-out:hover { color: var(--ink); }
+.tclock { margin-top: 30px; font-size: 72px; color: var(--red2); line-height: 1; }
+.invite {
+  margin-top: 24px; font-size: 10px; font-weight: 500;
+  letter-spacing: .34em; text-transform: uppercase; color: var(--dim);
+  padding-left: .34em;
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Elevare: lit front door ---------- */
+@font-face {
+  font-family: "Cinzel"; font-style: normal; font-weight: 700;
+  font-display: swap; src: url(/fonts/cinzel.woff2) format("woff2");
+}
+@property --ang { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+.door {
+  background:
+    radial-gradient(55% 60% at 50% 46%, #0f1a3a 0%, rgba(7,9,14,0) 70%),
+    radial-gradient(120% 90% at 50% 120%, #08142e 0%, #04050a 60%);
+}
+.door:before {
+  background: radial-gradient(620px circle at var(--mx, 50%) var(--my, 45%),
+    rgba(var(--red2-rgb),.17), rgba(var(--red-rgb),.06) 35%, transparent 62%);
+}
+.door .frame { border-color: rgba(var(--red2-rgb),.10); }
+.door .frame i { border-color: rgba(var(--red2-rgb),.6); }
+.bigv {
+  font-family: "Cinzel", var(--display); font-weight: 700; font-size: 46vh;
+  right: -2vw; bottom: -9vh; letter-spacing: -.02em;
+  -webkit-text-stroke: 1px rgba(var(--red2-rgb),.20);
+}
+/* spark field (one canvas per door, drawn only while that door is shown) */
+.sparks {
+  position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+  pointer-events: none;
+}
+/* receding light grid on the floor */
+.floor {
+  position: absolute; left: -50%; right: -50%; bottom: -10%; height: 60%;
+  z-index: 0; pointer-events: none; opacity: .5;
+  background-image:
+    linear-gradient(rgba(var(--red2-rgb),.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--red2-rgb),.35) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transform: perspective(520px) rotateX(64deg); transform-origin: 50% 100%;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 85%);
+  mask-image: linear-gradient(to top, #000 0%, transparent 85%);
+  animation: roll 3.2s linear infinite;
+}
+@keyframes roll { to { background-position: 0 64px, 0 0; } }
+/* logo glow on every door screen */
+.door .logo {
+  width: 440px; max-width: 80vw;
+  filter: drop-shadow(0 0 22px rgba(var(--red2-rgb),.28));
+  animation: surge 5.5s ease-in-out infinite;
+}
+@keyframes surge {
+  0%, 100% { filter: drop-shadow(0 0 18px rgba(var(--red2-rgb),.22)); }
+  50% { filter: drop-shadow(0 0 34px rgba(var(--red2-rgb),.50)); }
+  91% { filter: drop-shadow(0 0 20px rgba(var(--red2-rgb),.25)); }
+  92% { filter: drop-shadow(0 0 46px rgba(var(--red2-rgb),.85))
+    brightness(1.25); }
+  93.5% { filter: drop-shadow(0 0 20px rgba(var(--red2-rgb),.25)); }
+  95% { filter: drop-shadow(0 0 40px rgba(var(--red2-rgb),.7))
+    brightness(1.15); }
+}
+/* wordmark: white letters, accent letters glowing */
+.bmk {
+  font-family: "Cinzel", Georgia, serif; font-weight: 700;
+  letter-spacing: .14em; color: var(--ink); white-space: nowrap;
+}
+.bmk .a {
+  color: var(--red2);
+  text-shadow: 0 0 10px rgba(var(--red2-rgb),.85),
+    0 0 26px rgba(var(--red-rgb),.6);
+}
+.brand.bmk { line-height: 1; font-size: 21px; text-decoration: none;
+  padding-left: .14em; }
+
+/* ---- sign in: logo on the left, entry card on the right ---- */
+.duo {
+  position: relative; z-index: 2; width: 100%; max-width: 1240px;
+  display: grid; grid-template-columns: 1.25fr 1fr; gap: 40px;
+  align-items: center; text-align: left;
+}
+.emblem {
+  position: relative; display: flex; align-items: center;
+  justify-content: center; min-height: 420px;
+  animation: drift 1.4s cubic-bezier(.2,.7,.2,1) both;
+}
+.emblem .logo { width: 100%; max-width: 680px; max-height: none;
+  position: relative; z-index: 2; filter: none; animation: none; }
+.float { position: relative; z-index: 2; width: 100%; display: flex;
+  justify-content: center; transition: transform .35s ease-out; }
+.entry {
+  position: relative; padding: 46px 44px 38px; max-width: 460px;
+  justify-self: center; width: 100%;
+  background: linear-gradient(160deg, rgba(22,36,78,.62) 0%,
+    rgba(9,12,22,.82) 60%);
+  border: 1px solid rgba(var(--red2-rgb),.16);
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,.8),
+    0 0 60px -10px rgba(var(--red-rgb),.35),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  animation: rise 1s .15s cubic-bezier(.2,.7,.2,1) both;
+}
+/* light running round the card edge */
+.entry:before {
+  content: ""; position: absolute; inset: -1px; padding: 1px;
+  pointer-events: none;
+  background: conic-gradient(from var(--ang), transparent 0deg 250deg,
+    rgba(var(--red2-rgb),.9) 320deg, #fff 345deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: orbit 5s linear infinite;
+}
+@keyframes orbit { to { --ang: 360deg; } }
+.kick {
+  display: inline-flex; align-items: center; gap: 10px; height: 28px;
+  padding: 0 12px; border: 1px solid rgba(var(--red2-rgb),.35);
+  background: rgba(var(--red-rgb),.12); color: #cfe2ff;
+  font-size: 10px; font-weight: 600; letter-spacing: .3em;
+  text-transform: uppercase;
+}
+.kick i { width: 6px; height: 6px; border-radius: 50%;
+  background: var(--red2); box-shadow: 0 0 10px var(--red2);
+  animation: blink 1.6s ease-in-out infinite; }
+.entry h1 { margin: 26px 0 0; font-size: 44px; line-height: 1;
+  padding-left: 0; }
+.entry h1 small { display: block; margin-bottom: 12px;
+  font: 500 12px var(--sans); letter-spacing: .34em; color: var(--muted);
+  text-transform: uppercase; }
+.entry .tag { margin-top: 16px; padding-left: 0; color: #9fb6dd; }
+.entry .blurb { margin-top: 18px; max-width: none; color: #a3abbc; }
+.btn.lit {
+  position: relative; overflow: hidden; color: #fff;
+  background: linear-gradient(100deg, var(--red) 0%, var(--red2) 100%);
+  box-shadow: 0 12px 34px -10px rgba(var(--red-rgb),.95),
+    inset 0 1px 0 rgba(255,255,255,.3);
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+.btn.lit:after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: -40%;
+  width: 30%; transform: skewX(-20deg); pointer-events: none;
+  background: linear-gradient(90deg, transparent,
+    rgba(255,255,255,.55), transparent);
+  animation: shine 3.4s ease-in-out infinite;
+}
+@keyframes shine { 0% { left: -40%; } 55%, 100% { left: 130%; } }
+.btn.lit:hover { background: linear-gradient(100deg, var(--red) 0%,
+    var(--red2) 100%); filter: brightness(1.12); transform: translateY(-2px);
+  box-shadow: 0 18px 44px -10px rgba(var(--red-rgb),1),
+    0 0 0 6px rgba(var(--red2-rgb),.14), inset 0 1px 0 rgba(255,255,255,.3); }
+.btn.lit:disabled, .btn.lit:disabled:hover { filter: none; transform: none;
+  background: linear-gradient(100deg, var(--red) 0%, var(--red2) 100%); }
+.btn.lit .arr { margin-left: auto; font-size: 16px; line-height: 1;
+  transition: transform .2s ease; }
+.btn.lit:hover .arr { transform: translateX(4px); }
+.entry .btn { width: 100%; max-width: none; height: 56px; margin-top: 30px;
+  justify-content: flex-start; padding: 0 22px; }
+.entry .err { margin-top: 16px; }
+.perks { list-style: none; display: flex; flex-wrap: wrap; gap: 8px;
+  margin: 24px 0 0; padding: 0; }
+.perks li { height: 26px; display: inline-flex; align-items: center;
+  padding: 0 10px; border: 1px solid var(--line2); color: var(--muted);
+  font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
+.perks li:before { content: ""; width: 4px; height: 4px; margin-right: 8px;
+  background: var(--red2); box-shadow: 0 0 6px var(--red2); }
+.entry .invite { margin-top: 26px; padding-left: 0; }
+@media (max-width: 980px) {
+  .duo { grid-template-columns: 1fr; gap: 10px; text-align: center; }
+  .emblem { min-height: 0; }
+  .emblem .logo { max-width: 560px; }
+  .entry { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .door .logo, .floor, .float, .entry, .entry:before,
+  .btn.lit:after, .kick i, .emblem { animation: none; }
+}
+
+/* ---------- app shell ---------- */
+.app { flex-direction: column; }
+.top {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 28px;
+  height: 72px; padding: 0 32px;
+  background: rgba(7,9,14,.94); border-bottom: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.brand { display: block; line-height: 0; }
+.brand img { height: 22px; width: auto; }
+.live {
+  display: inline-flex; align-items: center; gap: 9px; height: 30px;
+  padding: 0 12px; margin-left: 8px; border: 1px solid var(--line);
+  font-size: 10px; font-weight: 500; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--muted); white-space: nowrap;
+}
+.live i { width: 6px; height: 6px; border-radius: 50%; background: #434c62; }
+.live.on i { background: var(--ok); animation: blink 2.4s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+.nav { display: flex; gap: 30px; margin-left: auto; }
+.nav a {
+  position: relative; color: var(--muted); text-decoration: none;
+  font-size: 12px; font-weight: 500; letter-spacing: .22em;
+  text-transform: uppercase; padding: 8px 0; white-space: nowrap;
+  transition: color .15s ease;
+}
+.nav a:hover { color: var(--ink); }
+.nav a.on { color: var(--ink); }
+.nav a.on:after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
+  height: 2px; background: var(--red);
+}
+.out {
+  height: 36px; padding: 0 16px; background: none; cursor: pointer;
+  border: 1px solid var(--line2); color: var(--soft);
+  font-size: 11px; font-weight: 500; letter-spacing: .22em;
+  text-transform: uppercase; transition: border-color .15s, color .15s;
+}
+.out:hover { border-color: var(--muted); color: var(--ink); }
+.wrap {
+  width: 100%; max-width: 1320px; margin: 0 auto;
+  padding: 36px 32px 120px;
+}
+.pane { display: none; animation: rise .45s ease both; }
+.pane.on { display: block; }
+#p-watch { animation: none; }
+.player.playing .poster, .player.playing .wm { display: none; }
+
+/* ---------- announcement strip ---------- */
+.announce {
+  display: flex; align-items: center; gap: 18px; padding: 10px 32px;
+  background: #0a1226; border-bottom: 1px solid #13234a; font-size: 13px;
+}
+.announce .k {
+  color: var(--red2); font-size: 10px; font-weight: 700;
+  letter-spacing: .26em; text-transform: uppercase; flex: none;
+}
+.announce .t { color: var(--soft); flex: 1; min-width: 0; }
+.announce a {
+  color: var(--ink); font-size: 10px; letter-spacing: .22em;
+  text-transform: uppercase; text-decoration: none; flex: none;
+  border-bottom: 1px solid #24407a; padding-bottom: 2px;
+}
+.announce a:hover { border-color: var(--ink); }
+.announce .d { color: var(--dim); font-size: 11px; flex: none; }
+
+/* ---------- watch layout: player column + course rail ---------- */
+.watch {
+  display: grid; grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 40px; align-items: start;
+}
+.eyebrow {
+  display: flex; align-items: center; gap: 10px; margin: 0;
+  color: var(--muted); font-size: 11px; font-weight: 500;
+  letter-spacing: .26em; text-transform: uppercase;
+}
+.eyebrow b { width: 6px; height: 6px; background: var(--red); flex: none; }
+.display {
+  font-family: var(--display); font-weight: 400;
+  text-transform: uppercase; letter-spacing: .005em; line-height: .98;
+}
+.player {
+  position: relative; aspect-ratio: 16 / 9; background: #04050a;
+  overflow: hidden; box-shadow: 0 0 0 1px var(--line);
+}
+.player iframe {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+}
+.poster {
+  position: absolute; inset: 0; display: flex; align-items: flex-end;
+  justify-content: flex-start; cursor: pointer; overflow: hidden;
+  padding: 0 0 6% 5%;
+  background:
+    radial-gradient(110% 90% at 30% 20%, #121a2e 0%, #05070c 65%);
+}
+.poster .thumb {
+  position: absolute; inset: 0; background: center / cover no-repeat;
+  opacity: 0; transition: opacity .5s ease;
+}
+.poster .thumb:after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(4,5,10,.78) 0%, rgba(4,5,10,.25) 55%,
+    rgba(4,5,10,.1) 100%), linear-gradient(0deg, rgba(4,5,10,.7) 0%,
+    rgba(4,5,10,0) 45%);
+}
+.poster.hasimg .thumb { opacity: 1; }
+.poster.hasimg .num { display: none; }
+.poster.locked .thumb { filter: grayscale(1) blur(6px) brightness(.5); }
+.poster .num {
+  position: absolute; right: 3%; bottom: -12%; pointer-events: none;
+  font-family: var(--display); font-size: min(30vw, 330px); line-height: 1;
+  color: transparent; -webkit-text-stroke: 1px rgba(242,245,251,.09);
+  letter-spacing: -.02em;
+}
+.poster .ptag {
+  position: absolute; left: 28px; top: 24px; font-size: 10px;
+  letter-spacing: .3em; text-transform: uppercase; color: var(--dim);
+}
+.play {
+  position: relative; width: 88px; height: 88px; border-radius: 50%;
+  border: 0; background: var(--ink); color: #07090e; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 10px rgba(242,245,251,.06);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.poster:hover .play { transform: scale(1.05);
+  box-shadow: 0 0 0 16px rgba(242,245,251,.07); }
+.play svg { width: 26px; height: 26px; margin-left: 4px; }
+.play { animation: breathe 3.6s ease-in-out infinite; }
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 10px rgba(242,245,251,.05); }
+  50% { box-shadow: 0 0 0 18px rgba(242,245,251,.08); }
+}
+.pgo { position: relative; display: flex; align-items: center; gap: 20px; }
+.pgo .pl b { display: block; font-family: var(--display); font-weight: 400;
+  font-size: 26px; text-transform: uppercase; color: var(--ink);
+  line-height: 1; }
+.pgo .pl span { display: block; margin-top: 6px; font-size: 11px;
+  letter-spacing: .24em; text-transform: uppercase; color: var(--muted); }
+.poster.locked { align-items: center; justify-content: center; padding: 0; }
+.poster.locked .pgo { display: none; }
+.poster.locked { cursor: default; }
+.lockbox {
+  position: relative; text-align: center; max-width: 360px; padding: 20px;
+}
+.lockbox svg { width: 26px; height: 26px; color: var(--muted); }
+.lockbox p { margin: 12px 0 18px; color: var(--soft); font-size: 15px;
+  line-height: 1.6; }
+.wm {
+  position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none;
+  font-size: 13px; font-weight: 600; letter-spacing: .06em;
+  color: rgba(242,245,251,.14); white-space: nowrap;
+  will-change: transform; transition: transform 1.6s ease-in-out;
+}
+.pmsg {
+  position: absolute; inset: 0; z-index: 4; display: flex;
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px; background: rgba(4,5,10,.94); text-align: center;
+  padding: 24px;
+}
+.pmsg p { margin: 0; color: var(--soft); font-size: 15px; max-width: 420px;
+  line-height: 1.6; }
+.ghost {
+  height: 40px; padding: 0 20px; cursor: pointer;
+  background: var(--ink); color: #07090e; border: 0;
+  font-size: 11px; font-weight: 700; letter-spacing: .22em;
+  text-transform: uppercase;
+}
+.ghost:hover { background: #fff; }
+.ghost.line {
+  background: none; color: var(--soft); border: 1px solid var(--line2);
+}
+.ghost.line:hover { color: var(--ink); border-color: var(--muted); }
+.ghost:disabled { opacity: .35; cursor: default; }
+.segs { display: flex; gap: 3px; margin-top: 10px; height: 4px; }
+.segs i { flex: 1; background: #171c28; cursor: pointer;
+  transition: background .2s ease; }
+.segs i.done { background: var(--red); }
+.segs i.open { background: #333b4f; }
+.segs i.cur { background: var(--ink); }
+.segs i.pop { background: linear-gradient(90deg, var(--red) 50%, #333b4f 50%);
+  background-size: 200% 100%; animation: sweep .9s ease forwards; }
+@keyframes sweep { from { background-position: 100% 0; }
+  to { background-position: 0 0; } }
+.node.pop .mk { animation: pop .6s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes pop { 0% { transform: scale(.4); } 100% { transform: none; } }
+.info { margin-top: 26px; }
+.info h1 { margin: 12px 0 0; font-size: 52px; overflow-wrap: anywhere; }
+.info .sub {
+  margin: 12px 0 0; color: var(--muted); font-size: 15px;
+  max-width: 680px; line-height: 1.6; white-space: pre-line;
+}
+.acts {
+  display: flex; align-items: center; gap: 12px; margin-top: 24px;
+  flex-wrap: wrap;
+}
+.acts .sp { flex: 1; }
+.badge {
+  display: inline-flex; align-items: center; gap: 8px; height: 40px;
+  padding: 0 16px; border: 1px solid #2f3d2c; color: var(--ok);
+  font-size: 11px; font-weight: 700; letter-spacing: .22em;
+  text-transform: uppercase;
+}
+.badge svg { width: 13px; height: 13px; }
+.wsx {
+  display: flex; align-items: center; gap: 8px; margin-top: 22px;
+  padding-top: 18px; border-top: 1px solid var(--line);
+  font-size: 11px; color: var(--dim); letter-spacing: .2em;
+  text-transform: uppercase;
+}
+.wsx svg { width: 12px; height: 12px; flex: none; }
+.wsx b { color: var(--muted); font-weight: 500; letter-spacing: .08em;
+  text-transform: none; font-size: 12px; }
+
+/* rail */
+.rail {
+  position: sticky; top: 96px; max-height: calc(100vh - 120px);
+  display: flex; flex-direction: column; background: var(--panel);
+  box-shadow: 0 0 0 1px var(--line);
+}
+.rhead { padding: 22px 22px 16px; border-bottom: 1px solid var(--line); }
+.rhead .top2 { display: flex; align-items: baseline; gap: 14px; }
+.rhead h2 { margin: 0; font-size: 26px; }
+.rhead .pc { margin-left: auto; font-family: var(--display);
+  font-size: 26px; color: var(--red2); line-height: .98; }
+.rhead .cnt { margin: 8px 0 0; font-size: 11px; color: var(--muted);
+  letter-spacing: .2em; text-transform: uppercase; }
+.search {
+  width: 100%; height: 38px; margin-top: 16px; padding: 0 12px;
+  background: var(--bg); color: var(--ink); border: 1px solid var(--line);
+  outline: none; font-size: 13px; border-radius: 0;
+}
+.search::placeholder { color: var(--dim); }
+.search:focus { border-color: var(--line2); }
+.rlist { overflow-y: auto; padding: 6px 0 14px; scrollbar-width: thin;
+  scrollbar-color: #232a3a transparent; }
+.ghead {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: none; border: 0; padding: 16px 22px 8px; cursor: pointer;
+  color: var(--ink); text-align: left;
+}
+.ghead .chev { width: 10px; height: 10px; flex: none; color: var(--muted);
+  transition: transform .2s ease; }
+.group.shut .chev { transform: rotate(-90deg); }
+.group.shut .rows { display: none; }
+.ghead .gt { font-size: 11px; font-weight: 600; letter-spacing: .22em;
+  text-transform: uppercase; flex: 1; }
+.ghead .gc { font-size: 11px; color: var(--muted); letter-spacing: .1em; }
+.node {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  width: 100%; min-height: 54px; padding: 8px 22px 8px 52px;
+  background: none; border: 0; color: var(--soft); text-align: left;
+  cursor: pointer; font-size: 14px; line-height: 1.35;
+  transition: background .15s ease, color .15s ease;
+}
+.node:hover { background: #121722; color: var(--ink); }
+.path .node:before {
+  content: ""; position: absolute; left: 30px; top: 0; bottom: 0;
+  width: 1px; background: var(--line2);
+}
+.path .node:first-child:before { top: 50%; }
+.path .node:last-child:before { bottom: 50%; }
+.node .mk {
+  position: absolute; left: 24px; top: 50%; width: 13px; height: 13px;
+  margin-top: -6.5px; background: var(--panel);
+  box-shadow: inset 0 0 0 1px #434c62;
+  display: flex; align-items: center; justify-content: center;
+}
+.node .mk svg { width: 9px; height: 9px; }
+.node.done .mk { background: var(--red); box-shadow: none; color: #fff; }
+.node.cur .mk { background: var(--ink); box-shadow: 0 0 0 4px rgba(242,245,251,.12); }
+.node.locked { cursor: not-allowed; color: var(--dim); }
+.node.locked .mk { box-shadow: inset 0 0 0 1px #262d3e; color: #434c62; }
+.node .tx { flex: 1; min-width: 0; }
+.node .tt { display: block; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }
+.node .mt { display: block; margin-top: 3px; font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; }
+.node .st { flex: none; font-size: 10px; font-weight: 700;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
+.node.cur { color: var(--ink); background: #131823; }
+.node.cur .st { color: var(--red2); }
+.node .st.done { color: var(--ok); }
+.node .st.new { color: var(--ink); }
+.node .st.next { color: var(--ink); }
+.flat .node { padding-left: 22px; }
+.flat .node .mk { display: none; }
+.none { padding: 28px 22px; color: var(--muted); font-size: 14px; }
+.empty { padding: 120px 0 40px; text-align: center; }
+.empty h1 { margin: 16px 0 0; font-size: 54px; }
+.empty p { color: var(--muted); font-size: 15px; margin: 14px 0 0; }
+.empty .eyebrow { justify-content: center; }
+
+/* ---------- profile card ---------- */
+.pcard {
+  max-width: 820px; margin: 0 auto; background: var(--panel);
+  box-shadow: 0 0 0 1px var(--line), 0 30px 80px rgba(0,0,0,.45);
+  overflow: hidden;
+}
+.pban {
+  position: relative; height: 200px; overflow: hidden;
+  background: center / cover no-repeat;
+}
+.pban.art {
+  background:
+    radial-gradient(120% 140% at 85% 120%, rgba(var(--red-rgb),.55) 0%,
+      rgba(var(--red-rgb),0) 55%),
+    linear-gradient(135deg, #141b2b 0%, #090b11 100%);
+}
+.pban .bv {
+  position: absolute; right: 4%; bottom: -38%; font-family: var(--display);
+  font-size: 260px; line-height: 1; color: transparent;
+  -webkit-text-stroke: 1px rgba(242,245,251,.14); pointer-events: none;
+}
+.pban.img .bv { display: none; }
+.pban:after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(13,16,24,.85));
+}
+.phead {
+  position: relative; display: flex; align-items: flex-end; gap: 24px;
+  padding: 0 36px; margin-top: -64px; z-index: 2;
+}
+.av {
+  width: 128px; height: 128px; border-radius: 50%; flex: none;
+  background: #151a25 center / cover no-repeat;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--display); font-size: 52px; color: var(--muted);
+  box-shadow: 0 0 0 6px var(--panel), 0 0 0 7px var(--line2);
+}
+.pwho { flex: 1; min-width: 0; padding-bottom: 6px; }
+.pwho h1 { margin: 0; font-size: 46px; overflow-wrap: anywhere; }
+.pwho .handle { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 22px 36px 0; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; height: 28px;
+  padding: 0 12px; border: 1px solid var(--line2); color: var(--soft);
+  font-size: 10px; font-weight: 600; letter-spacing: .2em;
+  text-transform: uppercase;
+}
+.chip b { width: 6px; height: 6px; background: var(--red); }
+.chip.ok { color: var(--ok); border-color: #2f3d2c; }
+.ptiles {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px; margin: 28px 0 0; background: var(--line);
+  border-top: 1px solid var(--line);
+}
+.ptile { background: var(--panel); padding: 22px 24px 24px; }
+.ptile .k { font-size: 10px; color: var(--muted); letter-spacing: .24em;
+  text-transform: uppercase; }
+.ptile .v { margin-top: 10px; font-family: var(--display); font-size: 40px;
+  line-height: 1; }
+.ptile .v small { font-size: 20px; color: var(--muted); }
+.ptile .s { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.mseg { display: flex; gap: 2px; margin-top: 14px; height: 3px; }
+.mseg i { flex: 1; background: #232a3a; }
+.mseg i.d { background: var(--red); }
+.ptile.next .t { margin-top: 10px; font-size: 15px; color: var(--ink);
+  line-height: 1.4; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }
+.ptile.next .ghost { margin-top: 14px; height: 34px; font-size: 10px; }
+.pfoot {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 18px 36px 22px; border-top: 1px solid var(--line);
+  font-size: 11px; color: var(--dim); letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.pfoot svg { width: 12px; height: 12px; flex: none; }
+.pfoot b { color: var(--muted); font-weight: 500; letter-spacing: .06em;
+  text-transform: none; font-size: 12px; }
+
+/* ---------- admin ---------- */
+.ahead { display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+.ahead h1 { margin: 0; font-size: 44px; }
+.seg { display: flex; border: 1px solid var(--line2); }
+.seg button {
+  height: 36px; padding: 0 16px; background: none; border: 0;
+  color: var(--muted); cursor: pointer; font-size: 11px; font-weight: 500;
+  letter-spacing: .2em; text-transform: uppercase;
+}
+.seg button + button { border-left: 1px solid var(--line2); }
+.seg button.on { background: var(--ink); color: #07090e; }
+.ahead .seg { margin-left: auto; }
+.abox { margin-top: 34px; }
+.abox h3 {
+  margin: 0 0 14px; font-size: 11px; font-weight: 600; color: var(--muted);
+  letter-spacing: .26em; text-transform: uppercase;
+}
+.frow { display: flex; gap: 10px; flex-wrap: wrap; }
+.in {
+  height: 40px; padding: 0 12px; flex: 1; min-width: 160px;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  outline: none; font-size: 14px; border-radius: 0; font-family: inherit;
+}
+.in:focus { border-color: var(--muted); }
+textarea.in { height: 120px; padding: 10px 12px; resize: vertical;
+  line-height: 1.5; }
+select.in { -webkit-appearance: none; appearance: none; }
+.sb {
+  height: 40px; padding: 0 16px; cursor: pointer; flex: none;
+  background: var(--ink); color: #07090e; border: 0;
+  font-size: 11px; font-weight: 700; letter-spacing: .2em;
+  text-transform: uppercase;
+}
+.sb:hover { background: #fff; }
+.sb.line { background: none; color: var(--soft);
+  border: 1px solid var(--line2); }
+.sb.line:hover { color: var(--ink); border-color: var(--muted); }
+.sb.red { background: none; color: var(--err); border: 1px solid #4a1d1f; }
+.sb.red:hover { border-color: var(--err); }
+.sb.sm { height: 30px; padding: 0 10px; font-size: 10px; }
+.sb:disabled { opacity: .4; cursor: default; }
+.sec { margin-top: 26px; border: 1px solid var(--line); }
+.sech {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.sech .gt { flex: 1; font-size: 12px; font-weight: 600;
+  letter-spacing: .22em; text-transform: uppercase; }
+.it {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  border-bottom: 1px solid var(--line); font-size: 14px; flex-wrap: wrap;
+}
+.it:last-child { border-bottom: 0; }
+.it .tt { flex: 1; min-width: 160px; color: var(--ink); }
+.pill {
+  font-size: 10px; font-weight: 600; letter-spacing: .2em;
+  text-transform: uppercase; padding: 4px 8px; border: 1px solid;
+  white-space: nowrap;
+}
+.pill.ready { color: var(--ok); border-color: #2f3d2c; }
+.pill.empty { color: var(--dim); border-color: var(--line2); }
+.pill.busy { color: #d9b45a; border-color: #4a3d1e; }
+.pill.error { color: var(--err); border-color: #4a1d1f; }
+.upbar { width: 100%; height: 2px; background: var(--line); }
+.upbar i { display: block; height: 100%; background: var(--red);
+  transition: width .2s linear; }
+.addit { padding: 10px 14px; }
+.log { width: 100%; border-collapse: collapse; font-size: 13px; }
+.log td, .log th {
+  text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.log th { color: var(--muted); font-size: 10px; font-weight: 600;
+  letter-spacing: .22em; text-transform: uppercase; }
+.log td.dim { color: var(--muted); white-space: nowrap; }
+.log .k { color: var(--red2); font-weight: 600; font-size: 11px;
+  letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; }
+.log .who { color: var(--ink); }
+.log .id { color: var(--dim); font-size: 11px; }
+.tbl-wrap { overflow-x: auto; }
+.note { color: var(--muted); font-size: 13px; line-height: 1.6;
+  margin: 10px 0 0; }
+
+/* ---------- modal + toast ---------- */
+.modal {
+  position: fixed; inset: 0; z-index: 900; display: flex;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(0,0,0,.72);
+}
+.card {
+  width: 100%; max-width: 520px; background: #0c0f16;
+  border: 1px solid var(--line2); padding: 28px;
+  animation: rise .25s ease both;
+}
+.card h2 { margin: 0 0 18px; font-size: 30px; }
+.card label {
+  display: block; margin: 16px 0 6px; font-size: 10px; font-weight: 600;
+  color: var(--muted); letter-spacing: .24em; text-transform: uppercase;
+}
+.card .in { width: 100%; }
+.card .acts { display: flex; gap: 10px; justify-content: flex-end;
+  margin-top: 24px; }
+.card p { color: var(--soft); line-height: 1.6; font-size: 14px; }
+.toast {
+  position: fixed; left: 50%; bottom: 28px; z-index: 950;
+  transform: translateX(-50%); background: var(--ink); color: #07090e;
+  padding: 12px 18px; font-size: 13px; font-weight: 500;
+  box-shadow: 0 10px 30px rgba(0,0,0,.5); animation: rise .25s ease both;
+}
+
+/* ---------- blocked-action warning + devtools wall ---------- */
+#warn, #dtwall {
+  position: fixed; inset: 0; z-index: 2147482000; display: flex;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(0,0,0,.8);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+#dtwall { background: #04050a; z-index: 2147482500; }
+.wbox {
+  width: 100%; max-width: 440px; background: #0c0f16; padding: 28px;
+  border: 1px solid #4a1d1f; box-shadow: 0 0 0 6px rgba(var(--red-rgb),.12);
+  animation: rise .25s ease both; text-align: left;
+}
+.wbox .eyebrow { color: var(--red2); }
+.wbox h2 { margin: 12px 0 0; font-size: 34px; }
+.wbox p { color: var(--soft); font-size: 14px; line-height: 1.6;
+  margin: 12px 0 0; }
+.wdet { margin: 18px 0 0; border-top: 1px solid var(--line); }
+.wdet div { display: flex; gap: 14px; padding: 9px 0;
+  border-bottom: 1px solid var(--line); font-size: 13px; }
+.wdet dt { width: 96px; flex: none; color: var(--muted); font-size: 10px;
+  letter-spacing: .22em; text-transform: uppercase; padding-top: 2px; }
+.wdet dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.wbox .ghost { margin-top: 22px; width: 100%; }
+.wall-acts { display: flex; gap: 10px; margin-top: 34px; flex-wrap: wrap;
+  justify-content: center; }
+.wall-acts a, .wall-acts button { margin: 0; width: auto; padding: 0 22px; }
+
+/* ---------- shield ---------- */
+#shield {
+  position: fixed; inset: 0; z-index: 2147483000; display: none;
+  background: #04050a; overflow: hidden;
+}
+#shield.on { display: block; }
+#shield .tiles {
+  position: absolute; left: -50%; top: -50%; width: 200%; height: 200%;
+  transform: rotate(-24deg); display: flex; flex-wrap: wrap;
+  align-content: flex-start; gap: 46px 70px; padding: 20px;
+}
+#shield .tiles span {
+  font: 700 18px var(--sans); color: rgba(242,245,251,.16);
+  letter-spacing: .08em; white-space: nowrap;
+}
+#shield .msg {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%,-50%); text-align: center;
+  font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--muted);
+}
+#shield .msg b {
+  display: block; margin-bottom: 10px; color: var(--ink);
+  font-size: 16px; letter-spacing: .2em;
+}
+@media print { body { display: none !important; } }
+
+@media (max-width: 1100px) {
+  .watch { grid-template-columns: minmax(0, 1fr); }
+  .rail { position: static; max-height: none; }
+  .rlist { overflow: visible; }
+}
+@media (max-width: 820px) {
+  .top { flex-wrap: wrap; height: auto; padding: 14px 20px 0; gap: 0; }
+  .brand { flex: 1; }
+  .live { order: 2; margin: 0 12px 0 0; padding: 0 10px; }
+  .nav {
+    order: 3; width: calc(100% + 40px); margin: 12px -20px 0;
+    padding: 0 20px; gap: 26px; overflow-x: auto; scrollbar-width: none;
+    border-top: 1px solid var(--line); height: 48px; align-items: stretch;
+  }
+  .nav a { display: flex; align-items: center; }
+  .nav::-webkit-scrollbar { display: none; }
+  .announce { flex-wrap: wrap; gap: 6px 14px; padding: 10px 20px; }
+  .announce .k { flex: 1; }
+  .announce .t { order: 3; flex-basis: 100%; line-height: 1.5; }
+  .announce a { order: 4; }
+  .wrap { padding: 24px 20px 100px; }
+  .info h1 { font-size: 38px; }
+  .play { width: 60px; height: 60px; }
+  .pgo { gap: 14px; }
+  .pgo .pl b { font-size: 20px; }
+  .acts .sp { display: none; }
+  .acts #prev, .acts #next { flex: 1 1 0; }
+  .acts #done-b, .acts #done-ok { flex: 1 1 100%; justify-content: center; }
+  .wsx { flex-wrap: wrap; }
+  .phead { padding: 0 20px; margin-top: -52px; gap: 16px; }
+  .av { width: 96px; height: 96px; font-size: 40px; }
+  .pwho h1 { font-size: 32px; }
+  .chips { padding: 18px 20px 0; }
+  .ptiles { grid-template-columns: minmax(0, 1fr); }
+  .pfoot { padding: 16px 20px 20px; }
+  .pban { height: 140px; }
+  .ahead .seg { margin-left: 0; }
+}
+@media (max-width: 480px) {
+  .tag { letter-spacing: .26em; font-size: 11px; }
+  .frame { inset: 14px; }
+  .bigv { font-size: 40vh; right: -10vw; bottom: -13vh; }
+  .btn { margin-top: 48px; }
+  .info h1 { font-size: 32px; }
+  .play { width: 50px; height: 50px; box-shadow: 0 0 0 6px rgba(242,245,251,.06); }
+  .pgo .pl span { display: none; }
+  .poster .ptag { left: 16px; top: 14px; }
+}
+
+/* ---------- Elevare inside: serif headings, lit buttons, blue glass ---------- */
+:root { --display: "Cinzel", Georgia, serif; }
+.display { font-weight: 700; letter-spacing: .03em; line-height: 1.08; }
+.info h1 { font-size: 40px; }
+.rhead h2 { font-size: 21px; }
+.rhead .pc { font-size: 24px; font-weight: 700;
+  text-shadow: 0 0 14px rgba(var(--red2-rgb),.6); }
+.empty h1 { font-size: 40px; }
+.pwho h1 { font-size: 36px; }
+.ahead h1 { font-size: 34px; }
+.pgo .pl b { font-size: 21px; font-weight: 700; }
+.ptile .v { font-size: 34px; font-weight: 700; }
+.codebox b { font-weight: 700; font-size: 34px; letter-spacing: .1em; }
+.rules li:before { font-weight: 700; }
+.poster .num { font-weight: 700;
+  -webkit-text-stroke: 1px rgba(var(--red2-rgb),.16); }
+.pban .bv { font-weight: 700; }
+.av { font-weight: 700; }
+/* soft blue light along the top of the app */
+.app {
+  background:
+    radial-gradient(70% 42% at 50% -6%, rgba(var(--red-rgb),.16), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+.top {
+  border-bottom-color: rgba(var(--red2-rgb),.12);
+  box-shadow: 0 1px 0 rgba(var(--red2-rgb),.05);
+}
+.nav a.on:after { background: var(--red2);
+  box-shadow: 0 0 10px rgba(var(--red2-rgb),.9); }
+/* primary buttons: the same lit blue as the sign-in button */
+.sb, .ghost {
+  background: linear-gradient(100deg, var(--red) 0%, var(--red2) 100%);
+  color: #fff;
+  box-shadow: 0 8px 22px -12px rgba(var(--red-rgb),.95),
+    inset 0 1px 0 rgba(255,255,255,.25);
+  transition: filter .15s ease, box-shadow .15s ease;
+}
+.sb:hover, .ghost:hover {
+  background: linear-gradient(100deg, var(--red) 0%, var(--red2) 100%);
+  filter: brightness(1.12);
+  box-shadow: 0 10px 26px -10px rgba(var(--red-rgb),1),
+    inset 0 1px 0 rgba(255,255,255,.25);
+}
+.sb.line, .ghost.line, .sb.red { box-shadow: none; filter: none; }
+.sb.line:hover, .ghost.line:hover { border-color: rgba(var(--red2-rgb),.55);
+  box-shadow: 0 0 0 3px rgba(var(--red2-rgb),.10); }
+.seg button.on { background: rgba(var(--red-rgb),.22); color: #fff;
+  box-shadow: inset 0 -2px 0 var(--red2); }
+.play {
+  background: radial-gradient(circle at 35% 30%, #8cc4ff 0%, var(--red2) 35%,
+    var(--red) 100%);
+  color: #fff;
+}
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 10px rgba(var(--red2-rgb),.10),
+    0 0 40px rgba(var(--red2-rgb),.35); }
+  50% { box-shadow: 0 0 0 18px rgba(var(--red2-rgb),.14),
+    0 0 60px rgba(var(--red2-rgb),.5); }
+}
+.poster:hover .play { box-shadow: 0 0 0 16px rgba(var(--red2-rgb),.16),
+  0 0 70px rgba(var(--red2-rgb),.6); }
+/* panels: a faint blue glass edge */
+.rail {
+  background: linear-gradient(180deg, rgba(22,34,74,.38) 0%,
+    rgba(13,16,24,.96) 40%);
+  box-shadow: 0 0 0 1px rgba(var(--red2-rgb),.12),
+    0 24px 60px -34px rgba(var(--red-rgb),.6);
+}
+/* player: thin edge only. Keep overlays/effects off the player box
+   (see SECURITY.md: Mac capture blackout depends on it) */
+.player { box-shadow: 0 0 0 1px rgba(var(--red2-rgb),.12); }
+.search:focus, .in:focus { border-color: rgba(var(--red2-rgb),.6);
+  box-shadow: 0 0 0 3px rgba(var(--red2-rgb),.12); }
+.toast {
+  background: rgba(16,26,56,.94); color: var(--ink);
+  border: 1px solid rgba(var(--red2-rgb),.35);
+  box-shadow: 0 12px 34px rgba(0,0,0,.55), 0 0 30px rgba(var(--red-rgb),.25);
+}
+@media (max-width: 900px) {
+  .info h1 { font-size: 30px; }
+  .pwho h1 { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Chrome-only wall -->
+<section id="v-wall" class="view door">
+  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
+  <div class="floor" aria-hidden="true"></div>
+  <div class="frame" aria-hidden="true">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+  </div>
+  <span class="bigv" aria-hidden="true">V2</span>
+  <div class="stack">
+    <img class="logo" src="/logo.png" alt="Elevare">
+    <div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
+    <p class="tag" id="wall-tag">Google Chrome required</p>
+    <p class="blurb" id="wall-text">For your security, the community is only
+      available in Google Chrome or Brave on a computer. Open this page in
+      one of them to
+      continue.</p>
+    <div class="wall-acts">
+      <a class="btn" id="wall-get" href="https://www.google.com/chrome/" target="_blank"
+        rel="noopener noreferrer">Get Google Chrome</a>
+      <button class="ghost line" id="wall-copy" type="button"
+        style="height:48px">Copy link</button>
+    </div>
+  </div>
+</section>
+
+<!-- Sign in: logo on the left, Discord entry on the right -->
+<section id="v-login" class="view door">
+  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
+  <div class="floor" aria-hidden="true"></div>
+  <div class="frame" aria-hidden="true">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+  </div>
+  <span class="bigv" aria-hidden="true">V2</span>
+  <div class="duo">
+    <div class="emblem">
+      <div class="float" id="emblem-float">
+        <img class="logo" src="/logo.png" alt="Elevare">
+      </div>
+    </div>
+    <div class="entry">
+      <div class="kick"><i></i>Members only</div>
+      <h1><small>Welcome to</small><span class="bmk" id="door-wm">ELEVARE</span></h1>
+      <p class="tag" id="brand-tag">Private Trading Community</p>
+      <p class="blurb">Sign in with the Discord account that holds your member
+        role. Your lectures, breakdowns and progress are waiting.</p>
+      <a id="go" class="btn lit" href="/api/login">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+          aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8
+          10 8 10z"/></svg>
+        Continue with Discord
+        <span class="arr" aria-hidden="true">&#x2192;</span>
+      </a>
+      <div id="err" class="err" role="alert"></div>
+      <ul class="perks" aria-label="Protection">
+        <li>DRM video</li><li>Role-gated</li><li>Watermarked</li>
+      </ul>
+      <div class="invite">By invitation only</div>
+    </div>
+  </div>
+</section>
+
+<!-- Community rules (agree before entering) -->
+<section id="v-agree" class="view door">
+  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
+  <div class="floor" aria-hidden="true"></div>
+  <div class="frame" aria-hidden="true">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+  </div>
+  <span class="bigv" aria-hidden="true">V2</span>
+  <div class="stack agree">
+    <img class="logo" src="/logo.png" alt="Elevare">
+    <div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
+    <p class="tag">Community rules</p>
+    <ol class="rules" id="ag-list"></ol>
+    <div class="codebox"><span>Your viewer code</span><b id="ag-code"></b>
+      <em>Printed on every video you watch.</em></div>
+    <label class="chk"><input type="checkbox" id="ag-chk">
+      <span>I&#x2019;ve read these rules and agree to follow them.</span></label>
+    <button class="btn lit" id="ag-go" type="button" disabled>Enter</button>
+    <button class="link ag-out" id="ag-out" type="button">Sign out</button>
+  </div>
+</section>
+
+<!-- Timed out -->
+<section id="v-timeout" class="view door">
+  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
+  <div class="floor" aria-hidden="true"></div>
+  <div class="frame" aria-hidden="true">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+  </div>
+  <span class="bigv" aria-hidden="true">V2</span>
+  <div class="stack">
+    <img class="logo" src="/logo.png" alt="Elevare">
+    <div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
+    <p class="tag">Timed out</p>
+    <div class="tclock display" id="to-clock">10:00</div>
+    <p class="blurb">Developer tools were detected more than once, so access is
+      paused. This was logged and the admins were notified. The page reloads
+      by itself when the time is up.</p>
+  </div>
+</section>
+
+<!-- Inside -->
+<section id="v-app" class="view app">
+  <div id="announce" class="announce" hidden>
+    <span class="k">Announcement</span>
+    <span class="t" id="an-text"></span>
+    <a id="an-link" href="#" target="_blank" rel="noopener noreferrer"
+      hidden>Open link</a>
+    <span class="d" id="an-date"></span>
+  </div>
+  <header class="top">
+    <a class="brand bmk" id="top-wm" href="#lectures">ELEVARE</a>
+    <span class="live" id="live" title="Market session, New York time">
+      <i></i><span id="live-t"></span></span>
+    <nav class="nav" id="nav">
+      <a href="#lectures" data-tab="lectures">Lectures</a>
+      <a href="#breakdowns" data-tab="breakdowns">Breakdowns</a>
+      <a href="#qna" data-tab="qna">Q&amp;A</a>
+      <a href="#random" data-tab="random">Random</a>
+      <a href="#profile" data-tab="profile">Profile</a>
+      <a href="#admin" data-tab="admin" id="nav-admin" hidden>Admin</a>
+    </nav>
+    <button id="out" class="out" type="button">Sign out</button>
+  </header>
+
+  <main class="wrap">
+    <!-- Lectures / Breakdowns -->
+    <section class="pane" id="p-watch">
+      <div class="watch" id="watch">
+        <div class="col">
+          <div class="player" id="player">
+            <div class="poster" id="poster">
+              <span class="thumb" id="p-thumb"></span>
+              <span class="num" id="p-num"></span>
+              <span class="ptag" id="p-tag"></span>
+              <div class="pgo">
+                <button class="play" id="play" type="button"
+                  aria-label="Play"><svg viewBox="0 0 24 24"
+                  fill="currentColor" aria-hidden="true"><path d="M7
+                  4.5v15l13-7.5z"/></svg></button>
+                <span class="pl"><b>Play</b><span id="p-len"></span></span>
+              </div>
+              <div class="lockbox" id="lockbox" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.8" aria-hidden="true"><rect x="5" y="11"
+                  width="14" height="10"/><path d="M8 11V8a4 4 0 018 0v3"/>
+                </svg>
+                <p id="lock-t"></p>
+                <button class="ghost" id="lock-b" type="button"></button>
+              </div>
+            </div>
+            <div class="wm" id="wm" hidden></div>
+            <div class="pmsg" id="pmsg" hidden>
+              <p id="pmsg-t"></p>
+              <button class="ghost" id="pmsg-b" type="button"></button>
+            </div>
+          </div>
+          <div class="segs" id="segs"></div>
+          <div class="info">
+            <p class="eyebrow"><b></b><span id="w-eyebrow"></span></p>
+            <h1 class="display" id="w-title"></h1>
+            <p class="sub" id="w-desc"></p>
+            <div class="acts">
+              <button class="ghost" id="done-b" type="button">Mark complete
+              </button>
+              <span class="badge" id="done-ok" hidden><svg viewBox="0 0 24
+                24" fill="none" stroke="currentColor" stroke-width="3"
+                aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>
+                Completed</span>
+              <span class="sp"></span>
+              <button class="ghost line" id="prev" type="button">&#x2190;
+                Previous</button>
+              <button class="ghost line" id="next" type="button">Next
+                &#x2192;</button>
+            </div>
+            <div class="wsx">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.2" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Watermarked to <b id="w-me"></b>
+            </div>
+          </div>
+        </div>
+
+        <aside class="rail" id="rail">
+          <div class="rhead">
+            <div class="top2">
+              <h2 class="display" id="lib-title"></h2>
+              <span class="pc" id="lib-pct">0%</span>
+            </div>
+            <p class="cnt" id="lib-count"></p>
+            <input class="search" id="q" type="search" autocomplete="off"
+              placeholder="Search all videos">
+          </div>
+          <div class="rlist" id="lib-list"></div>
+        </aside>
+      </div>
+      <div class="empty" id="w-empty" hidden>
+        <p class="eyebrow"><b></b><span id="e-eyebrow"></span></p>
+        <h1 class="display">Nothing here yet</h1>
+        <p id="e-text"></p>
+      </div>
+    </section>
+
+    <!-- Profile -->
+    <section class="pane" id="p-profile">
+      <div class="pcard">
+        <div class="pban art" id="pf-ban"><span class="bv">V2</span></div>
+        <div class="phead">
+          <div class="av" id="pf-av"></div>
+          <div class="pwho">
+            <h1 class="display" id="pf-name"></h1>
+            <p class="handle" id="pf-handle"></p>
+          </div>
+        </div>
+        <div class="chips" id="pf-chips"></div>
+        <div class="ptiles">
+          <div class="ptile">
+            <div class="k">Lectures</div>
+            <div class="v" id="pf-lec"></div>
+            <div class="mseg" id="pf-lseg"></div>
+          </div>
+          <div class="ptile">
+            <div class="k">Breakdowns</div>
+            <div class="v" id="pf-bd"></div>
+            <div class="s" id="pf-bds"></div>
+          </div>
+          <div class="ptile next">
+            <div class="k">Up next</div>
+            <div class="t" id="pf-next"></div>
+            <button class="ghost" id="pf-go" type="button">Continue</button>
+          </div>
+        </div>
+        <div class="pfoot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Viewer code <b id="pf-code"></b>
+          <span style="width:14px"></span>
+          Discord ID <b id="pf-id"></b>
+          <span style="flex:1"></span>
+          Every video is watermarked with these
+        </div>
+      </div>
+    </section>
+
+    <!-- Admin -->
+    <section class="pane" id="p-admin">
+      <div class="ahead">
+        <h1 class="display">Admin</h1>
+        <div class="seg" id="adm-seg">
+          <button type="button" data-a="content" class="on">Content</button>
+          <button type="button" data-a="log">Security log</button>
+          <button type="button" data-a="plays">Plays</button>
+          <button type="button" data-a="members">Members</button>
+        </div>
+      </div>
+      <div id="adm-body"></div>
+    </section>
+  </main>
+</section>
+
+<div id="warn" role="alertdialog" aria-modal="true" hidden>
+  <div class="wbox">
+    <p class="eyebrow"><b></b>Blocked</p>
+    <h2 class="display">Not allowed here</h2>
+    <p>Copying, recording or inspecting community content is against the
+      rules. This attempt was logged to your account.</p>
+    <dl class="wdet">
+      <div><dt>Member</dt><dd id="w-who"></dd></div>
+      <div><dt>Discord ID</dt><dd id="w-id"></dd></div>
+      <div><dt>Action</dt><dd id="w-what"></dd></div>
+      <div><dt>Time</dt><dd id="w-when"></dd></div>
+    </dl>
+    <button class="ghost" id="warn-ok" type="button">Understood</button>
+  </div>
+</div>
+
+<div id="dtwall" hidden>
+  <div class="wbox">
+    <p class="eyebrow"><b></b>Paused</p>
+    <h2 class="display">Developer tools are open</h2>
+    <p>Close developer tools to keep using the community. Nothing loads
+      while they&#x2019;re open, and this was logged.</p>
+  </div>
+</div>
+
+<div id="shield" aria-hidden="true">
+  <div class="tiles" id="tiles"></div>
+  <div class="msg"><b id="shield-name">Elevare</b>Protected content</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var DEMO = !!window.LVR_DEMO; // offline showcase build (dev/build-demo.js)
+  // ---------- brand (brand.js) ----------
+  var BRAND = window.BRAND || {};
+  var BN = BRAND.name || 'Elevare', SLUG = BRAND.fileSlug || 'elevare';
+  (function () {
+    function hex(h) {
+      var m = /^#?([0-9a-f]{6})$/i.exec(String(h || ''));
+      if (!m) return null;
+      var n = parseInt(m[1], 16);
+      return [n >> 16 & 255, n >> 8 & 255, n & 255].join(', ');
+    }
+    var r = document.documentElement.style;
+    if (hex(BRAND.accent)) {
+      r.setProperty('--red', BRAND.accent);
+      r.setProperty('--red-rgb', hex(BRAND.accent));
+    }
+    if (hex(BRAND.accentBright)) {
+      r.setProperty('--red2', BRAND.accentBright);
+      r.setProperty('--red2-rgb', hex(BRAND.accentBright));
+    }
+    if (!DEMO) document.title = BN;
+    var i, x = document.querySelectorAll('img[alt="Elevare"]');
+    for (i = 0; i < x.length; i++) x[i].alt = BN;
+    if (BRAND.mark !== undefined) {
+      x = document.querySelectorAll('.bigv, .bv');
+      for (i = 0; i < x.length; i++) x[i].textContent = BRAND.mark;
+    }
+    if (BRAND.tagline) {
+      document.getElementById('brand-tag').textContent = BRAND.tagline;
+    }
+    document.getElementById('ag-go').textContent = 'Enter ' + BN;
+    document.getElementById('shield-name').textContent = BN;
+    // wordmark: white letters with the accent letters lit (brand.js)
+    var wmT = BRAND.wordmark || BN.toUpperCase();
+    var wmA = BRAND.wordmarkAccent || [];
+    x = document.querySelectorAll('.bmk');
+    for (i = 0; i < x.length; i++) {
+      x[i].textContent = '';
+      for (var j = 0; j < wmT.length; j++) {
+        var sp = document.createElement('span');
+        sp.textContent = wmT.charAt(j);
+        if (wmA.indexOf(j) >= 0) sp.className = 'a';
+        x[i].appendChild(sp);
+      }
+      x[i].setAttribute('aria-label', BN);
+    }
+  })();
+  // ---------- front door sparks + logo parallax ----------
+  (function () {
+    var calm = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return;
+    var cv = null, cx = null, parts = [], W = 0, H = 0, R = 1, last = 0;
+    var rgb = (getComputedStyle(document.documentElement)
+      .getPropertyValue('--red2-rgb') || '79, 163, 255').replace(/\s/g, '');
+    function spark(fresh) {
+      return {
+        x: Math.random() * W,
+        y: fresh ? Math.random() * H : H + 10 * Math.random(),
+        r: 0.6 + Math.random() * 1.9,
+        vy: 0.25 + Math.random() * 0.9,
+        vx: (Math.random() - 0.5) * 0.25,
+        w: Math.random() * 6.28, hot: Math.random() < 0.18,
+        life: 0.4 + Math.random() * 0.6
+      };
+    }
+    function fit(c) {
+      R = Math.min(window.devicePixelRatio || 1, 2);
+      W = c.clientWidth; H = c.clientHeight;
+      c.width = Math.round(W * R); c.height = Math.round(H * R);
+      cx = c.getContext('2d'); cx.setTransform(R, 0, 0, R, 0, 0);
+      parts = [];
+      var n = Math.min(110, Math.round(W * H / 14000));
+      for (var k = 0; k < n; k++) parts.push(spark(true));
+    }
+    function frame(t) {
+      window.requestAnimationFrame(frame);
+      if (t - last < 30) return;
+      last = t;
+      var on = document.querySelector('.view.door.on .sparks');
+      if (!on) { cv = null; return; }
+      if (on !== cv || on.clientWidth !== W || on.clientHeight !== H) {
+        cv = on; fit(on);
+      }
+      cx.clearRect(0, 0, W, H);
+      cx.globalCompositeOperation = 'lighter';
+      for (var k = 0; k < parts.length; k++) {
+        var p = parts[k];
+        p.y -= p.vy; p.w += 0.03; p.x += p.vx + Math.sin(p.w) * 0.3;
+        if (p.y < -20) { parts[k] = spark(false); continue; }
+        var fade = Math.min(1, p.y / H * 1.6) * p.life;
+        var tw = 0.6 + 0.4 * Math.sin(p.w * 3);
+        var g = cx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5);
+        var col = p.hot ? '255,255,255' : rgb;
+        g.addColorStop(0, 'rgba(' + col + ',' + (fade * tw) + ')');
+        g.addColorStop(0.35, 'rgba(' + rgb + ',' + (fade * tw * 0.35) + ')');
+        g.addColorStop(1, 'rgba(' + rgb + ',0)');
+        cx.fillStyle = g;
+        cx.fillRect(p.x - p.r * 5, p.y - p.r * 5, p.r * 10, p.r * 10);
+      }
+    }
+    window.requestAnimationFrame(frame);
+    document.addEventListener('mousemove', function (e) {
+      var f = document.getElementById('emblem-float');
+      if (!f || !f.offsetWidth) return;
+      // whole pixels only, so the logo never resamples (stays sharp)
+      var dx = Math.round((e.clientX / window.innerWidth - 0.5) * 18);
+      var dy = Math.round((e.clientY / window.innerHeight - 0.5) * 12);
+      f.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    });
+  })();
+  var DEV = DEMO || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  var SEP = DEMO ? '-' : '/';
+  function toDoor(e) {
+    if (DEMO) { location.hash = ''; window.lvr.door(e); return; }
+    location.replace(e ? '/?e=' + e : '/');
+  }
+  var ME = null;          // /api/me payload
+  var SEEN = {};          // item id -> true
+  // content types: kind -> tab, labels (lectures unlock in order; the rest
+  // are open any time)
+  var KINDS = { lecture: 'lectures', breakdown: 'breakdowns', qna: 'qna',
+    random: 'random' };
+  var TAB_KIND = { lectures: 'lecture', breakdowns: 'breakdown', qna: 'qna',
+    random: 'random' };
+  var ALL_KINDS = ['lecture', 'breakdown', 'qna', 'random'];
+  var LABEL = { lecture: 'Lecture', breakdown: 'Breakdown', qna: 'Q&A',
+    random: 'Video' };
+  var PLURAL = { lecture: 'Lectures', breakdown: 'Breakdowns', qna: 'Q&A',
+    random: 'Random' };
+  var NOUN = { lecture: 'lecture', breakdown: 'breakdown', qna: 'Q&A',
+    random: 'video' };
+
+  // ======================================================================
+  // helpers
+  // ======================================================================
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) {
+      e.appendChild(document.createTextNode(String(text)));
+    }
+    return e;
+  }
+  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+  function hasCls(n, c) { return (' ' + n.className + ' ').indexOf(' ' + c + ' ') >= 0; }
+  function setCls(n, c, on) {
+    var has = hasCls(n, c);
+    if (on && !has) n.className = (n.className + ' ' + c).replace(/^\s+/, '');
+    if (!on && has) {
+      n.className = (' ' + n.className + ' ').replace(' ' + c + ' ', ' ')
+        .replace(/^\s+|\s+$/g, '');
+    }
+  }
+  function show(id) {
+    var v = document.querySelectorAll('.view');
+    for (var i = 0; i < v.length; i++) setCls(v[i], 'on', v[i].id === id);
+  }
+  function api(method, path, body, cb) {
+    var x = new XMLHttpRequest();
+    x.open(method, path, true);
+    x.setRequestHeader('Content-Type', 'application/json');
+    x.onload = function () {
+      var d = null;
+      try { d = JSON.parse(x.responseText); } catch (e) { d = {}; }
+      if (x.status === 401 && ME) {
+        toDoor(d && ERRORS[d.error] ? d.error : null); return;
+      }
+      if (x.status === 403 && d && d.error === 'timeout') {
+        showTimeout(d.wait || 600); return;
+      }
+      if (cb) cb(x.status, d || {});
+    };
+    x.onerror = function () { if (cb) cb(0, {}); };
+    x.send(body ? JSON.stringify(body) : null);
+  }
+  function flag(kind, detail) {
+    if (!ME) return;
+    api('POST', '/api/me', { action: 'flag', kind: kind,
+      detail: detail || '' }, function (st, d) {
+      if (d && d.timeout) showTimeout(d.timeout);
+    });
+  }
+  var toT = null;
+  function showTimeout(sec) {
+    try { unmount(); } catch (e) {}
+    var end = Date.now() + sec * 1000;
+    show('v-timeout');
+    clearInterval(toT);
+    function tick() {
+      var left = Math.max(0, Math.round((end - Date.now()) / 1000));
+      $('to-clock').textContent = Math.floor(left / 60) + ':' +
+        ('0' + left % 60).slice(-2);
+      if (!left) { clearInterval(toT); location.reload(); }
+    }
+    tick();
+    toT = setInterval(tick, 1000);
+  }
+  function pad2(n) { return n < 10 ? '0' + n : String(n); }
+  function dur(sec) {
+    sec = Math.round(sec || 0);
+    if (!sec) return '';
+    var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60);
+    var s = sec % 60;
+    return h ? h + ':' + pad2(m) + ':' + pad2(s) : m + ':' + pad2(s);
+  }
+  function fmtDate(t) {
+    if (!t) return '';
+    var d = new Date(t);
+    if (isNaN(d.getTime())) return '';
+    return pad2(d.getMonth() + 1) + '/' + pad2(d.getDate()) + '/' +
+      d.getFullYear();
+  }
+  function longDate(t) {
+    var d = new Date(t);
+    if (!t || isNaN(d.getTime())) return '\u2014';
+    var M = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+      'August', 'September', 'October', 'November', 'December'];
+    return M[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  }
+  function store(k, v) {
+    try {
+      if (v === undefined) return localStorage.getItem('elevare.' + k);
+      localStorage.setItem('elevare.' + k, v);
+    } catch (e) { return null; }
+    return null;
+  }
+  var toastT = null;
+  function toast(msg) {
+    var old = document.querySelector('.toast');
+    if (old) old.parentNode.removeChild(old);
+    var t = el('div', 'toast', msg);
+    t.setAttribute('data-lvr', '1');
+    document.body.appendChild(t);
+    clearTimeout(toastT);
+    toastT = setTimeout(function () {
+      if (t.parentNode) t.parentNode.removeChild(t);
+    }, 3200);
+  }
+
+  // ======================================================================
+  // Chrome only
+  // ======================================================================
+  var SAFARI = /Version\/[\d.]+.*Safari\//.test(navigator.userAgent) &&
+    !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|OPR|Android/.test(navigator.userAgent);
+  // Desktop only: phones and tablets (including iPads that report a Mac).
+  function isMobileClient() {
+    var ua = navigator.userAgent;
+    var d = navigator.userAgentData;
+    if (d && d.mobile) return true;
+    if (/Android|iPhone|iPad|iPod|Mobile|CriOS|FxiOS|EdgiOS/i.test(ua)) return true;
+    return /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  }
+  function mobileWall() {
+    $('wall-tag').textContent = 'Desktop only';
+    $('wall-text').textContent = BN + ' is only available on a computer,' +
+      ' in Google Chrome or Brave. Copy the link and open it on your computer.';
+    var g = document.querySelector('#v-wall .btn');
+    if (g) g.hidden = true;
+    show('v-wall');
+  }
+  function isChrome() {
+    var ua = navigator.userAgent;
+    if (/CriOS\//.test(ua)) return true;
+    var d = navigator.userAgentData;
+    if (!d || !d.brands) return false;
+    for (var i = 0; i < d.brands.length; i++) {
+      if (d.brands[i].brand === 'Google Chrome') return true;
+      if (d.brands[i].brand === 'Brave') return true; // Brave is allowed too
+    }
+    return false;
+  }
+
+  var ERRORS = {
+    no_access: 'Your Discord account doesn\u2019t have access yet.',
+    host: 'Please open the site at its official address.',
+    not_member: 'Join the Discord server first, then sign in again.',
+    blocked: 'Access for this account has been revoked.',
+    browser: 'Please open this page in Google Chrome or Brave.',
+    mobile: BN + ' is desktop only. Open it on your computer in Chrome.',
+    expired: 'Your sign-in timed out. Please try again.',
+    idle: 'You were signed out after a while with no activity.',
+    denied: 'Sign-in was cancelled.',
+    slow: 'Too many attempts. Wait a few minutes and try again.',
+    setup: 'The vault isn\u2019t configured yet.',
+    elsewhere: 'You signed in on another device, so you were signed out' +
+      ' here.',
+    automation: 'Automated browsers can\u2019t open the community.'
+  };
+
+  // ======================================================================
+  // shield + lockdown
+  // ======================================================================
+  var shieldTimer = null;
+  var pickerOpen = false;
+  function buildTiles() {
+    var t = $('tiles'); clear(t);
+    var label = ME ? ME.user.name + '  \u00b7  ' + ME.user.id : BN;
+    for (var i = 0; i < 160; i++) t.appendChild(el('span', null, label));
+  }
+  // Pause VdoCipher playback (through its player API) when the page is covered.
+  function pauseVideo() {
+    try {
+      if (frame && frame.tagName === 'IFRAME' && window.VdoPlayer) {
+        window.VdoPlayer.getInstance(frame).video.pause();
+      }
+    } catch (e) {}
+  }
+  function shield(on, ms) {
+    if (on) pauseVideo();
+    clearTimeout(shieldTimer);
+    $('shield').className = on ? 'on' : '';
+    if (on && ms) shieldTimer = setTimeout(function () { shield(false); }, ms);
+  }
+  function stop(e) { e.preventDefault(); e.stopPropagation(); return false; }
+  function editable(t) {
+    return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' ||
+      t.tagName === 'SELECT');
+  }
+  function isAdm() { return !!(ME && ME.isAdmin); }
+
+  // Visible warning + log entry for blocked actions (signed-in only).
+  var lastWarn = {};
+  function blocked(e, what) {
+    stop(e);
+    if (!ME) return false;
+    var now = new Date();
+    $('w-who').textContent = ME.user.name;
+    $('w-id').textContent = ME.user.id;
+    $('w-what').textContent = what;
+    $('w-when').textContent = fmtDate(now.getTime()) + ' ' +
+      pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+    $('warn').hidden = false;
+    if (!lastWarn[what] || Date.now() - lastWarn[what] > 15000) {
+      lastWarn[what] = Date.now();
+      flag('blocked-action', what);
+    }
+    return false;
+  }
+  $('warn-ok').addEventListener('click', function () { $('warn').hidden = true; });
+
+  document.addEventListener('contextmenu', function (e) {
+    blocked(e, 'Right-click');
+  }, true);
+  document.addEventListener('selectstart', function (e) {
+    if (!editable(e.target)) stop(e);
+  }, true);
+  ['copy', 'cut'].forEach(function (n) {
+    document.addEventListener(n, function (e) {
+      if (!editable(e.target)) blocked(e, 'Copying');
+    }, true);
+  });
+  window.addEventListener('beforeprint', function (e) {
+    shield(true, 4000);
+    if (ME) blocked(e, 'Printing');
+  });
+
+  var lastKeysFlag = 0;
+  document.addEventListener('keydown', function (e) {
+    var k = (e.key || '').toLowerCase();
+    var mod = e.ctrlKey || e.metaKey;
+    if (k === 'f12') return blocked(e, 'Developer tools shortcut');
+    if (mod && e.shiftKey && (k === 'i' || k === 'j' || k === 'c'))
+      return blocked(e, 'Developer tools shortcut');
+    if (e.metaKey && e.altKey && (k === 'i' || k === 'j' || k === 'c'))
+      return blocked(e, 'Developer tools shortcut');
+    if ((e.metaKey && e.altKey && k === 'u') || (mod && k === 'u'))
+      return blocked(e, 'View page source');
+    if (mod && k === 's') return blocked(e, 'Save page');
+    if (mod && k === 'p') return blocked(e, 'Print');
+    if (mod && k === 'a' && !editable(e.target)) return stop(e);
+    if (e.metaKey && e.shiftKey) {
+      shield(true, 3000);
+      if (Date.now() - lastKeysFlag > 30000 && /^[345]$/.test(k)) {
+        lastKeysFlag = Date.now();
+        flag('screenshot-keys', 'Cmd+Shift+' + k);
+      }
+    }
+    if (k === 'printscreen') shield(true, 3000);
+  }, true);
+  document.addEventListener('keyup', function (e) {
+    if ((e.key || '').toLowerCase() === 'printscreen') {
+      shield(true, 3000);
+      try { navigator.clipboard.writeText(''); } catch (x) {}
+      flag('printscreen');
+    }
+  }, true);
+  window.addEventListener('blur', function () {
+    setTimeout(function () {
+      var a = document.activeElement;
+      if (a && a.tagName === 'IFRAME') return;
+      if (pickerOpen) return;
+      if (ME) shield(true);
+    }, 0);
+  });
+  window.addEventListener('focus', function () {
+    shield(false);
+    setTimeout(function () { pickerOpen = false; }, 600);
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && ME && !pickerOpen) shield(true);
+  });
+
+  // ---------- developer tools ----------
+  // 1) debugger trap: an open debugger (docked or separate window) pauses
+  //    here; the delay gives it away. 2) docked-panel size check, for when
+  //    breakpoints are switched off. Admins are exempt once signed in.
+  function pausedByDebugger() {
+    var t = Date.now();
+    debugger; // eslint-disable-line no-debugger
+    return Date.now() - t > 200;
+  }
+  function docked() {
+    if (('ontouchstart' in window) || navigator.maxTouchPoints > 0) {
+      return false;
+    }
+    return window.outerHeight - window.innerHeight > 280 ||
+      window.outerWidth - window.innerWidth > 520;
+  }
+  var tripped = false;
+  function trip() {
+    if (tripped) return;
+    tripped = true;
+    flag('devtools', 'debugger pause detected');
+    setTimeout(function () {
+      document.documentElement.innerHTML =
+        '<body style="margin:0;background:#07090e;color:#8790a3;' +
+        'font:13px -apple-system,Arial,sans-serif;display:flex;' +
+        'align-items:center;justify-content:center;height:100vh;' +
+        'letter-spacing:.2em;text-transform:uppercase">' +
+        'Session closed. This was logged.</body>';
+    }, 150);
+  }
+  var dtFlagged = false;
+  function dtWall(on) {
+    $('dtwall').hidden = !on;
+    if (on) {
+      unmount();
+      if (!dtFlagged) {
+        dtFlagged = true;
+        api('POST', '/api/me', { action: 'flag', kind: 'devtools-open',
+          detail: 'developer tools panel open' });
+      }
+    }
+  }
+  // 3) console-attached check: when developer tools are open in ANY form
+  //    (docked or a separate window, breakpoints on or off), Chrome has to
+  //    serialise what the page logs, which makes logging a big table slow.
+  //    Best-effort tripwire; needs two slow readings in a row.
+  var probe = [];
+  for (var pi = 0; pi < 400; pi++) {
+    probe.push({ a: pi, b: 'lvr-' + pi, c: [pi, pi + 1, pi + 2], d: { e: pi } });
+  }
+  var slowHits = 0;
+  function consoleAttached() {
+    var t = (window.performance || Date).now();
+    try { console.table(probe); console.clear(); } catch (e) { return false; }
+    var dt = (window.performance || Date).now() - t;
+    // measured: ~0.5 ms with tools closed, 14-26 ms with them attached
+    slowHits = dt > 8 ? slowHits + 1 : 0;
+    return slowHits >= 2;
+  }
+  var consoleFlagged = false;
+  if (!DEV) {
+    setInterval(function () {
+      if (isAdm()) return;
+      if (pausedByDebugger()) return trip();
+      var c = consoleAttached();
+      if (c && !consoleFlagged && ME) {
+        consoleFlagged = true;
+        flag('devtools', 'developer tools attached (separate window or docked)');
+      }
+      dtWall(c || docked());
+    }, 1500);
+  }
+
+  // ======================================================================
+  // library data
+  // ======================================================================
+  function sectionsOf(kind) {
+    return ME.sections.filter(function (s) { return s.kind === kind; });
+  }
+  function secById(id) {
+    for (var i = 0; i < ME.sections.length; i++) {
+      if (ME.sections[i].id === id) return ME.sections[i];
+    }
+    return null;
+  }
+  // Items of a kind in display order (section order, then item order).
+  function ordered(kind) {
+    var out = [];
+    sectionsOf(kind).forEach(function (s) {
+      ME.items.forEach(function (it) {
+        if (it.sectionId === s.id && it.status === 'ready') out.push(it);
+      });
+    });
+    out.forEach(function (it, i) { it.n = i + 1; });
+    return out;
+  }
+  var DONE = {};          // completed (approved) lectures
+  function isDone(it) {
+    return it.kind === 'lecture' ? !!DONE[it.id] : !!SEEN[it.id];
+  }
+  function countDone(list) {
+    var n = 0;
+    list.forEach(function (it) { if (isDone(it)) n++; });
+    return n;
+  }
+  function isNew(it) {
+    return !SEEN[it.id] && it.added && Date.now() - it.added < 14 * 864e5;
+  }
+  function tierOk(it) {
+    return !it.tier || ME.isAdmin || (ME.myTiers || []).indexOf(it.tier) >= 0;
+  }
+  // null when playable; otherwise why not (tier, or an earlier lecture).
+  function lockInfo(it) {
+    if (!tierOk(it)) return { why: 'tier' };
+    if (it.kind !== 'lecture' || ME.isAdmin || ME.unlocked || DONE[it.id]) {
+      return null;
+    }
+    var list = ordered('lecture');
+    for (var i = 0; i < list.length && list[i] !== it; i++) {
+      if (!DONE[list[i].id]) return { why: 'order', need: list[i] };
+    }
+    return null;
+  }
+  function upNext(list) {
+    for (var i = 0; i < list.length; i++) {
+      if (!isDone(list[i]) && !lockInfo(list[i])) return list[i];
+    }
+    return null;
+  }
+
+  // ======================================================================
+  // routing
+  // ======================================================================
+  var route = { tab: 'lectures', id: null };
+  function parseHash() {
+    var h = (location.hash || '').replace(/^#\/?/, '').split(SEP);
+    var tab = h[0] || 'lectures';
+    if (!TAB_KIND[tab] && ['profile', 'admin'].indexOf(tab) < 0) {
+      tab = 'lectures';
+    }
+    if (tab === 'admin' && !(ME && ME.isAdmin)) tab = 'lectures';
+    return { tab: tab, id: h[1] || null };
+  }
+  function go(tab, id) {
+    var h = '#' + tab + (id ? SEP + id : '');
+    if (location.hash === h) render(); else location.hash = h;
+  }
+  window.addEventListener('hashchange', function () {
+    if (ME) render();
+  });
+
+  function render() {
+    var prevTab = route.tab;
+    route = parseHash();
+    var links = document.querySelectorAll('#nav a');
+    for (var i = 0; i < links.length; i++) {
+      setCls(links[i], 'on', links[i].getAttribute('data-tab') === route.tab);
+    }
+    var watch = !!TAB_KIND[route.tab];
+    setCls($('p-watch'), 'on', watch);
+    setCls($('p-profile'), 'on', route.tab === 'profile');
+    setCls($('p-admin'), 'on', route.tab === 'admin');
+    if (!watch) unmount();
+    if (watch) renderWatch();
+    if (route.tab === 'profile') renderProfile();
+    if (route.tab === 'admin') admOpen();
+    else admClose();
+    if (prevTab !== route.tab) window.scrollTo(0, 0);
+  }
+
+  // ======================================================================
+  // watch view
+  // ======================================================================
+  var current = null;
+  function kindOfTab() {
+    return TAB_KIND[route.tab] || 'lecture';
+  }
+  var ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+    ' stroke-width="4"><path d="M4 12.5l5 5L20 6.5"/></svg>';
+  var ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+    ' stroke-width="2.6"><rect x="5" y="11" width="14" height="10"/>' +
+    '<path d="M8 11V8a4 4 0 018 0v3"/></svg>';
+
+  function renderWatch() {
+    var kind = kindOfTab();
+    var list = ordered(kind);
+    var pick = null, i;
+    for (i = 0; i < list.length; i++) if (list[i].id === route.id) pick = list[i];
+    if (!pick) pick = upNext(list) || list[0] || null;
+    if (!current || !pick || current.id !== pick.id) unmount();
+    current = pick;
+
+    $('watch').hidden = !pick;
+    $('w-empty').hidden = !!pick;
+    if (!pick) {
+      $('e-eyebrow').textContent = PLURAL[kind];
+      $('e-text').textContent = PLURAL[kind] + ' will appear here as soon' +
+        ' as they\u2019re published.';
+      return;
+    }
+    var done = countDone(list);
+    var pct = list.length ? Math.round(done / list.length * 100) : 0;
+    var sec = secById(pick.sectionId);
+    var at = list.indexOf(pick);
+    var lk = lockInfo(pick);
+
+    // poster: the video's own thumbnail when VdoCipher has one
+    $('p-num').textContent = pad2(pick.n);
+    showThumb(pick);
+    $('p-tag').textContent = LABEL[kind] + ' ' + pad2(pick.n) + ' / ' +
+      pad2(list.length);
+    $('p-len').textContent = (pick.length ? dur(pick.length) + '  \u00b7  ' :
+      '') + (DONE[pick.id] || SEEN[pick.id] ? 'Watch again' : 'Start');
+    setCls($('poster'), 'locked', !!lk);
+    $('lockbox').hidden = !lk;
+    if (lk) {
+      unmount();
+      $('lock-t').textContent = lk.why === 'tier' ?
+        'This one is for ' + pick.tier + ' members.' :
+        'Complete \u201c' + lk.need.title + '\u201d to unlock this lecture.';
+      $('lock-b').hidden = lk.why !== 'order';
+      if (lk.need) {
+        $('lock-b').textContent = 'Go to No. ' + pad2(lk.need.n);
+        $('lock-b').onclick = function () { go('lectures', lk.need.id); };
+      }
+    }
+
+    // info
+    $('w-eyebrow').textContent = LABEL[kind] + ' ' + pad2(pick.n) +
+      (sec ? '  \u00b7  ' + sec.title : '') +
+      (pick.tier ? '  \u00b7  ' + pick.tier : '');
+    $('w-title').textContent = pick.title;
+    $('w-desc').textContent = pick.desc || '';
+    $('w-desc').hidden = !pick.desc;
+    var lec = kind === 'lecture';
+    $('done-b').hidden = !lec || !!DONE[pick.id] || !!lk;
+    $('done-ok').hidden = !lec || !DONE[pick.id];
+    $('prev').disabled = at <= 0;
+    $('next').disabled = at >= list.length - 1 || !!lockInfo(list[at + 1]);
+    $('w-me').textContent = ME.user.name + '  \u00b7  ' + ME.user.id;
+
+    // segmented progress: one segment per item
+    var segs = $('segs'); clear(segs);
+    list.forEach(function (it) {
+      var s = el('i', it === pick ? 'cur' : isDone(it) ? 'done' :
+        !lockInfo(it) ? 'open' : '');
+      s.title = pad2(it.n) + '  ' + it.title;
+      s.addEventListener('click', function () {
+        if (!lockInfo(it)) go(KINDS[it.kind], it.id);
+      });
+      segs.appendChild(s);
+    });
+    renderLibrary(kind, list, done, pct);
+  }
+
+  var thumbFor = null;
+  function showThumb(it) {
+    if (thumbFor === it.id) return;
+    thumbFor = it.id;
+    setCls($('poster'), 'hasimg', false);
+    $('p-thumb').style.backgroundImage = '';
+    if (DEMO) return;
+    var url = '/api/poster?id=' + encodeURIComponent(it.id);
+    var img = new Image();
+    img.onload = function () {
+      if (thumbFor !== it.id) return;
+      $('p-thumb').style.backgroundImage = 'url("' + url + '")';
+      setCls($('poster'), 'hasimg', true);
+    };
+    img.src = url;
+  }
+
+  function renderLibrary(kind, list, done, pct) {
+    $('lib-title').textContent = PLURAL[kind];
+    $('lib-pct').textContent = pct + '%';
+    $('lib-count').textContent = done + ' of ' + list.length +
+      (kind === 'lecture' ? ' completed' : ' watched');
+    var host = $('lib-list'); clear(host);
+    var q = $('q').value.replace(/^\s+|\s+$/g, '').toLowerCase();
+
+    if (q) {
+      var hits = [].concat.apply([], ALL_KINDS.map(ordered))
+        .filter(function (it) {
+          return (it.title + ' ' + (it.desc || '')).toLowerCase()
+            .indexOf(q) >= 0;
+        });
+      var g = el('div', 'group');
+      var rows = el('div', 'rows flat');
+      hits.forEach(function (it) { rows.appendChild(node(it, true, null)); });
+      if (!hits.length) g.appendChild(el('div', 'none', 'No matches.'));
+      g.appendChild(rows);
+      host.appendChild(g);
+      return;
+    }
+    var nxt = upNext(list);
+    var shut = {};
+    try { shut = JSON.parse(store('shut') || '{}') || {}; } catch (e) {}
+    var any = false;
+    sectionsOf(kind).forEach(function (s) {
+      var its = list.filter(function (it) { return it.sectionId === s.id; });
+      if (!its.length) return;
+      any = true;
+      var g = el('div', 'group' + (shut[s.id] ? ' shut' : ''));
+      var h = el('button', 'ghead'); h.type = 'button';
+      h.innerHTML = '<svg class="chev" viewBox="0 0 10 10" fill="none"' +
+        ' stroke="currentColor" stroke-width="1.6"><path d="M2 3.5l3 3' +
+        ' 3-3"/></svg>';
+      h.appendChild(el('span', 'gt', s.title));
+      h.appendChild(el('span', 'gc', countDone(its) + '/' + its.length));
+      h.addEventListener('click', function () {
+        var now = !hasCls(g, 'shut');
+        setCls(g, 'shut', now);
+        if (now) shut[s.id] = 1; else delete shut[s.id];
+        store('shut', JSON.stringify(shut));
+      });
+      g.appendChild(h);
+      var rows = el('div', 'rows ' + (kind === 'lecture' ? 'path' : 'flat'));
+      its.forEach(function (it) { rows.appendChild(node(it, false, nxt)); });
+      g.appendChild(rows);
+      host.appendChild(g);
+    });
+    if (!any) host.appendChild(el('div', 'none', 'Nothing published yet.'));
+  }
+
+  function node(it, withKind, nxt) {
+    var lk = lockInfo(it);
+    var on = current && current.id === it.id;
+    var b = el('button', 'node' + (on ? ' cur' : '') +
+      (isDone(it) ? ' done' : '') + (lk ? ' locked' : ''));
+    b.type = 'button';
+    var mk = el('span', 'mk');
+    mk.innerHTML = isDone(it) ? ICON_CHECK : lk ? ICON_LOCK : '';
+    b.appendChild(mk);
+    var tx = el('span', 'tx');
+    tx.appendChild(el('span', 'tt', it.title));
+    tx.appendChild(el('span', 'mt', (withKind ? LABEL[it.kind] + ' ' : 'No. ') +
+      pad2(it.n) + (it.length ? '  \u00b7  ' + dur(it.length) : '') +
+      (it.tier ? '  \u00b7  ' + it.tier : '')));
+    b.appendChild(tx);
+    var st = '', sc = '';
+    if (on) st = frame ? 'Playing' : 'Viewing';
+    else if (isDone(it)) { st = it.kind === 'lecture' ? 'Done' : 'Watched'; sc = 'done'; }
+    else if (lk) st = lk.why === 'tier' ? it.tier : 'Locked';
+    else if (nxt === it) { st = 'Up next'; sc = 'next'; }
+    else if (isNew(it)) { st = 'New'; sc = 'new'; }
+    b.appendChild(el('span', 'st ' + sc, st));
+    b.addEventListener('click', function () {
+      if (lk) {
+        return toast(lk.why === 'tier' ? 'This one is for ' + it.tier +
+          ' members.' :
+          'Complete \u201c' + lk.need.title + '\u201d first.');
+      }
+      $('q').value = '';
+      go(KINDS[it.kind], it.id);
+      if (window.innerWidth < 1100) {
+        setTimeout(function () {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 30);
+      }
+    });
+    return b;
+  }
+
+  $('q').addEventListener('input', function () { if (ME) renderWatch(); });
+  $('prev').addEventListener('click', function () { step(-1); });
+  $('next').addEventListener('click', function () { step(1); });
+  function step(d) {
+    var list = ordered(kindOfTab());
+    var n = list[list.indexOf(current) + d];
+    if (n && !lockInfo(n)) go(KINDS[n.kind], n.id);
+  }
+
+  // ---------- completing a lecture ----------
+  function complete(auto) {
+    if (!current || current.kind !== 'lecture' || DONE[current.id]) return;
+    var it = current;
+    api('POST', '/api/play', { action: 'complete', id: it.id }, function (st, d) {
+      if (st === 200) {
+        (d.done || []).forEach(function (id) { DONE[id] = true; });
+        DONE[it.id] = true;
+        var list = ordered('lecture');
+        var nx = list[list.indexOf(it) + 1];
+        toast(nx ? 'Lecture complete. \u201c' + nx.title + '\u201d is unlocked.' :
+          'Lecture complete. That\u2019s every lecture.');
+        renderWatch();
+        celebrate(it);
+        return;
+      }
+      if (auto) return;
+      if (st === 409 && d.error === 'too_soon') {
+        toast('Keep watching. You can complete this in about ' +
+          Math.max(1, Math.ceil(d.wait / 60)) + ' min.');
+      } else if (st === 409) {
+        toast('Press play first.');
+      } else {
+        toast('Couldn\u2019t save that. Please try again.');
+      }
+    });
+  }
+  $('done-b').addEventListener('click', function () { complete(false); });
+  // little moment when a lecture is completed: its segment sweeps red and
+  // its marker on the path pops in
+  function celebrate(it) {
+    var list = ordered('lecture');
+    var segs = $('segs').children, i = list.indexOf(it);
+    if (segs[i]) { segs[i].className = 'pop'; }
+    var nodes = document.querySelectorAll('#lib-list .node.done');
+    for (var k = 0; k < nodes.length; k++) {
+      if (nodes[k].querySelector('.tt').textContent === it.title) {
+        setCls(nodes[k], 'pop', true);
+      }
+    }
+  }
+
+  // Auto-complete near the end, using VdoCipher's player API.
+  var progT = null;
+  function loadVdoApi(cb) {
+    if (window.VdoPlayer || DEMO) return cb();
+    var s = document.createElement('script');
+    s.src = 'https://player.vdocipher.com/v2/api.js';
+    s.onload = cb;
+    document.head.appendChild(s);
+  }
+  function watchProgress() {
+    clearInterval(progT);
+    if (!current || current.kind !== 'lecture' || DONE[current.id]) return;
+    var f = frame;
+    loadVdoApi(function () {
+      if (frame !== f) return;
+      try {
+        if (!DEMO && window.VdoPlayer) {
+          window.VdoPlayer.getInstance(f).video.addEventListener('ended',
+            function () { complete(true); });
+        }
+      } catch (e) {}
+      progT = setInterval(function () {
+        if (frame !== f) { clearInterval(progT); return; }
+        try {
+          var ended = false;
+          if (DEMO) ended = f.getAttribute('data-ended') === '1';
+          else if (window.VdoPlayer) {
+            var v = window.VdoPlayer.getInstance(f).video;
+            ended = v.duration > 0 && v.currentTime / v.duration >= 0.92;
+          }
+          if (ended) { clearInterval(progT); complete(true); }
+        } catch (e) {}
+      }, 5000);
+    });
+  }
+
+  // ======================================================================
+  // player + device lock
+  // ======================================================================
+  function deviceId() {
+    var d = store('device');
+    if (!d || !/^[A-Za-z0-9_-]{8,64}$/.test(d)) {
+      d = '';
+      var c = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      var r = new Uint8Array(24);
+      (window.crypto || window.msCrypto).getRandomValues(r);
+      for (var i = 0; i < r.length; i++) d += c.charAt(r[i] % c.length);
+      store('device', d);
+    }
+    return d;
+  }
+  var DEVICE = null;
+  var beatT = null, wmT = null, frame = null;
+
+  function pmsg(text, label, fn) {
+    $('pmsg-t').textContent = text;
+    $('pmsg-b').textContent = label;
+    $('pmsg-b').onclick = fn;
+    $('pmsg').hidden = false;
+  }
+  function unmount() {
+    clearInterval(beatT); clearInterval(wmT); clearInterval(progT);
+    beatT = wmT = progT = null;
+    if (frame && frame.parentNode) frame.parentNode.removeChild(frame);
+    frame = null;
+    setCls($('player'), 'playing', false);
+    $('poster').hidden = false;
+    $('wm').hidden = true;
+    $('pmsg').hidden = true;
+    setCls($('play'), 'busy', false);
+  }
+  function play(take) {
+    if (!current) return;
+    if (foreignOn()) { foreignWarn(); return; }
+    if (noGpu()) {
+      if (ME && !ME.isAdmin && !gpuFlagged) {
+        gpuFlagged = true; flag(VM ? 'vm' : 'no-gpu', GPU_INFO);
+      }
+      if (VM) {
+        return pmsg('Videos can\u2019t play inside a virtual machine. Please' +
+          ' watch on your own computer\u2019s browser.', 'OK',
+          function () { unmount(); });
+      }
+      return pmsg('Hardware acceleration is turned off in your browser, and' +
+        ' videos need it. Open Settings > System, turn on \u201cUse graphics' +
+        ' acceleration when available\u201d, then fully quit the browser' +
+        ' (Cmd+Q on Mac, close every window on Windows) and reopen it.',
+        'OK', function () { unmount(); });
+    }
+    var it = current;
+    $('pmsg').hidden = true;
+    api('POST', '/api/play', { id: it.id, device: DEVICE, take: !!take },
+      function (st, d) {
+        if (current !== it) return;
+        if (st === 200 && d.otp) return mount(d);
+        if (st === 409) {
+          return pmsg('You\u2019re watching on another device. Only one' +
+            ' device can play at a time.', 'Watch here instead',
+            function () { play(true); });
+        }
+        if (st === 429) {
+          return pmsg('Too many plays in a short time. Take a breather and' +
+            ' try again in a few minutes.', 'Try again',
+            function () { play(false); });
+        }
+        if (st === 403 && d.error === 'browser') {
+          return pmsg(ERRORS.browser, 'OK', function () { unmount(); });
+        }
+        if (st === 403 && d.error === 'blocked') {
+          toDoor('blocked'); return;
+        }
+        if (st === 403 && d.error === 'no_access') {
+          toDoor('no_access'); return;
+        }
+        if (st === 403 && d.error === 'tier') {
+          return pmsg('This lesson is for ' + d.tier + ' members.', 'OK',
+            function () { unmount(); });
+        }
+        if (st === 403 && d.error === 'device_limit') {
+          return pmsg('This account is already used on ' + (d.limit || 3) +
+            ' browsers this month, the most allowed. Watch on one of those,' +
+            ' or ask an admin to reset your devices.', 'OK',
+            function () { unmount(); });
+        }
+        if (st === 403 && d.error === 'locked') {
+          refreshMe();
+          return pmsg('Complete the previous lecture first.', 'OK',
+            function () { unmount(); });
+        }
+        pmsg('The video couldn\u2019t load. Please try again.', 'Try again',
+          function () { play(false); });
+      });
+  }
+  function mount(d) {
+    unmount();
+    if (DEMO) {
+      frame = window.lvr.player(current, ME.user);
+    } else {
+      frame = document.createElement('iframe');
+      frame.src = 'https://player.vdocipher.com/v2/?otp=' +
+        encodeURIComponent(d.otp) + '&playbackInfo=' +
+        encodeURIComponent(d.playbackInfo);
+      frame.setAttribute('allow', 'encrypted-media; fullscreen');
+      frame.setAttribute('allowfullscreen', '');
+      frame.setAttribute('referrerpolicy', 'strict-origin');
+    }
+    $('player').insertBefore(frame, $('wm'));
+    setCls($('player'), 'playing', true);
+    $('poster').hidden = true;
+    if (!route.id) {
+      route.id = current.id;
+      if (history.replaceState) {
+        history.replaceState(null, '', '#' + route.tab + SEP + current.id);
+      }
+    }
+    SEEN[current.id] = true;
+    // our own light watermark on top of VdoCipher's
+    var w = $('wm');
+    w.style.color = /^#[0-9a-f]{6}$/i.test(d.wm || '') ? d.wm : '';
+    w.style.opacity = d.wm && d.wm.toUpperCase() !== '#FFFFFF' ? '.3' : '';
+    w.textContent = ME.user.name + '  \u00b7  ' + ME.user.id +
+      (d.session ? '  \u00b7  ' + d.session : '');
+    w.hidden = true; // VdoCipher draws the watermarks inside the player
+    watchProgress();
+    // (no site overlay: VdoCipher draws the watermarks)
+
+    beatT = setInterval(beat, 60000);
+    renderWatch();
+  }
+  function moveWm() {
+    var p = $('player'), w = $('wm');
+    var mx = Math.max(0, p.clientWidth - w.offsetWidth - 20);
+    var my = Math.max(0, p.clientHeight - w.offsetHeight - 30);
+    var x = 10 + Math.floor(Math.random() * mx);
+    var y = 10 + Math.floor(Math.random() * my);
+    w.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
+  }
+  function beat() {
+    api('POST', '/api/play', { device: DEVICE, beat: true }, function (st) {
+      if (st === 409) {
+        var keep = current;
+        unmount();
+        current = keep;
+        pmsg('This video was opened on another device, so it stopped here.',
+          'Watch here instead', function () { play(true); });
+      }
+    });
+  }
+  function isBrave() {
+    var d = navigator.userAgentData;
+    if (d && d.brands) {
+      for (var i = 0; i < d.brands.length; i++) {
+        if (d.brands[i].brand === 'Brave') return true;
+      }
+    }
+    return !!navigator.brave;
+  }
+  $('poster').addEventListener('click', function () {
+    if (isBrave() && store('braveTip') !== '1') {
+      store('braveTip', '1');
+      toast('Using Brave? If the video won\u2019t play, allow Widevine when' +
+        ' Brave asks (or turn it on in Settings, Extensions) and reload.');
+    }
+    if (hasCls($('poster'), 'locked')) return;
+    setCls($('play'), 'busy', true);
+    play(false);
+  });
+
+  // ======================================================================
+  // profile
+  // ======================================================================
+  function cdn(path) { return 'url(https://cdn.discordapp.com/' + path + ')'; }
+  function renderProfile() {
+    var u = ME.user;
+    var H = /^(a_)?[a-f0-9]{16,64}$/i;
+    // avatar: server avatar, else Discord avatar, else initial
+    var av = $('pf-av'); clear(av); av.style.backgroundImage = '';
+    if (u.gavatar && H.test(u.gavatar) && /^\d+$/.test(u.guild || '')) {
+      av.style.backgroundImage = cdn('guilds/' + u.guild + '/users/' + u.id +
+        '/avatars/' + u.gavatar + '.png?size=256');
+    } else if (u.avatar && H.test(u.avatar)) {
+      av.style.backgroundImage = cdn('avatars/' + u.id + '/' + u.avatar +
+        '.png?size=256');
+    } else {
+      av.appendChild(document.createTextNode((u.name || '?').charAt(0)));
+    }
+    // banner: Discord banner, else accent colour, else brand art
+    var ban = $('pf-ban');
+    ban.style.backgroundImage = ''; ban.style.backgroundColor = '';
+    if (u.banner && H.test(u.banner)) {
+      ban.className = 'pban img';
+      ban.style.backgroundImage = cdn('banners/' + u.id + '/' + u.banner +
+        '.png?size=1024');
+    } else if (typeof u.accent === 'number') {
+      ban.className = 'pban art';
+      var hex = ('000000' + u.accent.toString(16)).slice(-6);
+      ban.style.backgroundImage = 'radial-gradient(120% 140% at 85% 120%, ' +
+        'rgba(var(--red-rgb),.45) 0%, rgba(var(--red-rgb),0) 55%), linear-gradient(' +
+        '135deg, #' + hex + ' 0%, #090b11 100%)';
+    } else {
+      ban.className = 'pban art';
+    }
+    $('pf-name').textContent = u.name;
+    $('pf-handle').textContent = u.username ? '@' + u.username : '';
+    // chips
+    var chips = $('pf-chips'); clear(chips);
+    var c1 = el('span', 'chip'); c1.appendChild(el('b'));
+    c1.appendChild(document.createTextNode(ME.isAdmin ? 'Admin' : 'Member'));
+    chips.appendChild(c1);
+    (ME.myTiers || []).forEach(function (t) {
+      if (!ME.isAdmin) chips.appendChild(el('span', 'chip', t));
+    });
+    if (u.joinedAt) {
+      chips.appendChild(el('span', 'chip', 'In the server since ' +
+        longDate(u.joinedAt)));
+    }
+    var l = ordered('lecture'), b = ordered('breakdown');
+    var ld = countDone(l), bd = countDone(b);
+    if (l.length && ld === l.length) {
+      chips.appendChild(el('span', 'chip ok', 'All lectures complete'));
+    }
+    // tiles
+    var lv = $('pf-lec'); clear(lv);
+    lv.appendChild(document.createTextNode(ld));
+    lv.appendChild(el('small', null, ' / ' + l.length));
+    var seg = $('pf-lseg'); clear(seg);
+    l.forEach(function (it) { seg.appendChild(el('i', DONE[it.id] ? 'd' : '')); });
+    var bv = $('pf-bd'); clear(bv);
+    bv.appendChild(document.createTextNode(bd));
+    bv.appendChild(el('small', null, ' / ' + b.length));
+    $('pf-bds').textContent = b.length ?
+      Math.round(bd / b.length * 100) + '% watched' : 'None posted yet';
+    var nx = upNext(l);
+    $('pf-next').textContent = nx ? pad2(nx.n) + '  ' + nx.title :
+      l.length ? 'Every lecture done' : 'Nothing posted yet';
+    $('pf-go').hidden = !nx;
+    $('pf-go').onclick = function () { if (nx) go('lectures', nx.id); };
+    $('pf-id').textContent = u.id;
+    $('pf-code').textContent = u.code || '';
+  }
+
+  // ======================================================================
+  // admin
+  // ======================================================================
+  var ADM = { tab: 'content', kind: 'lecture', data: null, ups: {},
+    poll: null };
+  var ST_LABEL = { empty: 'No video', uploading: 'Uploading',
+    processing: 'Processing', ready: 'Ready', error: 'Error' };
+
+  function admCall(body, cb) {
+    api('POST', '/api/admin', body, function (st, d) {
+      if (st !== 200) {
+        var m = { not_empty: 'Move or delete the items in this section first.',
+          title: 'Add a title first.', section: 'Pick a section.',
+          video_id: 'That isn\u2019t a VdoCipher video ID (32 letters and' +
+          ' numbers).', video_missing: 'VdoCipher has no video with that ID' +
+          ' in this account.', file: 'Pick a video file.',
+          link: 'Links must start with https://', self: 'You can\u2019t' +
+          ' block yourself.', uid: 'That doesn\u2019t look like a Discord ID.' };
+        toast(m[d.error] || 'That didn\u2019t work. Please try again.');
+        return;
+      }
+      if (d.content) ADM.data.content = d.content;
+      if (cb) cb(d);
+      admRender();
+      refreshMe();
+    });
+  }
+  function admLoad(cb) {
+    api('GET', '/api/admin', null, function (st, d) {
+      if (st !== 200) return;
+      ADM.data = d;
+      admRender();
+      admPollCheck();
+      if (cb) cb();
+    });
+  }
+  function admOpen() {
+    if (!ADM.data) admLoad(); else admRender();
+  }
+  function admClose() {
+    clearInterval(ADM.poll); ADM.poll = null;
+  }
+  function admPollCheck() {
+    var c = ADM.data && ADM.data.content;
+    var busy = c && c.items.some(function (it) {
+      return (it.status === 'processing' || it.status === 'uploading') &&
+        !ADM.ups[it.id];
+    });
+    if (busy && !ADM.poll && route.tab === 'admin') {
+      ADM.poll = setInterval(function () {
+        api('POST', '/api/admin', { action: 'status' }, function (st, d) {
+          if (st !== 200 || !d.content) return;
+          ADM.data.content = d.content;
+          admRender();
+          refreshMe();
+          var still = d.content.items.some(function (it) {
+            return it.status === 'processing' || it.status === 'uploading';
+          });
+          if (!still) { clearInterval(ADM.poll); ADM.poll = null; }
+        });
+      }, DEMO ? 3000 : 15000);
+    }
+  }
+  var segs = document.querySelectorAll('#adm-seg button');
+  for (var si = 0; si < segs.length; si++) {
+    segs[si].addEventListener('click', function () {
+      ADM.tab = this.getAttribute('data-a');
+      if (ADM.tab !== 'content') admLoad(); else admRender();
+    });
+  }
+  function btn(label, cls, fn) {
+    var b = el('button', 'sb ' + (cls || ''), label); b.type = 'button';
+    b.addEventListener('click', fn);
+    return b;
+  }
+
+  function admRender() {
+    if (!ADM.data || route.tab !== 'admin') return;
+    for (var i = 0; i < segs.length; i++) {
+      setCls(segs[i], 'on', segs[i].getAttribute('data-a') === ADM.tab);
+    }
+    var host = $('adm-body'); clear(host);
+    if (ADM.tab === 'content') admContent(host);
+    if (ADM.tab === 'log') admLog(host);
+    if (ADM.tab === 'members') admMembers(host);
+    if (ADM.tab === 'plays') admPlays(host);
+  }
+
+  function admContent(host) {
+    var c = ADM.data.content;
+    // announcement
+    var ab = el('div', 'abox');
+    ab.appendChild(el('h3', null, 'Announcement'));
+    var fr = el('div', 'frow');
+    var at = el('input', 'in'); at.placeholder = 'Short message for members';
+    at.maxLength = 200;
+    var al = el('input', 'in'); al.placeholder = 'Link (optional, https://)';
+    al.maxLength = 300;
+    if (c.announcement) {
+      at.value = c.announcement.text; al.value = c.announcement.link || '';
+    }
+    fr.appendChild(at); fr.appendChild(al);
+    fr.appendChild(btn('Post', '', function () {
+      admCall({ action: 'announce', text: at.value, link: al.value },
+        function () { toast(at.value ? 'Announcement posted.' :
+          'Announcement removed.'); });
+    }));
+    if (c.announcement) {
+      fr.appendChild(btn('Remove', 'line', function () {
+        admCall({ action: 'announce', text: '' },
+          function () { toast('Announcement removed.'); });
+      }));
+    }
+    ab.appendChild(fr);
+    host.appendChild(ab);
+
+    // community rules
+    var rb = el('div', 'abox');
+    rb.appendChild(el('h3', null, 'Community rules (members agree before' +
+      ' entering)'));
+    var rt = el('textarea', 'in');
+    rt.style.width = '100%'; rt.style.height = '170px'; rt.maxLength = 6000;
+    rt.value = (ADM.data.rules && ADM.data.rules.text) || '';
+    rb.appendChild(rt);
+    rb.appendChild(el('p', 'note', 'One rule per line. {CODE} shows each' +
+      ' member\u2019s viewer code. Saving asks every member to agree again.' +
+      ' Version ' + ((ADM.data.rules && ADM.data.rules.v) || 1) + '.'));
+    var rf = el('div', 'frow');
+    rf.appendChild(btn('Save rules', '', function () {
+      confirmModal('Save the new rules?', 'Every member will be asked to' +
+        ' read and agree again the next time they open the site.', 'Save',
+        function () {
+          admCall({ action: 'rules-save', text: rt.value }, function () {
+            toast('Rules saved. Members will agree again.'); admLoad();
+          });
+        });
+    }));
+    rb.appendChild(rf);
+    host.appendChild(rb);
+
+    // kind switch
+    var kb = el('div', 'abox');
+    var top = el('div', 'frow');
+    var seg = el('div', 'seg');
+    ALL_KINDS.forEach(function (k) {
+      var b = el('button', ADM.kind === k ? 'on' : '', PLURAL[k]);
+      b.type = 'button';
+      b.addEventListener('click', function () { ADM.kind = k; admRender(); });
+      seg.appendChild(b);
+    });
+    top.appendChild(seg);
+    var ns = el('input', 'in'); ns.placeholder = 'New section name';
+    ns.maxLength = 80;
+    top.appendChild(ns);
+    top.appendChild(btn('Add section', 'line', function () {
+      if (!ns.value) return toast('Name the section first.');
+      admCall({ action: 'section-save', kind: ADM.kind, title: ns.value },
+        function () { toast('Section added.'); });
+    }));
+    kb.appendChild(top);
+
+    var secs = c.sections.filter(function (s) { return s.kind === ADM.kind; });
+    if (!secs.length) {
+      kb.appendChild(el('p', 'note', 'No sections yet. Add one above, then' +
+        ' add ' + NOUN[ADM.kind] + ' videos to it.'));
+    }
+    secs.forEach(function (s) {
+      var box = el('div', 'sec');
+      var h = el('div', 'sech');
+      h.appendChild(el('span', 'gt', s.title));
+      h.appendChild(btn('\u2191', 'line sm', function () {
+        admCall({ action: 'section-move', id: s.id, dir: 'up' });
+      }));
+      h.appendChild(btn('\u2193', 'line sm', function () {
+        admCall({ action: 'section-move', id: s.id, dir: 'down' });
+      }));
+      h.appendChild(btn('Rename', 'line sm', function () {
+        formModal('Rename section', [{ k: 'title', label: 'Name',
+          v: s.title }], function (v) {
+          admCall({ action: 'section-save', id: s.id, title: v.title });
+        });
+      }));
+      h.appendChild(btn('Delete', 'red sm', function () {
+        confirmModal('Delete \u201c' + s.title + '\u201d?',
+          'Only empty sections can be deleted.', 'Delete', function () {
+            admCall({ action: 'section-delete', id: s.id },
+              function () { toast('Section deleted.'); });
+          });
+      }));
+      box.appendChild(h);
+      c.items.filter(function (it) { return it.sectionId === s.id; })
+        .forEach(function (it) { box.appendChild(admItem(it, secs)); });
+      var add = el('div', 'addit');
+      add.appendChild(btn('+ Add ' + NOUN[ADM.kind], 'line sm',
+        function () { itemModal(null, s.id, secs); }));
+      add.appendChild(document.createTextNode(' '));
+      add.appendChild(btn('+ Bulk upload', 'line sm', function () {
+        bulkUpload(s.id);
+      }));
+      box.appendChild(add);
+      kb.appendChild(box);
+    });
+    host.appendChild(kb);
+  }
+
+  function admItem(it, secs) {
+    var r = el('div', 'it');
+    r.appendChild(el('span', 'tt', it.title + (it.tier ? '  \u00b7  ' +
+      it.tier + ' only' : '')));
+    var up = ADM.ups[it.id];
+    var st = up ? 'Uploading ' + up.pct + '%' : ST_LABEL[it.status] ||
+      it.status;
+    if (it.status === 'ready' && it.length && !up) st += '  ' + dur(it.length);
+    var cls = it.status === 'ready' && !up ? 'ready' :
+      it.status === 'error' ? 'error' : it.status === 'empty' && !up ?
+      'empty' : 'busy';
+    r.appendChild(el('span', 'pill ' + cls, st));
+    var file = el('input'); file.type = 'file'; file.accept = 'video/*';
+    file.hidden = true;
+    file.addEventListener('change', function () {
+      if (file.files && file.files[0]) startUpload(it, file.files[0]);
+    });
+    r.appendChild(file);
+    var vb = btn(it.videoId ? 'Replace video' : 'Upload video', 'sm',
+      function () { pickerOpen = true; file.click(); });
+    if (up) vb.disabled = true;
+    r.appendChild(vb);
+    r.appendChild(btn('Link existing', 'line sm', function () {
+      formModal('Use a video already in VdoCipher', [{ k: 'videoId',
+        label: 'VdoCipher video ID (32 letters/numbers, from the' +
+        ' VdoCipher dashboard)', v: '' }], function (v) {
+        admCall({ action: 'link-video', id: it.id,
+          videoId: v.videoId.replace(/\s/g, '') }, function () {
+          toast('Linked.'); admLoad();
+        });
+      });
+    }));
+    r.appendChild(btn('Edit', 'line sm', function () {
+      itemModal(it, it.sectionId, secs);
+    }));
+    r.appendChild(btn('\u2191', 'line sm', function () {
+      admCall({ action: 'item-move', id: it.id, dir: 'up' });
+    }));
+    r.appendChild(btn('\u2193', 'line sm', function () {
+      admCall({ action: 'item-move', id: it.id, dir: 'down' });
+    }));
+    r.appendChild(btn('Delete', 'red sm', function () {
+      confirmModal('Delete \u201c' + it.title + '\u201d?',
+        'This also deletes its video from VdoCipher. It can\u2019t be undone.',
+        'Delete', function () {
+          admCall({ action: 'item-delete', id: it.id },
+            function () { toast('Deleted.'); });
+        });
+    }));
+    if (up) {
+      var bar = el('div', 'upbar'); var f = el('i');
+      f.style.width = up.pct + '%'; bar.appendChild(f); r.appendChild(bar);
+    }
+    return r;
+  }
+
+  var VIDEO_RX = /\.(mp4|mov|m4v|mkv|webm|avi)$/i;
+  function startUpload(it, f, then) {
+    then = then || function () {};
+    if (!VIDEO_RX.test(f.name)) {
+      toast('Pick a video file (MP4, MOV, M4V, MKV, WEBM or AVI).');
+      return then(false);
+    }
+    ADM.ups[it.id] = { pct: 0 };
+    admRender();
+    api('POST', '/api/admin', { action: 'upload-start', id: it.id,
+      name: f.name, size: f.size },
+      function (st, d) {
+        if (st !== 200 || !d.clientPayload) {
+          delete ADM.ups[it.id]; admRender();
+          toast('Couldn\u2019t start the upload. Try again.');
+          return then(false);
+        }
+        var p = d.clientPayload;
+        var fd = new FormData();
+        ['policy', 'key', 'x-amz-signature', 'x-amz-algorithm', 'x-amz-date',
+          'x-amz-credential'].forEach(function (k) { fd.append(k, p[k]); });
+        fd.append('success_action_status', '201');
+        fd.append('success_action_redirect', '');
+        fd.append('file', f);
+        var x = new XMLHttpRequest();
+        x.open('POST', p.uploadLink, true);
+        x.upload.onprogress = function (e) {
+          if (!e.lengthComputable) return;
+          ADM.ups[it.id].pct = Math.floor(e.loaded / e.total * 100);
+          admRender();
+        };
+        x.onload = function () {
+          var ok = x.status >= 200 && x.status < 300;
+          delete ADM.ups[it.id];
+          admCall({ action: ok ? 'upload-done' : 'upload-failed', id: it.id },
+            function () {
+              if (!ADM.bulk) {
+                toast(ok ? 'Uploaded. VdoCipher is processing it now.' :
+                  'Upload failed. Try again.');
+              }
+              if (ok && !ADM.bulk) admLoad();
+            });
+          then(ok);
+        };
+        x.onerror = function () {
+          delete ADM.ups[it.id];
+          admCall({ action: 'upload-failed', id: it.id }, function () {
+            toast('Upload failed. Check your connection and try again.');
+          });
+          then(false);
+        };
+        x.send(fd);
+      });
+  }
+  // ---------- bulk upload: many files, added oldest-first by file name ----------
+  function titleOf(name) {
+    return name.replace(/\.[^.]+$/, '').replace(/_+/g, ' ')
+      .replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '').slice(0, 120) ||
+      'Untitled';
+  }
+  function bulkUpload(secId) {
+    var inp = el('input'); inp.type = 'file'; inp.multiple = true;
+    inp.accept = 'video/*';
+    inp.addEventListener('change', function () {
+      var files = [].slice.call(inp.files || []).filter(function (f) {
+        return VIDEO_RX.test(f.name);
+      });
+      if (!files.length) return toast('No video files picked.');
+      files.sort(function (a, b) {
+        return a.name.localeCompare(b.name, undefined,
+          { numeric: true, sensitivity: 'base' });
+      });
+      var names = files.slice(0, 5).map(function (f) {
+        return titleOf(f.name);
+      }).join(', ') + (files.length > 5 ? ' \u2026' : '');
+      confirmModal('Upload ' + files.length + ' videos?',
+        'Added in this order, top to bottom (sorted by file name): ' + names +
+        '. Keep this tab open until all are done.', 'Upload all',
+        function () { runBulk(secId, files, 0, 0); });
+    });
+    pickerOpen = true;
+    inp.click();
+  }
+  function runBulk(secId, files, i, failed) {
+    if (i >= files.length) {
+      ADM.bulk = null;
+      toast((files.length - failed) + ' of ' + files.length + ' uploaded.' +
+        ' VdoCipher is processing them now.');
+      admLoad();
+      return;
+    }
+    ADM.bulk = { i: i + 1, n: files.length };
+    toast('Uploading ' + (i + 1) + ' of ' + files.length + ': ' +
+      titleOf(files[i].name));
+    api('POST', '/api/admin', { action: 'item-save', sectionId: secId,
+      title: titleOf(files[i].name) }, function (st, d) {
+      if (st !== 200 || !d.item) {
+        ADM.bulk = null;
+        return toast('Stopped at ' + files[i].name + '. Upload the rest again.');
+      }
+      ADM.data.content = d.content;
+      admRender();
+      startUpload(d.item, files[i], function (ok) {
+        runBulk(secId, files, i + 1, failed + (ok ? 0 : 1));
+      });
+    });
+  }
+  window.addEventListener('beforeunload', function (e) {
+    if (Object.keys(ADM.ups).length) {
+      e.preventDefault(); e.returnValue = '';
+    }
+  });
+
+  function itemModal(it, sectionId, secs) {
+    var fields = [
+      { k: 'sectionId', label: 'Section', v: sectionId, opts: secs },
+      { k: 'tier', label: 'Who can watch', v: it ? it.tier || '' : '',
+        opts: [{ id: '', title: 'Every member' }].concat(
+          (ADM.data.tiers || []).map(function (t) {
+            return { id: t, title: t + ' only' };
+          })), hide: !(ADM.data.tiers || []).length },
+      { k: 'title', label: 'Title', v: it ? it.title : '' },
+      { k: 'desc', label: 'Description (optional)', v: it ? it.desc : '',
+        area: true }
+    ];
+    var noun = NOUN[ADM.kind];
+    formModal(it ? 'Edit ' + noun : 'New ' + noun, fields, function (v) {
+      admCall({ action: 'item-save', id: it ? it.id : undefined,
+        sectionId: v.sectionId, title: v.title, desc: v.desc,
+        tier: v.tier || '' },
+        function () {
+          toast(it ? 'Saved.' : 'Added. Now upload its video.');
+        });
+    });
+  }
+
+  function modalShell(title) {
+    var m = el('div', 'modal');
+    var c = el('div', 'card');
+    c.appendChild(el('h2', 'display', title));
+    m.appendChild(c);
+    m.addEventListener('click', function (e) {
+      if (e.target === m) close();
+    });
+    function close() { if (m.parentNode) m.parentNode.removeChild(m); }
+    m.setAttribute('data-lvr', '1');
+    document.body.appendChild(m);
+    return { card: c, close: close };
+  }
+  function formModal(title, fields, onSave) {
+    var s = modalShell(title), inputs = {};
+    fields.forEach(function (f) {
+      if (f.hide) return;
+      s.card.appendChild(el('label', null, f.label));
+      var i;
+      if (f.opts) {
+        i = el('select', 'in');
+        f.opts.forEach(function (o) {
+          var op = el('option', null, o.title); op.value = o.id;
+          if (o.id === f.v) op.selected = true;
+          i.appendChild(op);
+        });
+      } else if (f.area) {
+        i = el('textarea', 'in'); i.value = f.v || ''; i.maxLength = 4000;
+      } else {
+        i = el('input', 'in'); i.value = f.v || ''; i.maxLength = 120;
+      }
+      inputs[f.k] = i;
+      s.card.appendChild(i);
+    });
+    var acts = el('div', 'acts');
+    acts.appendChild(btn('Cancel', 'line', s.close));
+    acts.appendChild(btn('Save', '', function () {
+      var v = {};
+      for (var k in inputs) v[k] = inputs[k].value;
+      s.close(); onSave(v);
+    }));
+    s.card.appendChild(acts);
+    var first = s.card.querySelector('input, textarea');
+    if (first) first.focus();
+  }
+  function confirmModal(title, text, label, onYes) {
+    var s = modalShell(title);
+    s.card.appendChild(el('p', null, text));
+    var acts = el('div', 'acts');
+    acts.appendChild(btn('Cancel', 'line', s.close));
+    acts.appendChild(btn(label, 'red', function () { s.close(); onYes(); }));
+    s.card.appendChild(acts);
+  }
+
+  function placeOf(u) {
+    return [u.city, u.region, u.country].filter(function (x) { return x; })
+      .join(', ');
+  }
+  // All members as a CSV file (opens in Excel / Google Sheets / Numbers).
+  function exportMembers(ids) {
+    function q(v) {
+      v = v === null || v === undefined ? '' : String(v);
+      if (/^[=+\-@]/.test(v)) v = "'" + v;      // no spreadsheet formulas
+      return '"' + v.replace(/"/g, '""') + '"';
+    }
+    function iso(t) { return t ? new Date(t).toISOString().slice(0, 16)
+      .replace('T', ' ') : ''; }
+    var rows = [['Name', 'Username', 'Discord ID', 'Viewer code', 'Email',
+      'Email verified', 'Last IP', 'City', 'Region', 'Country', 'Network',
+      'VPN / hosting',
+      'First sign-in (UTC)', 'Last sign-in (UTC)', 'Discord account created',
+      'Rules agreed (UTC)', 'Payment ID', 'Note', 'Blocked']];
+    ids.forEach(function (id) {
+      var u = ADM.data.users[id] || {};
+      var a = (ADM.data.agreements || {})[id];
+      var n = (ADM.data.notes || {})[id] || {};
+      rows.push([u.name, u.username, id, u.code, u.email,
+        u.email ? (u.verified ? 'yes' : 'no') : '', u.ip, u.city, u.region,
+        u.country, u.net, u.vpn ? 'yes' : '', iso(u.first), iso(u.last), iso(u.created),
+        a ? iso(a.t) : '', n.pay, n.note,
+        (ADM.data.blocked || []).indexOf(id) >= 0 ? 'yes' : 'no']);
+    });
+    var csv = rows.map(function (r) { return r.map(q).join(','); })
+      .join('\r\n');
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob(['\ufeff' + csv],
+      { type: 'text/csv' }));
+    link.download = SLUG + '-members-' + new Date().toISOString().slice(0, 10) +
+      '.csv';
+    link.setAttribute('data-lvr', '1');
+    document.body.appendChild(link); link.click();
+    setTimeout(function () {
+      URL.revokeObjectURL(link.href); link.parentNode.removeChild(link);
+    }, 1000);
+  }
+
+  // Full evidence report for one member, downloaded as a text file.
+  function evidence(uid) {
+    api('GET', '/api/admin?evidence=' + encodeURIComponent(uid), null,
+      function (st, d) {
+        if (st !== 200) return toast('Couldn\u2019t build the report.');
+        var u = d.user || {}, n = d.note || {}, a = d.agreement, L = [];
+        function iso(t) { return t ? new Date(t).toISOString().replace('T', ' ')
+          .slice(0, 19) + ' UTC' : '-'; }
+        L.push(BN + ' - MEMBER EVIDENCE REPORT');
+        L.push('Generated: ' + iso(d.generated) + '  by ' + ME.user.name);
+        L.push('');
+        L.push('Name:            ' + (u.name || '-'));
+        L.push('Discord user:    @' + (u.username || '-') + '  (ID ' + d.uid + ')');
+        L.push('Discord created: ' + iso(d.created));
+        L.push('Email:           ' + (u.email || '-') +
+          (u.email ? (u.verified ? ' (verified)' : ' (unverified)') : ''));
+        L.push('Viewer code:     ' + d.code + '  (printed on every video)');
+        L.push('First sign-in:   ' + iso(u.first));
+        L.push('Last sign-in:    ' + iso(u.last) + '  from ' + (u.ip || '-') +
+          ' ' + (u.country || ''));
+        L.push('Rules agreed:    ' + (a ? iso(a.t) + '  version ' + a.v +
+          '  from ' + a.ip + '  ' + a.ua : 'no'));
+        L.push('Payment ID:      ' + (n.pay || '-'));
+        L.push('Note:            ' + (n.note || '-'));
+        L.push('Blocked:         ' + (d.blocked ? 'yes' : 'no') +
+          '    Unlocked all: ' + (d.unlocked ? 'yes' : 'no') +
+          '    Lectures completed: ' + d.done.length);
+        L.push('');
+        var dk = Object.keys(d.devices || {});
+        L.push('AUTHORISED BROWSERS (' + dk.length + ')');
+        dk.forEach(function (k) {
+          var v = d.devices[k] || {};
+          L.push('  ' + k + '  first ' + iso(v.first) + '  last ' + iso(v.last) +
+            '  ' + (v.ip || '') + '  ' + (v.ua || ''));
+        });
+        L.push('');
+        L.push('ACTIVITY (newest first, ' + d.history.length + ' events)');
+        L.push('------------------------------------------------------------');
+        d.history.forEach(function (h) {
+          var what = h.type === 'play' ? 'PLAY   ' + (h.title || h.item) +
+            '  [' + h.sid + ']' : h.type === 'alert' ? 'ALERT  ' + h.kind +
+            (h.detail ? ': ' + h.detail : '') : 'SIGNIN ' + h.event;
+          L.push(iso(h.t) + '  ' + what);
+          L.push('    ip ' + (h.ip || '-') + (h.country ? '  ' + h.country : '') +
+            (h.city ? ' ' + h.city : '') + (h.device ? '  device ' + h.device : ''));
+          if (h.ua) L.push('    ' + h.ua);
+        });
+        L.push('');
+        L.push('RAW DATA (JSON)');
+        L.push(JSON.stringify(d, null, 1));
+        var blob = new Blob([L.join('\r\n')], { type: 'text/plain' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = SLUG + '-evidence-' + (u.username || d.uid) + '-' +
+          new Date().toISOString().slice(0, 10) + '.txt';
+        link.setAttribute('data-lvr', '1');
+        document.body.appendChild(link); link.click();
+        setTimeout(function () {
+          URL.revokeObjectURL(link.href); link.parentNode.removeChild(link);
+        }, 1000);
+      });
+  }
+
+  function blockBtn(uid, name) {
+    var blocked = ADM.data.blocked.indexOf(uid) >= 0;
+    if (uid === ME.user.id) return el('span', 'id', 'You');
+    return btn(blocked ? 'Unblock' : 'Block', blocked ? 'line sm' : 'red sm',
+      function () {
+        if (blocked) {
+          return admCall({ action: 'unblock', uid: uid }, function () {
+            toast('Unblocked.'); admLoad();
+          });
+        }
+        confirmModal('Block ' + (name || uid) + '?',
+          'They\u2019re signed out right away and can\u2019t sign back in' +
+          ' until you unblock them.', 'Block', function () {
+            admCall({ action: 'block', uid: uid }, function () {
+              toast('Blocked.'); admLoad();
+            });
+          });
+      });
+  }
+
+  function admLog(host) {
+    var lv = ADM.data.live || [];
+    var lb = el('div', 'abox');
+    lb.appendChild(el('h3', null, 'Watching now (' + lv.length + ')'));
+    if (!lv.length) {
+      lb.appendChild(el('p', 'note', 'Nobody is playing a video right now.'));
+    } else {
+      var lw = el('div', 'tbl-wrap'); var lt = el('table', 'log');
+      var lh = el('tr');
+      ['Member', 'Video', 'Started', 'Network', 'Browser', ''].forEach(
+        function (x) { lh.appendChild(el('th', null, x)); });
+      lt.appendChild(lh);
+      lv.forEach(function (x) {
+        var tr = el('tr');
+        var w1 = el('td');
+        w1.appendChild(el('div', 'who', x.name || x.uid));
+        w1.appendChild(el('div', 'id', (x.code || '') + '  \u00b7  ' + x.sid));
+        tr.appendChild(w1);
+        tr.appendChild(el('td', null, x.title || x.item));
+        tr.appendChild(el('td', 'dim', fmtDate(x.t0)));
+        tr.appendChild(el('td', 'dim', (x.ip || '') + ' ' + (x.country || '')));
+        tr.appendChild(el('td', 'dim', String(x.device || '').slice(0, 8)));
+        var ac = el('td');
+        ac.appendChild(btn('Stop', 'red sm', function () {
+          admCall({ action: 'revoke', uid: x.uid }, function () {
+            toast('Stopped and signed out.'); admLoad();
+          });
+        }));
+        tr.appendChild(ac);
+        lt.appendChild(tr);
+      });
+      lw.appendChild(lt); lb.appendChild(lw);
+    }
+    host.appendChild(lb);
+    var box = el('div', 'abox');
+    var fr = el('div', 'frow');
+    fr.appendChild(btn('Refresh', 'line', function () { admLoad(); }));
+    fr.appendChild(btn('Send test alert', 'line', function () {
+      api('POST', '/api/admin', { action: 'test-alert' }, function (st, d) {
+        if (st === 200) return toast('Test alert sent. Check your Discord' +
+          ' alert channel.');
+        toast(d.error === 'no_webhook' ? 'No webhook yet: add ALERT_WEBHOOK' +
+          ' in Vercel and redeploy.' : 'Discord refused it (' +
+          (d.status || 'no answer') + '). Check the webhook URL.');
+      });
+    }));
+    fr.appendChild(btn('Clear log', 'red', function () {
+      confirmModal('Clear the security log?', 'Every entry is removed.',
+        'Clear', function () {
+          admCall({ action: 'alerts-clear' }, function () { admLoad(); });
+        });
+    }));
+    box.appendChild(fr);
+    var a = ADM.data.alerts;
+    if (!a.length) {
+      box.appendChild(el('p', 'note', 'Nothing logged. Devtools attempts,' +
+        ' screenshot keys, device switches, admin probes and blocked' +
+        ' sign-ins show up here.'));
+    } else {
+      var w = el('div', 'tbl-wrap'); var t = el('table', 'log');
+      var hr = el('tr');
+      ['When', 'Event', 'Who', 'Detail', ''].forEach(function (x) {
+        hr.appendChild(el('th', null, x));
+      });
+      t.appendChild(hr);
+      a.forEach(function (x) {
+        var tr = el('tr');
+        var d = new Date(x.t);
+        tr.appendChild(el('td', 'dim', fmtDate(x.t) + ' ' +
+          pad2(d.getHours()) + ':' + pad2(d.getMinutes())));
+        tr.appendChild(el('td', 'k', x.kind));
+        var who = el('td');
+        who.appendChild(el('div', 'who', x.name || 'Unknown'));
+        if (x.uid) who.appendChild(el('div', 'id', x.uid));
+        tr.appendChild(who);
+        tr.appendChild(el('td', 'dim', (x.detail || '') +
+          (x.ip ? '  \u00b7  ' + x.ip : '')));
+        var act = el('td');
+        if (x.uid && x.kind === 'timeout') {
+          act.appendChild(btn('Lift timeout', 'line sm', function () {
+            admCall({ action: 'untimeout', uid: x.uid }, function () {
+              toast('Timeout lifted.');
+            });
+          }));
+          act.appendChild(document.createTextNode(' '));
+        }
+        if (x.uid) {
+          act.appendChild(btn('Report', 'line sm', function () {
+            evidence(x.uid);
+          }));
+          act.appendChild(document.createTextNode(' '));
+        }
+        if (x.uid) act.appendChild(blockBtn(x.uid, x.name));
+        tr.appendChild(act);
+        t.appendChild(tr);
+      });
+      w.appendChild(t); box.appendChild(w);
+    }
+    host.appendChild(box);
+  }
+
+  function admPlays(host) {
+    var box = el('div', 'abox');
+    box.appendChild(el('p', 'note', 'Every play, newest first: who, which' +
+      ' video, when and from which network. If a video leaks, match the' +
+      ' watermark\u2019s Discord ID here.'));
+    var fr = el('div', 'frow');
+    var q = el('input', 'in');
+    q.placeholder = 'Filter by viewer code, session ID, name, ID, video or network';
+    fr.appendChild(q);
+    fr.appendChild(btn('Refresh', 'line', function () { admLoad(); }));
+    box.appendChild(fr);
+    var w = el('div', 'tbl-wrap');
+    box.appendChild(w);
+    function draw() {
+      clear(w);
+      var f = q.value.toLowerCase();
+      var list = (ADM.data.plays || []).filter(function (x) {
+        return !f || (x.name + ' ' + x.uid + ' ' + x.title + ' ' + x.ip + ' ' +
+          (x.sid || '') + ' ' + (x.code || '')).toLowerCase().indexOf(f) >= 0;
+      });
+      if (!list.length) {
+        w.appendChild(el('p', 'note', 'No plays yet.'));
+        return;
+      }
+      var t = el('table', 'log');
+      var hr = el('tr');
+      ['When', 'Session', 'Member', 'Video', 'Network'].forEach(function (x) {
+        hr.appendChild(el('th', null, x));
+      });
+      t.appendChild(hr);
+      list.forEach(function (x) {
+        var tr = el('tr'); var d = new Date(x.t);
+        tr.appendChild(el('td', 'dim', fmtDate(x.t) + ' ' +
+          pad2(d.getHours()) + ':' + pad2(d.getMinutes())));
+        tr.appendChild(el('td', 'dim', (x.code ? x.code + '  ' : '') + (x.sid || '')));
+        var who = el('td');
+        who.appendChild(el('div', 'who', x.name || 'Unknown'));
+        who.appendChild(el('div', 'id', x.uid));
+        tr.appendChild(who);
+        tr.appendChild(el('td', null, x.title));
+        tr.appendChild(el('td', 'dim', x.ip));
+        t.appendChild(tr);
+      });
+      w.appendChild(t);
+    }
+    q.addEventListener('input', draw);
+    draw();
+    host.appendChild(box);
+  }
+
+  function admMembers(host) {
+    var box = el('div', 'abox');
+    box.appendChild(el('h3', null, 'Block by Discord ID'));
+    var fr = el('div', 'frow');
+    var i = el('input', 'in'); i.placeholder = 'Discord user ID';
+    fr.appendChild(i);
+    fr.appendChild(btn('Block', 'red', function () {
+      var v = i.value.replace(/\s/g, '');
+      if (!v) return;
+      admCall({ action: 'block', uid: v }, function () {
+        toast('Blocked.'); admLoad();
+      });
+    }));
+    box.appendChild(fr);
+    host.appendChild(box);
+
+    var users = ADM.data.users || {};
+    var ids = Object.keys(users);
+    ADM.data.blocked.forEach(function (b) {
+      if (ids.indexOf(b) < 0) ids.push(b);
+    });
+    ids.sort(function (a, b) {
+      return ((users[b] || {}).last || 0) - ((users[a] || {}).last || 0);
+    });
+    var mb = el('div', 'abox');
+    mb.appendChild(el('h3', null, 'Members who have signed in (' +
+      ids.length + ')'));
+    var find = el('input', 'in');
+    find.placeholder = 'Look up: viewer code, Discord ID, email, name' +
+      ' or payment ID';
+    find.style.width = '100%'; find.style.marginBottom = '14px';
+    mb.appendChild(find);
+    var xr = el('div', 'frow');
+    xr.appendChild(btn('Export members (spreadsheet)', 'line', function () {
+      exportMembers(ids);
+    }));
+    mb.appendChild(xr);
+    mb.appendChild(el('p', 'note', 'Network names: IP data by IPinfo' +
+      ' (ipinfo.io). \u201cVPN / hosting\u201d is a flag only, nobody is' +
+      ' blocked for it.'));
+    var rows = [];
+    find.addEventListener('input', function () {
+      var q = find.value.replace(/^\s+|\s+$/g, '').toLowerCase();
+      rows.forEach(function (r) {
+        r.tr.style.display = !q || r.text.indexOf(q) >= 0 ? '' : 'none';
+      });
+    });
+    var w = el('div', 'tbl-wrap'); var t = el('table', 'log');
+    var hr = el('tr');
+    ['Member', 'Discord ID', 'Last sign-in', 'Location', 'Rules agreed',
+      'Payment', ''].forEach(function (x) {
+      hr.appendChild(el('th', null, x));
+    });
+    t.appendChild(hr);
+    ids.forEach(function (id) {
+      var u = users[id] || {};
+      var tr = el('tr');
+      var who = el('td');
+      who.appendChild(el('div', 'who', u.name || 'Unknown'));
+      if (u.username) who.appendChild(el('div', 'id', '@' + u.username +
+        (u.code ? '  \u00b7  ' + u.code : '')));
+      if (u.email) who.appendChild(el('div', 'id', u.email));
+      if (u.created) {
+        var age = Math.floor((Date.now() - u.created) / 86400000);
+        var ag = el('div', 'id', 'Discord account ' + (age < 60 ? age +
+          ' days' : Math.floor(age / 30) + ' months') + ' old');
+        if (age < 30) ag.style.color = '#e0464c';
+        who.appendChild(ag);
+      }
+      tr.appendChild(who);
+      var nt = (ADM.data.notes || {})[id];
+      rows.push({ tr: tr, text: [id, u.name, u.username, u.code, u.email,
+        nt && nt.pay, nt && nt.note].join(' ').toLowerCase() });
+      tr.appendChild(el('td', 'dim', id));
+      tr.appendChild(el('td', 'dim', u.last ? fmtDate(u.last) : '\u2014'));
+      var loc = el('td', 'dim');
+      loc.appendChild(el('div', null, placeOf(u) || '\u2014'));
+      if (u.ip) loc.appendChild(el('div', 'id', u.ip));
+      if (u.vpn) {
+        var vb = el('div', 'id', 'VPN / hosting: ' + (u.net || u.asn || ''));
+        vb.style.color = '#e0464c';
+        loc.appendChild(vb);
+      } else if (u.net) loc.appendChild(el('div', 'id', u.net));
+      tr.appendChild(loc);
+      var agr = (ADM.data.agreements || {})[id];
+      tr.appendChild(el('td', 'dim', agr ? fmtDate(agr.t) + '  v' + agr.v : '\u2014'));
+      var pc = el('td', 'dim', nt && nt.pay ? nt.pay : '\u2014');
+      if (nt && nt.note) pc.title = nt.note;
+      tr.appendChild(pc);
+      var act = el('td');
+      act.appendChild(btn('Report', 'line sm', function () {
+        evidence(id);
+      }));
+      act.appendChild(document.createTextNode(' '));
+      act.appendChild(btn('Reset devices', 'line sm', function () {
+        admCall({ action: 'devices-reset', uid: id }, function () {
+          toast('Devices reset. Their next browser is allowed.');
+        });
+      }));
+      act.appendChild(document.createTextNode(' '));
+      act.appendChild(btn('Payment', 'line sm', function () {
+        formModal('Payment & notes: ' + (u.name || id), [
+          { k: 'pay', label: 'Payment ID (Whop / Stripe / PayPal receipt' +
+            ' or order ID)', v: nt && nt.pay },
+          { k: 'note', label: 'Private note', v: nt && nt.note, area: true }
+        ], function (v) {
+          admCall({ action: 'member-note', uid: id, pay: v.pay, note: v.note },
+            function () { toast('Saved.'); admLoad(); });
+        });
+      }));
+      act.appendChild(document.createTextNode(' '));
+      if (id !== ME.user.id) {
+        act.appendChild(btn('Sign out', 'line sm', function () {
+          admCall({ action: 'revoke', uid: id }, function () {
+            toast('Signed out everywhere.'); admLoad();
+          });
+        }));
+        act.appendChild(document.createTextNode(' '));
+      }
+      if (id !== ME.user.id) {
+        var un = (ADM.data.unlocked || []).indexOf(id) >= 0;
+        act.appendChild(btn(un ? 'Re-lock' : 'Unlock all', 'line sm',
+          function () {
+            admCall({ action: un ? 'relock' : 'unlock', uid: id }, function () {
+              toast(un ? 'Lectures re-locked for them.' :
+                'Everything unlocked for them.');
+              admLoad();
+            });
+          }));
+        act.appendChild(document.createTextNode(' '));
+      }
+      act.appendChild(blockBtn(id, u.name));
+      tr.appendChild(act);
+      t.appendChild(tr);
+    });
+    w.appendChild(t); mb.appendChild(w);
+    host.appendChild(mb);
+
+    var hb = el('div', 'abox');
+    hb.appendChild(el('h3', null, 'Sign-in history'));
+    var hw = el('div', 'tbl-wrap'); var ht = el('table', 'log');
+    var hh = el('tr');
+    ['When', 'Event', 'Member', 'Network'].forEach(function (x) {
+      hh.appendChild(el('th', null, x));
+    });
+    ht.appendChild(hh);
+    var EV = { signin: 'Signed in', replaced: 'Replaced by a newer sign-in',
+      revoked: 'Signed out by admin' };
+    (ADM.data.sessions || []).forEach(function (x) {
+      var tr = el('tr'); var d = new Date(x.t);
+      tr.appendChild(el('td', 'dim', fmtDate(x.t) + ' ' +
+        pad2(d.getHours()) + ':' + pad2(d.getMinutes())));
+      tr.appendChild(el('td', null, EV[x.event] || x.event));
+      var who = el('td');
+      who.appendChild(el('div', 'who', x.name || 'Unknown'));
+      who.appendChild(el('div', 'id', x.uid || ''));
+      tr.appendChild(who);
+      tr.appendChild(el('td', 'dim', x.ip || ''));
+      ht.appendChild(tr);
+    });
+    hw.appendChild(ht); hb.appendChild(hw);
+    host.appendChild(hb);
+  }
+
+  // ======================================================================
+  // boot
+  // ======================================================================
+  function applyMe(d) {
+    ME = d;
+    SEEN = {};
+    (d.seen || []).forEach(function (id) { SEEN[id] = true; });
+    DONE = {};
+    (d.done || []).forEach(function (id) { DONE[id] = true; });
+    var a = d.announcement;
+    $('announce').hidden = !a;
+    if (a) {
+      $('an-text').textContent = a.text;
+      $('an-date').textContent = fmtDate(a.t);
+      var safe = a.link && /^https:\/\//i.test(a.link);
+      $('an-link').hidden = !safe;
+      if (safe) $('an-link').href = a.link;
+    }
+    $('nav-admin').hidden = !d.isAdmin;
+  }
+  function refreshMe() {
+    api('GET', '/api/me', null, function (st, d) {
+      if (st !== 200 || !d.user) return;
+      var keepSeen = SEEN;
+      applyMe(d);
+      for (var k in keepSeen) SEEN[k] = true;
+      if (TAB_KIND[route.tab]) {
+        renderWatch();
+      }
+    });
+  }
+  function greeting() {
+    var h = new Date().getHours();
+    return h < 5 ? 'Late one' : h < 12 ? 'Good morning' :
+      h < 18 ? 'Good afternoon' : 'Good evening';
+  }
+  // Market session by New York time (Mon-Fri; futures week opens Sun 6pm).
+  function session() {
+    var p = {};
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York',
+        weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: false })
+        .formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+    } catch (e) { return null; }
+    var m = (+p.hour % 24) * 60 + (+p.minute), d = p.weekday;
+    var shut = d === 'Sat' || (d === 'Sun' && m < 1080) ||
+      (d === 'Fri' && m >= 1020);
+    if (shut) return { t: 'Markets closed', on: false };
+    if (m >= 1080 || m < 180) return { t: 'Asia session', on: true };
+    if (m < 480) return { t: 'London session', on: true };
+    if (m < 570) return { t: 'NY pre-market', on: true };
+    if (m < 720) return { t: 'NY AM session', on: true };
+    if (m < 810) return { t: 'NY lunch', on: true };
+    if (m < 960) return { t: 'NY PM session', on: true };
+    return { t: 'After hours', on: false };
+  }
+  function tickSession() {
+    var s = session();
+    $('live').hidden = !s;
+    if (!s) return;
+    $('live-t').textContent = s.t;
+    setCls($('live'), 'on', s.on);
+  }
+  setInterval(tickSession, 30000);
+  function showAgree(d) {
+    ME = d;
+    buildTiles();
+    var ol = $('ag-list'); clear(ol);
+    String(d.rules.text || '').split('\n').forEach(function (line) {
+      line = line.replace(/^\s+|\s+$/g, '');
+      if (line) ol.appendChild(el('li', null, line));
+    });
+    $('ag-code').textContent = d.user.code || '';
+    $('ag-chk').checked = false;
+    $('ag-go').disabled = true;
+    show('v-agree');
+    window.scrollTo(0, 0);
+  }
+  $('ag-chk').addEventListener('change', function () {
+    $('ag-go').disabled = !$('ag-chk').checked;
+  });
+  $('ag-go').addEventListener('click', function () {
+    if (!ME || !ME.rules) return;
+    $('ag-go').disabled = true;
+    api('POST', '/api/me', { action: 'agree', v: ME.rules.v }, function (st) {
+      api('GET', '/api/me', null, function (s2, d2) {
+        if (s2 === 200 && d2.user) enter(d2);
+      });
+      if (st !== 200) toast('The rules were just updated. Please read them again.');
+    });
+  });
+  $('ag-out').addEventListener('click', function () {
+    api('POST', '/api/me', { action: 'logout' }, function () {
+      ME = null; toDoor();
+    });
+  });
+  function enter(d) {
+    tabMark(true);
+    if (d.needsMfa) {
+      setTimeout(function () {
+        toast('Admin tools are off: turn on two-factor authentication in' +
+          ' Discord (User Settings > My Account), then sign in again.');
+      }, 1500);
+    }
+    if (d.agreed === false && !d.isAdmin) return showAgree(d);
+    applyMe(d);
+    DEVICE = deviceId();
+    buildTiles();
+    tickSession();
+    show('v-app');
+    render();
+    var first = (d.user.name || '').split(' ')[0];
+    setTimeout(function () { toast(greeting() + ', ' + first + '.'); }, 500);
+  }
+  // soft light following the cursor on the sign-in screen
+  document.addEventListener('mousemove', function (e) {
+    if (ME) return;
+    var r = document.documentElement.style;
+    r.setProperty('--mx', e.clientX + 'px');
+    r.setProperty('--my', e.clientY + 'px');
+  });
+
+  // Sign-in lasts for this tab only: closing the tab/site or Chrome means
+  // signing in again (the login cookie also ends when Chrome closes).
+  function tabMark(on) {
+    try {
+      if (on) sessionStorage.setItem('elevare.tab', '1');
+      else return sessionStorage.getItem('elevare.tab') === '1';
+    } catch (e) { return true; }
+    return true;
+  }
+  $('go').addEventListener('click', function () {
+    tabMark(true);
+    setCls($('go'), 'busy', true);
+  });
+  $('out').addEventListener('click', function () {
+    unmount();
+    api('POST', '/api/me', { action: 'logout' }, function () {
+      ME = null;
+      toDoor();
+    });
+  });
+
+  var m = /[?&]e=([a-z_]+)/.exec(location.search);
+  if (m) {
+    $('err').textContent = ERRORS[m[1]] ||
+      'Something went wrong. Please try again.';
+    if (history.replaceState) history.replaceState(null, '', '/');
+  }
+  buildTiles();
+
+  // ---------- hardware acceleration ----------
+  // Turning off the browser's hardware acceleration is the standard first
+  // step for recording protected video (recorder makers say so). With it
+  // off, Chrome draws with a software renderer that the page can see.
+  var GPU_INFO = '', gpuFlagged = false, gpuState = null, VM = false;
+  function noGpu() {
+    if (DEMO) return false;
+    if (gpuState !== null) return gpuState;
+    try {
+      var c = document.createElement('canvas');
+      var gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+      // No WebGL at all (privacy settings, Brave shields, old GPU): unknown,
+      // so allow. Only a named software renderer counts as "off".
+      if (!gl) { GPU_INFO = 'no WebGL'; gpuState = false; return false; }
+      var x = gl.getExtension('WEBGL_debug_renderer_info');
+      GPU_INFO = String(gl.getParameter(x ? x.UNMASKED_RENDERER_WEBGL :
+        gl.RENDERER) || '').slice(0, 120);
+      gpuState = /swiftshader|llvmpipe|softpipe|microsoft basic render/i
+        .test(GPU_INFO);
+      // a browser inside a virtual machine, recorded from the real computer
+      VM = /vmware|virtualbox|parallels|qemu|virtio|virgl|red hat|hyper-v/i
+        .test(GPU_INFO);
+      gpuState = gpuState || VM;
+    } catch (e) { gpuState = false; }
+    return gpuState;
+  }
+
+  // ---------- recorder extensions ----------
+  // Screen-recorder extensions record the tab from inside Chrome, which DRM
+  // does not always black out. Most of them add their own controls (a timer,
+  // a stop button) to the page. Anything a browser extension adds to the
+  // page that isn't ours pauses the video and is logged. A determined user
+  // can use a recorder that adds nothing; the watermark covers that case.
+  var OURS = [];
+  (function () {
+    var k = document.body.children;
+    for (var i = 0; i < k.length; i++) OURS.push(k[i]);
+  })();
+  // Common extensions that are not recorders.
+  var BENIGN = new RegExp('grammarly|1password|onepassword|bitwarden|' +
+    'lastpass|dashlane|keeper|nordpass|protonpass|proton-pass|honey|' +
+    'darkreader|dark-reader|metamask|google-translate|goog-gt|vdocipher', 'i');
+  var SKIP_TAGS = /^(script|style|link|meta|noscript|template|title|base)$/;
+  var foreign = [];
+  function describe(n) {
+    var d = n.tagName.toLowerCase();
+    if (n.id) d += '#' + n.id;
+    if (typeof n.className === 'string' && n.className) {
+      d += '.' + n.className.split(/\s+/).slice(0, 3).join('.');
+    }
+    var src = n.getAttribute('src') || n.getAttribute('href') || '';
+    if (src) d += ' ' + src.slice(0, 80);
+    return d.slice(0, 160);
+  }
+  function isForeign(n) {
+    if (!n || n.nodeType !== 1 || n.hasAttribute('data-lvr')) return false;
+    var tag = n.tagName.toLowerCase();
+    if (SKIP_TAGS.test(tag)) return false;
+    var p = n.parentNode;
+    var src = String(n.getAttribute('src') || n.getAttribute('href') || '');
+    if (/^(chrome|moz|safari-web)-extension:/i.test(src)) return true;
+    if (tag === 'iframe' && src && !/^https:\/\/player\.vdocipher\.com\//
+      .test(src)) return true;
+    if (p === document.documentElement) return tag !== 'head' && tag !== 'body';
+    if (p === document.body) return OURS.indexOf(n) < 0;
+    return false;
+  }
+  // Only something the member can actually see on the page counts (a
+  // recorder's timer or stop button). Hidden helpers that many extensions
+  // and Brave add are ignored.
+  // What the member actually sees: sample the screen on a grid and record
+  // the top element at each point. Content inside an extension's (even
+  // closed) shadow root reports its host element, so a floating recorder
+  // widget shows up here even when its wrapper has no size of its own.
+  function topLayer() {
+    var hits = [], w = window.innerWidth, h = window.innerHeight;
+    for (var x = 8; x < w; x += 32) {
+      for (var y = 8; y < h; y += 32) {
+        var e = document.elementFromPoint(x, y);
+        if (e && hits.indexOf(e) < 0) hits.push(e);
+      }
+    }
+    return hits;
+  }
+  function shown(n, hits) {
+    try {
+      var cs = getComputedStyle(n);
+      if (cs.display === 'none' || cs.visibility === 'hidden' ||
+        parseFloat(cs.opacity) < 0.1) return false;
+      for (var i = 0; i < hits.length; i++) {
+        if (hits[i] === n || n.contains(hits[i])) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+  function foreignOn() {
+    var on = false, hits = null;
+    for (var i = foreign.length - 1; i >= 0; i--) {
+      if (!document.documentElement.contains(foreign[i])) {
+        foreign.splice(i, 1); continue;
+      }
+      if (!hits) hits = topLayer();
+      if (shown(foreign[i], hits)) { on = true; report(foreign[i]); }
+    }
+    return on;
+  }
+  function foreignWarn() {
+    $('w-who').textContent = ME ? ME.user.name : '';
+    $('w-id').textContent = ME ? ME.user.id : '';
+    $('w-what').textContent = 'A browser extension added something to this' +
+      ' page. Turn off screen recorder extensions, then reload to keep' +
+      ' watching.';
+    var now = new Date();
+    $('w-when').textContent = fmtDate(now.getTime()) + ' ' +
+      pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+    $('warn').hidden = false;
+  }
+  var reported = {};
+  function report(n) {
+    var d = describe(n);
+    if (ME && !ME.isAdmin && !reported[d]) {
+      reported[d] = 1;
+      flag('extension', d + ' | text: ' +
+        String(n.textContent || '').replace(/\s+/g, ' ').slice(0, 60));
+    }
+  }
+  function foreignHit(n) {
+    if (BENIGN.test(describe(n)) || BENIGN.test(n.outerHTML.slice(0, 400))) return;
+    if (foreign.indexOf(n) < 0) foreign.push(n);
+    checkForeign();
+    // widgets often draw a moment after they are added
+    setTimeout(checkForeign, 700);
+  }
+  function checkForeign() {
+    if (frame && foreignOn()) { pauseVideo(); unmount(); foreignWarn(); }
+  }
+  // a hidden helper can turn into a visible widget later
+  setInterval(function () { if (frame && foreign.length) checkForeign(); }, 2000);
+  function scanNode(n) {
+    if (isForeign(n)) return foreignHit(n);
+    if (n && n.nodeType === 1 && n.querySelectorAll) {
+      var x = n.querySelectorAll('[src^="chrome-extension:"],' +
+        '[href^="chrome-extension:"]');
+      for (var i = 0; i < x.length; i++) foreignHit(x[i]);
+    }
+  }
+  if (!DEMO && window.MutationObserver) {
+    new MutationObserver(function (list) {
+      for (var i = 0; i < list.length; i++) {
+        var a = list[i].addedNodes;
+        for (var j = 0; j < a.length; j++) scanNode(a[j]);
+      }
+    }).observe(document.documentElement, { childList: true, subtree: true });
+    // anything injected before this script ran
+    var hk = document.documentElement.children;
+    for (var q = 0; q < hk.length; q++) if (isForeign(hk[q])) foreignHit(hk[q]);
+  }
+
+  function boot() {
+    if (!DEV && !tabMark(false)) {
+      // fresh tab or reopened site: end any old session first
+      api('POST', '/api/me', { action: 'logout' }, function () {
+        show('v-login');
+      });
+      return;
+    }
+    api('GET', '/api/me', null, function (st, d) {
+      if (st === 200 && d.user) return enter(d);
+      if (st === 403 && d.error === 'mobile') { mobileWall(); return; }
+      if ((!DEV || DEMO) && !isChrome() &&
+          (st === 403 || (st === 401 && !d.safari))) {
+        show('v-wall'); return;
+      }
+      if (st === 403 && d.error && !m) {
+        $('err').textContent = ERRORS[d.error] || '';
+      }
+      if (st === 503 && !m) $('err').textContent = ERRORS.setup;
+      show('v-login');
+    });
+  }
+  if (DEMO) {
+    window.lvr.hooks({
+      boot: boot, beat: beat, shield: shield, go: go,
+      err: function (e) { $('err').textContent = e ? ERRORS[e] : ''; },
+      show: function () { ME = null; unmount(); show('v-login'); },
+      adm: function (t) { ADM.tab = t; ADM.data = null; admLoad(); }
+    });
+  }
+  $('wall-copy').addEventListener('click', function () {
+    var b = $('wall-copy');
+    try {
+      navigator.clipboard.writeText(location.origin + '/').then(function () {
+        b.textContent = 'Link copied';
+      });
+    } catch (x) { b.textContent = location.host; }
+  });
+  // (the offline demo checks the browser too)
+  if (isMobileClient() && (!DEV || DEMO)) { mobileWall(); return; }
+  if (!isChrome() && !SAFARI && (!DEV || DEMO)) { show('v-wall'); return; }
+  if (navigator.webdriver && !DEV) {
+    api('POST', '/api/me', { action: 'flag', kind: 'automation',
+      detail: 'navigator.webdriver' });
+    $('err').textContent = ERRORS.automation;
+    show('v-login'); $('go').hidden = true;
+    return;
+  }
+  // Developer tools already open at load: load nothing until they close.
+  if (!DEV && (pausedByDebugger() || docked())) {
+    show('v-login');
+    dtWall(true);
+    var wait = setInterval(function () {
+      if (!pausedByDebugger() && !docked()) {
+        clearInterval(wait); location.reload();
+      }
+    }, 1000);
+    return;
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
