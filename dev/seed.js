@@ -8,8 +8,6 @@ module.exports = function seed(mocks) {
     { id: 'sC', kind: 'lecture', title: 'Section Three' },
     { id: 'sD', kind: 'breakdown', title: 'Week One' },
     { id: 'sE', kind: 'breakdown', title: 'Week Two' },
-    { id: 'sF', kind: 'qna', title: 'Placeholder Q&A Session' },
-    { id: 'sG', kind: 'random', title: 'Placeholder Extras' }
   ];
   const items = [];
   function add(sec, kind, title, desc, len, ago) {
@@ -34,9 +32,6 @@ module.exports = function seed(mocks) {
   add('sE', 'breakdown', 'Placeholder Breakdown Thursday', '', 780, 2);
   add('sE', 'breakdown', 'Placeholder Breakdown Friday', '', 990, 1);
   items[items.length - 1].tier = 'Elite';
-  add('sF', 'qna', 'Placeholder Q&A One', '', 2400, 4);
-  add('sF', 'qna', 'Placeholder Q&A Two', '', 1900, 2);
-  add('sG', 'random', 'Placeholder Random Video', '', 640, 1);
   const content = { sections, items,
     announcement: { text: 'Placeholder announcement text goes here.',
       link: 'https://example.com', t: now - day } };

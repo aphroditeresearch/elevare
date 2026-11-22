@@ -1,7 +1,8 @@
 'use strict';
 const L = require('./_lib');
 
-const KINDS = ['lecture', 'breakdown', 'qna', 'random'];
+// Two sections only: Lectures and Breakdowns.
+const KINDS = ['lecture', 'breakdown'];
 const str = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
 
 async function deleteVideos(ids) {

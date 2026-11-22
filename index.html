@@ -66,7 +66,6 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 .door .stack {
   position: relative; z-index: 2;
   display: flex; flex-direction: column; align-items: center;
-  animation: rise .9s cubic-bezier(.2,.7,.2,1) both;
 }
 /* thin inset frame with corner ticks */
 .frame {
@@ -215,13 +214,11 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 }
 @property --ang { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
 .door {
-  background:
-    radial-gradient(55% 60% at 50% 46%, #0f1a3a 0%, rgba(7,9,14,0) 70%),
-    radial-gradient(120% 90% at 50% 120%, #08142e 0%, #04050a 60%);
+  background: radial-gradient(120% 90% at 50% 120%, #050a18 0%, #020308 60%);
 }
 .door:before {
-  background: radial-gradient(620px circle at var(--mx, 50%) var(--my, 45%),
-    rgba(var(--red2-rgb),.17), rgba(var(--red-rgb),.06) 35%, transparent 62%);
+  background: radial-gradient(640px circle at var(--mx, 50%) var(--my, 45%),
+    rgba(var(--red2-rgb),.24), rgba(var(--red-rgb),.09) 35%, transparent 64%);
 }
 .door .frame { border-color: rgba(var(--red2-rgb),.10); }
 .door .frame i { border-color: rgba(var(--red2-rgb),.6); }
@@ -238,7 +235,7 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 /* receding light grid on the floor */
 .floor {
   position: absolute; left: -50%; right: -50%; bottom: -10%; height: 60%;
-  z-index: 0; pointer-events: none; opacity: .5;
+  z-index: 0; pointer-events: none; opacity: .3;
   background-image:
     linear-gradient(rgba(var(--red2-rgb),.35) 1px, transparent 1px),
     linear-gradient(90deg, rgba(var(--red2-rgb),.35) 1px, transparent 1px);
@@ -250,21 +247,7 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 }
 @keyframes roll { to { background-position: 0 64px, 0 0; } }
 /* logo glow on every door screen */
-.door .logo {
-  width: 440px; max-width: 80vw;
-  filter: drop-shadow(0 0 22px rgba(var(--red2-rgb),.28));
-  animation: surge 5.5s ease-in-out infinite;
-}
-@keyframes surge {
-  0%, 100% { filter: drop-shadow(0 0 18px rgba(var(--red2-rgb),.22)); }
-  50% { filter: drop-shadow(0 0 34px rgba(var(--red2-rgb),.50)); }
-  91% { filter: drop-shadow(0 0 20px rgba(var(--red2-rgb),.25)); }
-  92% { filter: drop-shadow(0 0 46px rgba(var(--red2-rgb),.85))
-    brightness(1.25); }
-  93.5% { filter: drop-shadow(0 0 20px rgba(var(--red2-rgb),.25)); }
-  95% { filter: drop-shadow(0 0 40px rgba(var(--red2-rgb),.7))
-    brightness(1.15); }
-}
+.door .logo { width: 440px; max-width: 80vw; }  /* static: no motion */
 /* wordmark: white letters, accent letters glowing */
 .bmk {
   font-family: "Cinzel", Georgia, serif; font-weight: 700;
@@ -287,12 +270,11 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 .emblem {
   position: relative; display: flex; align-items: center;
   justify-content: center; min-height: 420px;
-  animation: drift 1.4s cubic-bezier(.2,.7,.2,1) both;
 }
 .emblem .logo { width: 100%; max-width: 680px; max-height: none;
   position: relative; z-index: 2; filter: none; animation: none; }
 .float { position: relative; z-index: 2; width: 100%; display: flex;
-  justify-content: center; transition: transform .35s ease-out; }
+  justify-content: center; }
 .entry {
   position: relative; padding: 46px 44px 38px; max-width: 460px;
   justify-self: center; width: 100%;
@@ -1173,8 +1155,6 @@ select.in { -webkit-appearance: none; appearance: none; }
     <nav class="nav" id="nav">
       <a href="#lectures" data-tab="lectures">Lectures</a>
       <a href="#breakdowns" data-tab="breakdowns">Breakdowns</a>
-      <a href="#qna" data-tab="qna">Q&amp;A</a>
-      <a href="#random" data-tab="random">Random</a>
       <a href="#profile" data-tab="profile">Profile</a>
       <a href="#admin" data-tab="admin" id="nav-admin" hidden>Admin</a>
     </nav>
@@ -1453,14 +1433,6 @@ select.in { -webkit-appearance: none; appearance: none; }
       }
     }
     window.requestAnimationFrame(frame);
-    document.addEventListener('mousemove', function (e) {
-      var f = document.getElementById('emblem-float');
-      if (!f || !f.offsetWidth) return;
-      // whole pixels only, so the logo never resamples (stays sharp)
-      var dx = Math.round((e.clientX / window.innerWidth - 0.5) * 18);
-      var dy = Math.round((e.clientY / window.innerHeight - 0.5) * 12);
-      f.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
-    });
   })();
   var DEV = DEMO || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   var SEP = DEMO ? '-' : '/';
@@ -1472,17 +1444,13 @@ select.in { -webkit-appearance: none; appearance: none; }
   var SEEN = {};          // item id -> true
   // content types: kind -> tab, labels (lectures unlock in order; the rest
   // are open any time)
-  var KINDS = { lecture: 'lectures', breakdown: 'breakdowns', qna: 'qna',
-    random: 'random' };
-  var TAB_KIND = { lectures: 'lecture', breakdowns: 'breakdown', qna: 'qna',
-    random: 'random' };
-  var ALL_KINDS = ['lecture', 'breakdown', 'qna', 'random'];
-  var LABEL = { lecture: 'Lecture', breakdown: 'Breakdown', qna: 'Q&A',
-    random: 'Video' };
-  var PLURAL = { lecture: 'Lectures', breakdown: 'Breakdowns', qna: 'Q&A',
-    random: 'Random' };
-  var NOUN = { lecture: 'lecture', breakdown: 'breakdown', qna: 'Q&A',
-    random: 'video' };
+  // Two sections only: Lectures and Breakdowns.
+  var KINDS = { lecture: 'lectures', breakdown: 'breakdowns' };
+  var TAB_KIND = { lectures: 'lecture', breakdowns: 'breakdown' };
+  var ALL_KINDS = ['lecture', 'breakdown'];
+  var LABEL = { lecture: 'Lecture', breakdown: 'Breakdown' };
+  var PLURAL = { lecture: 'Lectures', breakdown: 'Breakdowns' };
+  var NOUN = { lecture: 'lecture', breakdown: 'breakdown' };
 
   // ======================================================================
   // helpers
@@ -1595,8 +1563,7 @@ select.in { -webkit-appearance: none; appearance: none; }
   // ======================================================================
   // Chrome only
   // ======================================================================
-  var SAFARI = /Version\/[\d.]+.*Safari\//.test(navigator.userAgent) &&
-    !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|OPR|Android/.test(navigator.userAgent);
+  var SAFARI = false; // Safari is never allowed (Chrome / Brave only)
   // Desktop only: phones and tablets (including iPads that report a Mac).
   function isMobileClient() {
     var ua = navigator.userAgent;

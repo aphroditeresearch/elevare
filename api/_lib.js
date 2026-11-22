@@ -126,9 +126,9 @@ function embeddedBrowser(req) {
   if (!ch || !isChrome(req)) return false;
   return !/"Google Chrome"|"Brave"/.test(ch);
 }
-// Safari (with VdoCipher's FairPlay upgrade) is the only desktop browser where
-// DRM can block screen recording on a Mac, so it can be allowed too.
-function safariAllowed() { return env('ALLOW_SAFARI') === '1'; }
+// Elevare is Chrome-only (Chrome or Brave on a computer). Safari is always
+// refused; there is deliberately no setting to allow it.
+function safariAllowed() { return false; }
 function isSafari(req) {
   const ua = String(req.headers['user-agent'] || '');
   return /Version\/[\d.]+.*Safari\//.test(ua) &&
@@ -143,7 +143,7 @@ function isMobile(req) {
 }
 function browserOk(req) {
   return !isMobile(req) && !embeddedBrowser(req) &&
-    (isChrome(req) || (safariAllowed() && isSafari(req)));
+    isChrome(req);
 }
 
 // Membership tiers: TIERS="Core:roleId,Elite:roleId"

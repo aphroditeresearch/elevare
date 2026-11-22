@@ -2,7 +2,7 @@
 
 This folder is the complete Elevare website:
 Discord sign-in with role gate, DRM video (VdoCipher), lectures that unlock
-one by one, breakdowns / Q&A / random sections, admin panel, rules
+one by one, breakdowns (two sections only), admin panel, rules
 agreement, watermarks, device limits, recorder / VM / fake-browser blocks,
 Discord alerts, evidence reports, member export and VPN flags.
 
@@ -118,7 +118,6 @@ Optional settings (leave out to use the defaults this site runs with):
 | `ALERT_PING` | who alerts ping (default: the admin role) |
 | `REDIS_PREFIX` | only if two brands share one database (default `elevare`) |
 | `LOCK_OTP_IP` | `1` = video keys only work from the member's own IP |
-| `ALLOW_SAFARI` | `1` = also allow Safari (needs VdoCipher FairPlay) |
 
 ## Step 8. Check it works
 

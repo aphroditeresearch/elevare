@@ -29,7 +29,7 @@ checked on the deployed site with real VdoCipher + real devices (not done yet).
 - **Strongest Widevine security level / output protection (HDCP)**: VdoCipher's OTP API exposes no such option; only they can configure it.
 - **Allowed domains** in the dashboard (the site also sends `whitelisthref`).
 - **Viewer analytics / piracy tracker dashboards** (fed by the `userId` the site now sends).
-- FairPlay is only relevant if Safari is ever allowed (`ALLOW_SAFARI=1`); not needed for Chrome-only.
+- FairPlay is not needed: Elevare is Chrome-only and Safari is always refused (there is no setting to allow it).
 
 ### C. Impossible to guarantee in desktop Chrome
 - **Blocking every recording or screenshot.** VdoCipher states Windows capture is preventable in roughly 70 to 80% of cases, and its overview says Chrome on Mac can't be prevented. Black frames depend on the viewer's hardware, drivers and settings.
@@ -90,7 +90,7 @@ weakening anything above.
 | # | Requirement | Status |
 |---|---|---|
 | 1 | Only VdoCipher's DRM player; no unencrypted URLs | Done. Members never receive video ids or media URLs; only a 5-min OTP. Thumbnails are proxied. |
-| 2 | Widevine + FairPlay | Widevine is on by default. **FairPlay needs the account owner to request VdoCipher's FairPlay upgrade** (dashboard security section; iOS needs an Apple application process). Then set `ALLOW_SAFARI=1`. |
+| 2 | Widevine + FairPlay | Widevine is on by default. **FairPlay needs the account owner to request VdoCipher's FairPlay upgrade** (dashboard security section; iOS needs an Apple application process). Not used: Elevare never allows Safari. |
 | 3 | Hardware-backed DRM / HDCP, no silent fallback | **Not settable from the site.** VdoCipher's OTP API documents only ttl, annotate, whitelisthref, IP/geo rules and userId; no security-level or HDCP option. Must be requested from VdoCipher support (see section 3). |
 | 4 | Server-generated short-lived OTPs, secret server-side | Done (ttl 300 s; `VDOCIPHER_API_SECRET` only in Vercel). |
 | 5 | Moving viewer-specific watermark: Discord ID, username, time | Done: 6 VdoCipher marks: viewer code x4, @username, session + time + Discord ID; random positions at different speeds. |
@@ -108,9 +108,9 @@ video area records/screenshots as black while watermarks stay visible.
 | Platform | Expected (VdoCipher docs) | Observed |
 |---|---|---|
 | Mac, Chrome | Not preventable per VdoCipher's overview page | **Black (2026-11-21, tested on the original deployment of this code; re-test on yours):** native screenshot, macOS screen recording and OBS all show a black video area with the watermarks visible. It started working once nothing on the page sat over or around the player (no site overlay, no transforms/containment on the player box). **Keep the player area free of overlays and effects in future changes.** |
-| Mac, Safari + FairPlay | Black | Not tested (needs FairPlay upgrade + `ALLOW_SAFARI=1`) |
+| Mac, Safari | n/a | Safari is always refused on Elevare |
 | Windows, Chrome/Edge | Black on roughly 70 to 80% of machines (device-dependent) | Not tested |
-| iPhone/iPad, Safari + FairPlay | Black | Not tested |
+| iPhone/iPad | n/a | Phones and tablets are refused |
 | Android, Chrome | Not guaranteed in browsers | Not tested |
 | Linux, any browser | Not preventable | Not tested |
 
@@ -143,8 +143,7 @@ Record: date, OS + version, browser + version, result (Blocked / Black / Visible
 ## 4. Remaining piracy risks (honest)
 
 - **Screen recording in desktop Chrome** is the main open door. Only the
-  watermark deters it. Allowing Safari + FairPlay closes it for Mac Safari
-  users only.
+  watermark deters it.
 - **Camera pointed at the screen**: nothing stops it; the watermark is visible.
 - **Cracked DRM modules**: a rip removes the overlay watermark. The play log
   narrows it to who played that video and when.
@@ -161,8 +160,7 @@ Yes, meaningfully, for the recording problem: VdoCipher states screen capture
 can be blocked in their Android and iOS apps (hardware-backed Widevine L1 /
 FairPlay with OS capture flags). A desktop app (Electron etc.) does not get
 hardware DRM on most PCs and would be no better than Chrome. Recommendation: if
-recording is the real threat, the cheapest strong step is `ALLOW_SAFARI=1` +
-FairPlay, then a mobile app later, keeping the website for desktop with the
-watermark as the deterrent.
+recording is the real threat, a mobile app later is the strong step, keeping
+the website Chrome-only on desktop with the watermark as the deterrent.
 
 _Repository is private. Last checked: 2026-11-21._

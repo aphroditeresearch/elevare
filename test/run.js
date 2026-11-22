@@ -327,11 +327,10 @@ async function t(name, fn) {
     assert.ok(g.data.sessions.some(x => x.event === 'revoked'));
     assert.strictEqual(await member.signIn(MEMBER), '/');
   });
-  await t('Safari is refused unless ALLOW_SAFARI=1', async () => {
+  await t('Safari is always refused, even with ALLOW_SAFARI=1 set', async () => {
     assert.strictEqual(await client(SAFARI).signIn(MEMBER), '/?e=browser');
     process.env.ALLOW_SAFARI = '1';
-    const sc = client(SAFARI);
-    assert.strictEqual(await sc.signIn(MEMBER), '/');
+    assert.strictEqual(await client(SAFARI).signIn(MEMBER), '/?e=browser');
     delete process.env.ALLOW_SAFARI;
     assert.strictEqual(await member.signIn(MEMBER), '/');
   });
@@ -373,16 +372,17 @@ async function t(name, fn) {
     assert.strictEqual(r.status, 401); assert.strictEqual(r.data.error, 'idle');
   });
 
-  await t('Q&A and Random sections can be created and played (no lock)', async () => {
-    for (const kind of ['qna', 'random']) {
-      const sec = (await admin.req('POST', '/api/admin', { action: 'section-save', kind, title: kind + ' sec' })).data.section;
-      assert.strictEqual(sec.kind, kind);
-      const id = await readyLecture(sec.id, kind + ' one');
-      await readyLecture(sec.id, kind + ' two');
-      const all = (await member.req('GET', '/api/me')).data.items.filter(x => x.kind === kind);
-      const second = all[all.length - 1];
-      assert.strictEqual((await member.req('POST', '/api/play', { id: second.id, device: 'deviceBBBB' })).status, 200);
+  await t('only Lectures and Breakdowns exist (Q&A / Random refused)', async () => {
+    for (const kind of ['qna', 'random', 'other']) {
+      const r = await admin.req('POST', '/api/admin', { action: 'section-save', kind, title: kind + ' sec' });
+      assert.strictEqual(r.status, 400); assert.strictEqual(r.data.error, 'kind');
     }
+    const sec = (await admin.req('POST', '/api/admin', { action: 'section-save', kind: 'breakdown', title: 'bd sec' })).data.section;
+    assert.strictEqual(sec.kind, 'breakdown');
+    await readyLecture(sec.id, 'bd one');
+    await readyLecture(sec.id, 'bd two');
+    const all = (await member.req('GET', '/api/me')).data.items.filter(x => x.kind === 'breakdown');
+    assert.strictEqual((await member.req('POST', '/api/play', { id: all[all.length - 1].id, device: 'deviceBBBB' })).status, 200);
   });
   await t('admin test alert posts to the webhook', async () => {
     mocks.hooks.length = 0;
@@ -393,7 +393,7 @@ async function t(name, fn) {
   });
 
   await t('binge starting and country hopping raise alerts', async () => {
-    const sec = (await admin.req('POST', '/api/admin', { action: 'section-save', kind: 'random', title: 'Binge' })).data.section.id;
+    const sec = (await admin.req('POST', '/api/admin', { action: 'section-save', kind: 'breakdown', title: 'Binge' })).data.section.id;
     const ids = [];
     for (let i = 0; i < 8; i++) ids.push(await readyLecture(sec, 'B' + i));
     for (let i = 0; i < 8; i++) {
