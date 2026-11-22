@@ -94,12 +94,7 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   animation: drift 1.8s cubic-bezier(.2,.7,.2,1) both;
 }
 /* soft light that follows the cursor */
-.door:before {
-  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 45%),
-    rgba(var(--red2-rgb),.07), transparent 60%);
-  transition: background .2s linear;
-}
+/* cursor light: a small fixed-size disc moved on the GPU (see .glow) */
 .rule b { animation: beat 3.2s ease-in-out infinite; }
 @keyframes beat {
   0%, 100% { box-shadow: 0 0 0 0 rgba(var(--red2-rgb),0); }
@@ -216,9 +211,13 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 .door {
   background: radial-gradient(120% 90% at 50% 120%, #050a18 0%, #020308 60%);
 }
-.door:before {
-  background: radial-gradient(640px circle at var(--mx, 50%) var(--my, 45%),
-    rgba(var(--red2-rgb),.24), rgba(var(--red-rgb),.09) 35%, transparent 64%);
+.glow {
+  position: absolute; left: 0; top: 0; z-index: 1; width: 420px;
+  height: 420px; margin: -210px 0 0 -210px; border-radius: 50%;
+  pointer-events: none; will-change: transform;
+  background: radial-gradient(closest-side, rgba(var(--red2-rgb),.30),
+    rgba(var(--red-rgb),.11) 45%, rgba(var(--red-rgb),0) 100%);
+  transform: translate3d(30vw, 45vh, 0);
 }
 .door .frame { border-color: rgba(var(--red2-rgb),.10); }
 .door .frame i { border-color: rgba(var(--red2-rgb),.6); }
@@ -278,13 +277,11 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 .entry {
   position: relative; padding: 46px 44px 38px; max-width: 460px;
   justify-self: center; width: 100%;
-  background: linear-gradient(160deg, rgba(22,36,78,.62) 0%,
-    rgba(9,12,22,.82) 60%);
+  background: linear-gradient(160deg, #0f1a38 0%, #080b14 60%);
   border: 1px solid rgba(var(--red2-rgb),.16);
   box-shadow: 0 30px 80px -20px rgba(0,0,0,.8),
     0 0 60px -10px rgba(var(--red-rgb),.35),
     inset 0 1px 0 rgba(255,255,255,.06);
-  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   animation: rise 1s .15s cubic-bezier(.2,.7,.2,1) both;
 }
 /* light running round the card edge */
@@ -1039,6 +1036,7 @@ select.in { -webkit-appearance: none; appearance: none; }
 <!-- Chrome-only wall -->
 <section id="v-wall" class="view door">
   <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
+  <i class="glow" aria-hidden="true"></i>
   <div class="floor" aria-hidden="true"></div>
   <div class="frame" aria-hidden="true">
     <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
@@ -1064,6 +1062,7 @@ select.in { -webkit-appearance: none; appearance: none; }
 <!-- Sign in: logo on the left, Discord entry on the right -->
 <section id="v-login" class="view door">
   <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
+  <i class="glow" aria-hidden="true"></i>
   <div class="floor" aria-hidden="true"></div>
   <div class="frame" aria-hidden="true">
     <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
@@ -1098,6 +1097,7 @@ select.in { -webkit-appearance: none; appearance: none; }
 <!-- Community rules (agree before entering) -->
 <section id="v-agree" class="view door">
   <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
+  <i class="glow" aria-hidden="true"></i>
   <div class="floor" aria-hidden="true"></div>
   <div class="frame" aria-hidden="true">
     <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
@@ -1120,6 +1120,7 @@ select.in { -webkit-appearance: none; appearance: none; }
 <!-- Timed out -->
 <section id="v-timeout" class="view door">
   <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
+  <i class="glow" aria-hidden="true"></i>
   <div class="floor" aria-hidden="true"></div>
   <div class="frame" aria-hidden="true">
     <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
@@ -1383,6 +1384,18 @@ select.in { -webkit-appearance: none; appearance: none; }
     var cv = null, cx = null, parts = [], W = 0, H = 0, R = 1, last = 0;
     var rgb = (getComputedStyle(document.documentElement)
       .getPropertyValue('--red2-rgb') || '79, 163, 255').replace(/\s/g, '');
+    // one soft dot drawn once per colour, then stamped (fast)
+    function sprite(core) {
+      var c = document.createElement('canvas'); c.width = c.height = 64;
+      var x = c.getContext('2d');
+      var g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, 'rgba(' + core + ',1)');
+      g.addColorStop(0.35, 'rgba(' + rgb + ',.35)');
+      g.addColorStop(1, 'rgba(' + rgb + ',0)');
+      x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+      return c;
+    }
+    var SPR = { blue: sprite(rgb), hot: sprite('255,255,255') };
     function spark(fresh) {
       return {
         x: Math.random() * W,
@@ -1395,12 +1408,12 @@ select.in { -webkit-appearance: none; appearance: none; }
       };
     }
     function fit(c) {
-      R = Math.min(window.devicePixelRatio || 1, 2);
+      R = 1; // soft dots: full resolution not needed, much cheaper
       W = c.clientWidth; H = c.clientHeight;
       c.width = Math.round(W * R); c.height = Math.round(H * R);
       cx = c.getContext('2d'); cx.setTransform(R, 0, 0, R, 0, 0);
       parts = [];
-      var n = Math.min(110, Math.round(W * H / 14000));
+      var n = Math.min(70, Math.round(W * H / 18000));
       for (var k = 0; k < n; k++) parts.push(spark(true));
     }
     function frame(t) {
@@ -1419,15 +1432,11 @@ select.in { -webkit-appearance: none; appearance: none; }
         p.y -= p.vy; p.w += 0.03; p.x += p.vx + Math.sin(p.w) * 0.3;
         if (p.y < -20) { parts[k] = spark(false); continue; }
         var fade = Math.min(1, p.y / H * 1.6) * p.life;
-        var tw = 0.6 + 0.4 * Math.sin(p.w * 3);
-        var g = cx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5);
-        var col = p.hot ? '255,255,255' : rgb;
-        g.addColorStop(0, 'rgba(' + col + ',' + (fade * tw) + ')');
-        g.addColorStop(0.35, 'rgba(' + rgb + ',' + (fade * tw * 0.35) + ')');
-        g.addColorStop(1, 'rgba(' + rgb + ',0)');
-        cx.fillStyle = g;
-        cx.fillRect(p.x - p.r * 5, p.y - p.r * 5, p.r * 10, p.r * 10);
+        cx.globalAlpha = fade * (0.6 + 0.4 * Math.sin(p.w * 3));
+        var d = p.r * 10;
+        cx.drawImage(p.hot ? SPR.hot : SPR.blue, p.x - d / 2, p.y - d / 2, d, d);
       }
+      cx.globalAlpha = 1;
     }
     window.requestAnimationFrame(frame);
   })();
@@ -3419,13 +3428,24 @@ select.in { -webkit-appearance: none; appearance: none; }
     var first = (d.user.name || '').split(' ')[0];
     setTimeout(function () { toast(greeting() + ', ' + first + '.'); }, 500);
   }
-  // soft light following the cursor on the sign-in screen
-  document.addEventListener('mousemove', function (e) {
-    if (ME) return;
-    var r = document.documentElement.style;
-    r.setProperty('--mx', e.clientX + 'px');
-    r.setProperty('--my', e.clientY + 'px');
-  });
+  // soft light following the cursor on the door screens: one transform per
+  // frame, composited on the GPU, so it tracks the mouse with no lag
+  (function () {
+    var gx = 0, gy = 0, queued = false;
+    function place() {
+      queued = false;
+      var g = document.querySelector('.view.door.on .glow');
+      if (!g) return;
+      var b = g.parentNode.getBoundingClientRect();
+      g.style.transform = 'translate3d(' + (gx - b.left) + 'px,' +
+        (gy - b.top) + 'px,0)';
+    }
+    document.addEventListener('mousemove', function (e) {
+      if (ME) return;
+      gx = e.clientX; gy = e.clientY;
+      if (!queued) { queued = true; window.requestAnimationFrame(place); }
+    });
+  })();
 
   // Sign-in lasts for this tab only: closing the tab/site or Chrome means
   // signing in again (the login cookie also ends when Chrome closes).
