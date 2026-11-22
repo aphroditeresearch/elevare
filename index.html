@@ -209,7 +209,8 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 }
 @property --ang { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
 .door {
-  background: radial-gradient(120% 90% at 50% 120%, #050a18 0%, #020308 60%);
+  background: url(/wall.png) 0 0 / 512px repeat,
+    radial-gradient(120% 90% at 50% 120%, #050a18 0%, #020308 60%);
 }
 .glow {
   position: absolute; left: 0; top: 0; z-index: 1; width: 420px;
@@ -227,14 +228,6 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   -webkit-text-stroke: 1px rgba(var(--red2-rgb),.20);
 }
 /* spark field (one canvas per door, drawn only while that door is shown) */
-/* rain behind the door screens (rain.webm / rain.mp4). One fixed layer,
-   shown and playing only while a door screen is up; paused inside. */
-.rain {
-  position: fixed; inset: 0; z-index: 1; width: 100%; height: 100%;
-  object-fit: cover; pointer-events: none; display: none;
-  background: #020308;  /* dimming + edge fade are baked into the video */
-}
-body:has(.view.door.on) .rain { display: block; }
 .door .bigv { z-index: 1; }
 .door .floor { display: none; }
 /* receding light grid on the floor */
@@ -280,6 +273,25 @@ body:has(.view.door.on) .rain { display: block; }
   position: relative; z-index: 2; filter: none; animation: none; }
 .float { position: relative; z-index: 2; width: 100%; display: flex;
   justify-content: center; }
+/* "painted on the wall": the logo, a light that follows the cursor and the
+   wall's grain are clipped to the logo's own shape, so the paint is lit by
+   the same light as the wall and carries its texture. Nothing moves. */
+.paint { overflow: hidden; isolation: isolate;
+  -webkit-mask: url(/logo.png) center / contain no-repeat;
+  mask: url(/logo.png) center / contain no-repeat; }
+.paint .lamp {
+  position: absolute; left: 0; top: 0; width: 560px; height: 560px;
+  margin: -280px 0 0 -280px; border-radius: 50%; pointer-events: none;
+  will-change: transform; mix-blend-mode: screen;
+  background: radial-gradient(closest-side, rgba(140,195,255,.34),
+    rgba(var(--red2-rgb),.12) 50%, rgba(var(--red2-rgb),0) 100%);
+  transform: translate3d(-999px, -999px, 0);
+}
+.paint .grain {
+  position: absolute; inset: 0; pointer-events: none;
+  background: url(/grain.png) 0 0 / 256px repeat;
+  mix-blend-mode: overlay; opacity: .6;
+}
 .entry {
   position: relative; padding: 46px 44px 38px; max-width: 460px;
   justify-self: center; width: 100%;
@@ -361,7 +373,7 @@ body:has(.view.door.on) .rain { display: block; }
   .entry { text-align: left; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .door .logo, .floor, .float, .entry, .entry:before, .rain,
+  .door .logo, .floor, .float, .entry, .entry:before,
   .btn.lit:after, .kick i, .emblem { animation: none; }
 }
 
@@ -1038,12 +1050,6 @@ select.in { -webkit-appearance: none; appearance: none; }
 </style>
 </head>
 <body>
-<video id="rain" class="rain" muted loop playsinline preload="auto"
-  poster="/rain-poster.jpg" data-lvr="1" disablepictureinpicture
-  aria-hidden="true">
-  <source src="/rain.webm" type="video/webm">
-  <source src="/rain.mp4" type="video/mp4">
-</video>
 
 <!-- Chrome-only wall -->
 <section id="v-wall" class="view door">
@@ -1080,8 +1086,10 @@ select.in { -webkit-appearance: none; appearance: none; }
   <span class="bigv" aria-hidden="true">V2</span>
   <div class="duo">
     <div class="emblem">
-      <div class="float" id="emblem-float">
+      <div class="float paint" id="emblem-float">
         <img class="logo" src="/logo.png" alt="Elevare">
+        <i class="lamp" aria-hidden="true"></i>
+        <i class="grain" aria-hidden="true"></i>
       </div>
     </div>
     <div class="entry">
@@ -1429,13 +1437,6 @@ select.in { -webkit-appearance: none; appearance: none; }
   function show(id) {
     var v = document.querySelectorAll('.view');
     for (var i = 0; i < v.length; i++) setCls(v[i], 'on', v[i].id === id);
-    // rain plays only behind the door screens (and never with reduced motion)
-    var rn = document.getElementById('rain'), door = id !== 'v-app';
-    if (!rn) return;
-    try {
-      if (door && !CALM) { var pr = rn.play(); if (pr && pr.catch) pr.catch(function () {}); }
-      else rn.pause();
-    } catch (e) {}
   }
   function api(method, path, body, cb) {
     var x = new XMLHttpRequest();
@@ -3392,6 +3393,12 @@ select.in { -webkit-appearance: none; appearance: none; }
       var b = g.parentNode.getBoundingClientRect();
       g.style.transform = 'translate3d(' + (gx - b.left) + 'px,' +
         (gy - b.top) + 'px,0)';
+      var lp = document.querySelector('.view.door.on .lamp');
+      if (lp) {
+        var c = lp.parentNode.getBoundingClientRect();
+        lp.style.transform = 'translate3d(' + (gx - c.left) + 'px,' +
+          (gy - c.top) + 'px,0)';
+      }
     }
     document.addEventListener('mousemove', function (e) {
       if (ME) return;

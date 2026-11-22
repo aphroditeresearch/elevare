@@ -48,11 +48,9 @@ html = html
   .replace(/<title>[^<]*<\/title>/, '<title>' + (require(R('brand.js')).name || 'Vault') + ' demo</title>')
   .replace('<script src="/brand.js"></script>', '<script>' + fs.readFileSync(R('brand.js'), 'utf8') + '</script>')
   .split('src="/logo.png"').join('src="" data-logo')
-  .replace('poster="/rain-poster.jpg"', 'poster="data:image/jpeg;base64,' +
-    b64('rain-poster.jpg') + '"')
-  .replace('<source src="/rain.webm" type="video/webm">',
-    '<source src="data:video/webm;base64,' + b64('rain.webm') + '" type="video/webm">')
-  .replace(/\n *<source src="\/rain\.mp4"[^>]*>/, '');
+  .split('url(/logo.png)').join('url(' + logo + ')')
+  .split('url(/wall.png)').join('url(data:image/png;base64,' + b64('wall.png') + ')')
+  .split('url(/grain.png)').join('url(data:image/png;base64,' + b64('grain.png') + ')');
 
 const demoCss = `
 <style>
