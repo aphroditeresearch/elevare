@@ -122,7 +122,7 @@ module.exports = async function (req, res) {
         plays: plays, sessions: sessions, tiers: L.tiers().map(t => t.name) });
     }
 
-    const b = await L.readBody(req);
+    const b = await L.readBody(req, 3000000);
     const c = await L.loadContent();
     const a = b.action;
 
@@ -243,6 +243,29 @@ module.exports = async function (req, res) {
       const out = await checkStatus(c, b.id ? [b.id] : null);
       await L.saveContent(c);
       return L.json(res, 200, { ok: true, results: out, content: c });
+    }
+
+    // ---- captions / subtitles ----
+    if (a === 'captions-list' || a === 'caption-upload' || a === 'caption-delete') {
+      const it = c.items.find(x => x.id === b.id);
+      if (!it || !it.videoId) return L.json(res, 404, { error: 'not_found' });
+      if (a === 'caption-upload') {
+        const lang = str(b.lang, 8).toLowerCase();
+        if (!/^[a-z]{2}$/.test(lang)) return L.json(res, 400, { error: 'lang' });
+        const text = String(b.text || '');
+        if (!text.trim() || text.length > 2500000) return L.json(res, 400, { error: 'caption_file' });
+        if (!/\d{1,2}:\d{2}:\d{2}[.,]\d{3}\s*-->/.test(text)) return L.json(res, 400, { error: 'format' });
+        // one track per language: replace an existing one
+        for (const f of await L.captionList(it.videoId)) {
+          if (f.lang === lang) await L.captionDelete(it.videoId, f.id);
+        }
+        await L.captionUpload(it.videoId, lang, text);
+      }
+      if (a === 'caption-delete') {
+        if (!/^\d{1,15}$/.test(String(b.fileId))) return L.json(res, 400, { error: 'file' });
+        await L.captionDelete(it.videoId, b.fileId);
+      }
+      return L.json(res, 200, { ok: true, captions: await L.captionList(it.videoId) });
     }
 
     if (a === 'announce') {

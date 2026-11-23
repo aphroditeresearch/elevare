@@ -91,14 +91,14 @@ function redirect(res, to) {
   res.setHeader('Cache-Control', 'no-store');
   res.end();
 }
-async function readBody(req) {
+async function readBody(req, max) {
   if (req.body !== undefined) {
     if (typeof req.body === 'object' && req.body !== null) return req.body;
     try { return JSON.parse(String(req.body || '{}')); } catch (e) { return {}; }
   }
   const chunks = []; let size = 0;
   for await (const ch of req) {
-    size += ch.length; if (size > 65536) return {};
+    size += ch.length; if (size > (max || 65536)) return {};
     chunks.push(ch);
   }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); }
@@ -558,6 +558,41 @@ async function vdo(method, path, body) {
   return d;
 }
 
+// ---------- captions (VdoCipher video files API) ----------
+// Caption tracks show in the player's CC menu, one per language.
+// SRT is converted to WebVTT (the format VdoCipher takes).
+function toVtt(text) {
+  let t = String(text || '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim();
+  if (/^WEBVTT/.test(t)) return t + '\n';
+  t = t.replace(/(\d{1,2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+  return 'WEBVTT\n\n' + t + '\n';
+}
+async function captionList(videoId) {
+  const d = await vdo('GET', '/videos/' + encodeURIComponent(videoId) + '/files/');
+  const rows = Array.isArray(d) ? d : (d.rows || d.files || d.data || []);
+  return rows.filter(f => f && f.lang).map(f => ({
+    id: f.id, lang: String(f.lang).slice(0, 8), size: f.size || '', time: f.time || ''
+  }));
+}
+async function captionUpload(videoId, lang, text) {
+  const form = new FormData();
+  form.append('file', new Blob([toVtt(text)], { type: 'text/vtt' }), lang + '.vtt');
+  const r = await fetch(VDO_API() + '/videos/' + encodeURIComponent(videoId) +
+    '/files/?language=' + encodeURIComponent(lang), {
+    method: 'POST', body: form,
+    headers: { Authorization: 'Apisecret ' + env('VDOCIPHER_API_SECRET', ''), Accept: 'application/json' }
+  });
+  const body = await r.text();
+  if (!r.ok) {
+    const err = new Error('vdocipher ' + r.status + ': ' + body.slice(0, 200));
+    err.status = r.status; throw err;
+  }
+  try { return JSON.parse(body); } catch (e) { return {}; }
+}
+async function captionDelete(videoId, fileId) {
+  return vdo('DELETE', '/videos/' + encodeURIComponent(videoId) + '/files/' + encodeURIComponent(fileId));
+}
+
 // Lectures in the order members take them (section order, then item order).
 function lectureOrder(c) {
   const out = [];
@@ -569,6 +604,51 @@ function lectureOrder(c) {
   return out;
 }
 // A lecture is open if it's already completed or every earlier one is.
+// ---------- watch progress ----------
+// The player reports which 30-second parts of a lecture actually played
+// (any speed). A lecture completes when 80% of its parts were watched, so
+// 1.5x/2x viewers complete normally and skipping ahead doesn't count.
+const PART = 30;
+async function recordWatched(uid, it, parts) {
+  if (!it || !Array.isArray(parts) || !parts.length) return;
+  const max = Math.ceil((it.length || 36000) / PART) + 1;
+  const ok = parts.slice(0, 400).map(Number)
+    .filter(n => Number.isInteger(n) && n >= 0 && n <= max);
+  if (!ok.length) return;
+  const k = K('wp:' + uid + ':' + it.id);
+  await kv('SADD', k, ...ok.map(String));
+  await kv('EXPIRE', k, 180 * 86400);
+}
+async function watchedEnough(uid, it) {
+  if (!it || !(it.length > 0)) return false;
+  const total = Math.ceil(it.length / PART);
+  const have = Number(await kv('SCARD', K('wp:' + uid + ':' + it.id))) || 0;
+  return have >= Math.max(1, Math.ceil(total * 0.8));
+}
+// One-time repair (Nov 2026): members who finished lectures before watch
+// progress was tracked, mostly at 1.5x/2x, had completion rejected. Any
+// lecture they opened before the fix, long enough ago that the old rule
+// was met, is marked complete, in order, once per member.
+const HEAL_BEFORE = Date.parse('2026-11-23T01:00:00Z');
+async function healCompletions(uid, c) {
+  const flagKey = K('heal1:' + uid);
+  if (await kv('GET', flagKey)) return null;
+  const done = (await kv('SMEMBERS', K('done:' + uid))) || [];
+  const added = [];
+  for (const it of lectureOrder(c)) {
+    if (done.indexOf(it.id) >= 0) continue;
+    const st = Number(await kv('GET', K('start:' + uid + ':' + it.id)));
+    const need = Math.max(60, Math.round((it.length || 0) * 0.85)) * 1000;
+    if (!st || st >= HEAL_BEFORE) break;
+    // opened before the fix but not long enough ago yet: try again later
+    if (Date.now() - st < need) return added;
+    await kv('SADD', K('done:' + uid), it.id);
+    done.push(it.id); added.push(it.id);
+  }
+  await kv('SET', flagKey, String(Date.now()));
+  return added;
+}
+
 function lectureOpen(c, id, done) {
   const list = lectureOrder(c);
   const i = list.findIndex(x => x.id === id);
@@ -637,7 +717,8 @@ async function isUnlocked(uid) { return (await kv('SISMEMBER', K('unlocked'), ui
 
 module.exports = {
   posterOf, memberCode, isUnlocked, rulesOf, agreement, hist, createdAt, hostOk, adminOk,
-  netInfo, noteNet,
+  netInfo, noteNet, toVtt, captionList, captionUpload, captionDelete,
+  recordWatched, watchedEnough, healCompletions,
   lectureOrder, lectureOpen,
   env, list, SITE_NAME, ACCENT, BRAND, DISCORD_API, configured, rid, sign, safeEq, ip, query,
   cookies, setCookie, json, redirect, readBody, sameOrigin, isChrome, guard,

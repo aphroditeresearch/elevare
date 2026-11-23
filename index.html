@@ -1733,14 +1733,9 @@ select.in { -webkit-appearance: none; appearance: none; }
       flag('printscreen');
     }
   }, true);
-  window.addEventListener('blur', function () {
-    setTimeout(function () {
-      var a = document.activeElement;
-      if (a && a.tagName === 'IFRAME') return;
-      if (pickerOpen) return;
-      if (ME) shield(true);
-    }, 0);
-  });
+  // Clicking another window or monitor (notes, Discord, a chart) no longer
+  // pauses or covers the video: DRM handles screenshots, and members watch
+  // with other apps open. Switching tabs or minimising still pauses.
   window.addEventListener('focus', function () {
     shield(false);
     setTimeout(function () { pickerOpen = false; }, 600);
@@ -1751,19 +1746,12 @@ select.in { -webkit-appearance: none; appearance: none; }
 
   // ---------- developer tools ----------
   // 1) debugger trap: an open debugger (docked or separate window) pauses
-  //    here; the delay gives it away. 2) docked-panel size check, for when
-  //    breakpoints are switched off. Admins are exempt once signed in.
+  //    here; the delay gives it away. 2) console-attached check below. (A
+  //    window-size check was removed: zoom set it off.) Admins are exempt.
   function pausedByDebugger() {
     var t = Date.now();
     debugger; // eslint-disable-line no-debugger
     return Date.now() - t > 200;
-  }
-  function docked() {
-    if (('ontouchstart' in window) || navigator.maxTouchPoints > 0) {
-      return false;
-    }
-    return window.outerHeight - window.innerHeight > 280 ||
-      window.outerWidth - window.innerWidth > 520;
   }
   var tripped = false;
   function trip() {
@@ -1800,12 +1788,22 @@ select.in { -webkit-appearance: none; appearance: none; }
     probe.push({ a: pi, b: 'lvr-' + pi, c: [pi, pi + 1, pi + 2], d: { e: pi } });
   }
   var slowHits = 0;
-  function consoleAttached() {
+  function probeMs() {
     var t = (window.performance || Date).now();
-    try { console.table(probe); console.clear(); } catch (e) { return false; }
-    var dt = (window.performance || Date).now() - t;
-    // measured: ~0.5 ms with tools closed, 14-26 ms with them attached
-    slowHits = dt > 8 ? slowHits + 1 : 0;
+    try { console.table(probe); console.clear(); } catch (e) { return 0; }
+    return (window.performance || Date).now() - t;
+  }
+  function consoleAttached() {
+    if (document.hidden) return false;
+    // measured: ~0.5 ms with tools closed, 14-26 ms with them attached.
+    // A busy computer can make one reading slow, so a slow one is checked
+    // straight away three more times; tools being open keeps all of them
+    // slow, a hiccup doesn't.
+    if (probeMs() <= 8) { slowHits = 0; return false; }
+    for (var r = 0; r < 3; r++) {
+      if (probeMs() <= 8) { slowHits = 0; return false; }
+    }
+    slowHits++;
     return slowHits >= 2;
   }
   var consoleFlagged = false;
@@ -1818,7 +1816,9 @@ select.in { -webkit-appearance: none; appearance: none; }
         consoleFlagged = true;
         flag('devtools', 'developer tools attached (separate window or docked)');
       }
-      dtWall(c || docked());
+      // (the window-size check is gone: browser zoom and Chrome's side
+      // panel set it off for normal members)
+      dtWall(c);
     }, 1500);
   }
 
@@ -1937,6 +1937,13 @@ select.in { -webkit-appearance: none; appearance: none; }
     var list = ordered(kind);
     var pick = null, i;
     for (i = 0; i < list.length; i++) if (list[i].id === route.id) pick = list[i];
+    // keep the lecture that's playing (landing without a chosen lecture
+    // shows "up next", which changes the moment this one completes)
+    if (!pick && current && frame) {
+      for (i = 0; i < list.length; i++) {
+        if (list[i].id === current.id && !lockInfo(list[i])) pick = list[i];
+      }
+    }
     if (!pick) pick = upNext(list) || list[0] || null;
     if (!current || !pick || current.id !== pick.id) unmount();
     current = pick;
@@ -2122,10 +2129,16 @@ select.in { -webkit-appearance: none; appearance: none; }
   }
 
   // ---------- completing a lecture ----------
+  var lastTry = 0, hinted = {};
   function complete(auto) {
     if (!current || current.kind !== 'lecture' || DONE[current.id]) return;
+    if (auto && Date.now() - lastTry < 30000) return;
+    lastTry = Date.now();
     var it = current;
-    api('POST', '/api/play', { action: 'complete', id: it.id }, function (st, d) {
+    var parts = [];
+    for (var n in (WATCHED[it.id] || {})) parts.push(+n);
+    api('POST', '/api/play', { action: 'complete', id: it.id, w: parts },
+      function (st, d) {
       if (st === 200) {
         (d.done || []).forEach(function (id) { DONE[id] = true; });
         DONE[it.id] = true;
@@ -2137,10 +2150,17 @@ select.in { -webkit-appearance: none; appearance: none; }
         celebrate(it);
         return;
       }
-      if (auto) return;
+      if (auto) {
+        if (st === 409 && d.error === 'too_soon' && !hinted[it.id]) {
+          hinted[it.id] = true;
+          toast('Almost there. Watch the parts you skipped and this lecture' +
+            ' completes by itself.');
+        }
+        return;
+      }
       if (st === 409 && d.error === 'too_soon') {
-        toast('Keep watching. You can complete this in about ' +
-          Math.max(1, Math.ceil(d.wait / 60)) + ' min.');
+        toast('Watch the rest of this lecture first (parts you skipped' +
+          ' don\u2019t count). It completes by itself when you\u2019re done.');
       } else if (st === 409) {
         toast('Press play first.');
       } else {
@@ -2165,6 +2185,16 @@ select.in { -webkit-appearance: none; appearance: none; }
 
   // Auto-complete near the end, using VdoCipher's player API.
   var progT = null;
+  // which 30-second parts of each lecture actually played (any speed)
+  var WATCHED = {}, UNSENT = {};
+  function notePart(id, t) {
+    var n = Math.floor(t / 30);
+    var w = WATCHED[id] || (WATCHED[id] = {});
+    if (!w[n]) { w[n] = 1; (UNSENT[id] || (UNSENT[id] = [])).push(n); }
+  }
+  function takeUnsent(id) {
+    var u = UNSENT[id] || []; UNSENT[id] = []; return u;
+  }
   function loadVdoApi(cb) {
     if (window.VdoPlayer || DEMO) return cb();
     var s = document.createElement('script');
@@ -2191,9 +2221,12 @@ select.in { -webkit-appearance: none; appearance: none; }
           if (DEMO) ended = f.getAttribute('data-ended') === '1';
           else if (window.VdoPlayer) {
             var v = window.VdoPlayer.getInstance(f).video;
+            if (!v.paused && v.currentTime > 0 && current) {
+              notePart(current.id, v.currentTime);
+            }
             ended = v.duration > 0 && v.currentTime / v.duration >= 0.92;
           }
-          if (ended) { clearInterval(progT); complete(true); }
+          if (ended) complete(true);
         } catch (e) {}
       }, 5000);
     });
@@ -2341,7 +2374,13 @@ select.in { -webkit-appearance: none; appearance: none; }
     w.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
   }
   function beat() {
-    api('POST', '/api/play', { device: DEVICE, beat: true }, function (st) {
+    var bid = current && current.kind === 'lecture' ? current.id : null;
+    var w = bid ? takeUnsent(bid) : [];
+    api('POST', '/api/play', { device: DEVICE, beat: true, id: bid, w: w },
+      function (st) {
+      if (st !== 200 && bid) {
+        (UNSENT[bid] || (UNSENT[bid] = [])).push.apply(UNSENT[bid], w);
+      }
       if (st === 409) {
         var keep = current;
         unmount();
@@ -2452,16 +2491,20 @@ select.in { -webkit-appearance: none; appearance: none; }
   var ST_LABEL = { empty: 'No video', uploading: 'Uploading',
     processing: 'Processing', ready: 'Ready', error: 'Error' };
 
-  function admCall(body, cb) {
+  function admCall(body, cb, onErr) {
     api('POST', '/api/admin', body, function (st, d) {
       if (st !== 200) {
+        if (onErr) onErr(d);
         var m = { not_empty: 'Move or delete the items in this section first.',
           title: 'Add a title first.', section: 'Pick a section.',
           video_id: 'That isn\u2019t a VdoCipher video ID (32 letters and' +
           ' numbers).', video_missing: 'VdoCipher has no video with that ID' +
           ' in this account.', file: 'Pick a video file.',
           link: 'Links must start with https://', self: 'You can\u2019t' +
-          ' block yourself.', uid: 'That doesn\u2019t look like a Discord ID.' };
+          ' block yourself.', uid: 'That doesn\u2019t look like a Discord ID.',
+          format: 'That doesn\u2019t look like a subtitle file (.vtt or .srt).',
+          caption_file: 'That subtitle file is empty or too big.',
+          lang: 'Pick a language.' };
         toast(m[d.error] || 'That didn\u2019t work. Please try again.');
         return;
       }
@@ -2681,6 +2724,11 @@ select.in { -webkit-appearance: none; appearance: none; }
         });
       });
     }));
+    if (it.videoId) {
+      r.appendChild(btn('Captions', 'line sm', function () {
+        captionsModal(it);
+      }));
+    }
     r.appendChild(btn('Edit', 'line sm', function () {
       itemModal(it, it.sectionId, secs);
     }));
@@ -2854,6 +2902,194 @@ select.in { -webkit-appearance: none; appearance: none; }
     document.body.appendChild(m);
     return { card: c, close: close };
   }
+  // ---------- captions / subtitles (one track per language) ----------
+  var LANGS = [['en', 'English'], ['ko', 'Korean (\ud55c\uad6d\uc5b4)'],
+    ['ja', 'Japanese (\u65e5\u672c\u8a9e)'], ['es', 'Spanish'],
+    ['fr', 'French'], ['de', 'German'], ['pt', 'Portuguese'],
+    ['it', 'Italian'], ['nl', 'Dutch'], ['ar', 'Arabic'], ['zh', 'Chinese'],
+    ['hi', 'Hindi'], ['ru', 'Russian'], ['tr', 'Turkish'],
+    ['vi', 'Vietnamese'], ['id', 'Indonesian'], ['no', 'Norwegian'],
+    ['sv', 'Swedish'], ['pl', 'Polish']];
+  function langName(c) {
+    for (var i = 0; i < LANGS.length; i++) if (LANGS[i][0] === c) return LANGS[i][1];
+    return c;
+  }
+  function captionsModal(it) {
+    var s = modalShell('Captions: ' + it.title);
+    var list = el('div', 'caps');
+    s.card.appendChild(el('p', 'note', 'Each language shows up in the' +
+      ' player\u2019s CC menu. Use .vtt or .srt subtitle files.' +
+      ' Uploading a language that already exists replaces it.'));
+    s.card.appendChild(list);
+    function draw(caps) {
+      clear(list);
+      if (!caps.length) {
+        list.appendChild(el('p', 'note', 'No captions yet.'));
+        return;
+      }
+      caps.forEach(function (f) {
+        var row = el('div', 'frow');
+        row.appendChild(el('span', null, langName(f.lang) +
+          (f.size ? '  \u00b7  ' + f.size : '')));
+        row.appendChild(btn('Remove', 'red sm', function () {
+          admCall({ action: 'caption-delete', id: it.id, fileId: f.id },
+            function (d) { draw(d.captions || []); toast('Removed.'); });
+        }));
+        list.appendChild(row);
+      });
+    }
+    admCall({ action: 'captions-list', id: it.id }, function (d) {
+      draw(d.captions || []);
+    });
+    s.card.appendChild(el('label', null, 'Language'));
+    var sel = el('select', 'in');
+    LANGS.forEach(function (l) {
+      var o = el('option', null, l[1]); o.value = l[0]; sel.appendChild(o);
+    });
+    s.card.appendChild(sel);
+    s.card.appendChild(el('label', null, 'Subtitle file (.vtt or .srt)'));
+    var fi = el('input', 'in'); fi.type = 'file'; fi.accept = '.vtt,.srt';
+    s.card.appendChild(fi);
+    var acts = el('div', 'acts');
+    acts.appendChild(btn('Close', 'line', s.close));
+    var up = btn('Upload', '', function () {
+      var f = fi.files && fi.files[0];
+      if (!f) return toast('Choose a .vtt or .srt file first.');
+      if (f.size > 2400000) return toast('That file is too big (2 MB max).');
+      var rd = new FileReader();
+      rd.onload = function () {
+        up.disabled = true;
+        admCall({ action: 'caption-upload', id: it.id, lang: sel.value,
+          text: String(rd.result || '') }, function (d) {
+          up.disabled = false; fi.value = '';
+          draw(d.captions || []);
+          toast(langName(sel.value) + ' captions added.');
+        }, function () { up.disabled = false; });
+      };
+      rd.readAsText(f, 'utf-8');
+    });
+    acts.appendChild(up);
+    s.card.appendChild(acts);
+
+    // Auto-translate with Chrome's built-in, on-device translator (free).
+    s.card.appendChild(el('label', null, 'Or make other languages automatically'));
+    s.card.appendChild(el('p', 'note', 'Pick the language the file above is in,' +
+      ' choose the file, then click below. Chrome translates it on this' +
+      ' computer and uploads every track. The first time, Chrome downloads' +
+      ' each language pack, which can take a minute.'));
+    var auto = el('div', 'frow');
+    var targets = {};
+    [['ko', 'Korean'], ['ja', 'Japanese'], ['es', 'Spanish'],
+      ['zh', 'Chinese']].forEach(function (t, n) {
+      var lab = el('label', 'chk');
+      lab.style.marginTop = '0';
+      var cb = el('input'); cb.type = 'checkbox'; cb.checked = n < 2;
+      targets[t[0]] = cb;
+      lab.appendChild(cb); lab.appendChild(el('span', null, t[1]));
+      auto.appendChild(lab);
+    });
+    s.card.appendChild(auto);
+    var tr = btn('Upload + translate', '', function () {
+      var f = fi.files && fi.files[0];
+      if (!f) return toast('Choose the subtitle file first.');
+      if (!('Translator' in window)) {
+        return toast('This needs Google Chrome 138 or newer on a computer.' +
+          ' Brave doesn\u2019t include Chrome\u2019s translator.');
+      }
+      var src = sel.value, want = [];
+      for (var k in targets) if (targets[k].checked && k !== src) want.push(k);
+      if (!want.length) return toast('Tick at least one language.');
+      tr.disabled = true; up.disabled = true;
+      // create translators right away: Chrome needs the click for downloads
+      var makers = want.map(function (to) {
+        return window.Translator.create({ sourceLanguage: src,
+          targetLanguage: to, monitor: function (m) {
+            m.addEventListener('downloadprogress', function (e) {
+              tr.textContent = 'Downloading ' + langName(to).split(' ')[0] +
+                ' ' + Math.round((e.loaded || 0) * 100) + '%';
+            });
+          } });
+      });
+      var rd = new FileReader();
+      rd.onload = function () {
+        var text = String(rd.result || '');
+        if (!/\d{1,2}:\d{2}:\d{2}[.,]\d{3}\s*-->/.test(text)) {
+          tr.disabled = false; up.disabled = false;
+          tr.textContent = 'Upload + translate';
+          return toast('That doesn\u2019t look like a subtitle file.');
+        }
+        var uploads = [{ lang: src, text: text }];
+        var i = 0;
+        function nextLang() {
+          if (i >= want.length) return sendAll(0);
+          var to = want[i];
+          makers[i].then(function (t) {
+            return translateSubs(text, t, function (pct) {
+              tr.textContent = 'Translating ' + langName(to).split(' ')[0] +
+                ' ' + pct + '%';
+            });
+          }).then(function (out) {
+            uploads.push({ lang: to, text: out }); i++; nextLang();
+          }, function () {
+            toast('Chrome couldn\u2019t translate to ' + langName(to) +
+              ' on this computer. Skipped it.');
+            i++; nextLang();
+          });
+        }
+        function sendAll(n) {
+          if (n >= uploads.length) {
+            tr.disabled = false; up.disabled = false;
+            tr.textContent = 'Upload + translate';
+            fi.value = '';
+            return toast('Captions added: ' + uploads.map(function (u) {
+              return langName(u.lang).split(' ')[0];
+            }).join(', ') + '.');
+          }
+          tr.textContent = 'Uploading ' + (n + 1) + ' of ' + uploads.length;
+          admCall({ action: 'caption-upload', id: it.id, lang: uploads[n].lang,
+            text: uploads[n].text }, function (d) {
+            draw(d.captions || []); sendAll(n + 1);
+          }, function () {
+            tr.disabled = false; up.disabled = false;
+            tr.textContent = 'Upload + translate';
+          });
+        }
+        nextLang();
+      };
+      rd.readAsText(f, 'utf-8');
+    });
+    var ta = el('div', 'acts'); ta.appendChild(tr);
+    s.card.appendChild(ta);
+  }
+  // Translate only the spoken lines of a .vtt/.srt; numbers, timings and
+  // headers stay exactly as they are, so the timing doesn't move.
+  function translateSubs(text, t, progress) {
+    var lines = String(text).replace(/\r\n?/g, '\n').split('\n');
+    var todo = [], cache = {};
+    lines.forEach(function (l, n) {
+      var x = l.replace(/^\s+|\s+$/g, '');
+      if (!x || /^\d+$/.test(x) || x.indexOf('-->') >= 0 ||
+        /^(WEBVTT|NOTE|STYLE|REGION)\b/.test(x)) return;
+      todo.push(n);
+    });
+    var k = 0;
+    return new Promise(function (ok, fail) {
+      function step() {
+        if (k >= todo.length) { progress(100); return ok(lines.join('\n')); }
+        var n = todo[k], src = lines[n];
+        if (cache[src] !== undefined) {
+          lines[n] = cache[src]; k++; return step();
+        }
+        t.translate(src).then(function (out) {
+          cache[src] = out; lines[n] = out; k++;
+          if (k % 10 === 0) progress(Math.round(k * 100 / todo.length));
+          step();
+        }, fail);
+      }
+      step();
+    });
+  }
+
   function formModal(title, fields, onSave) {
     var s = modalShell(title), inputs = {};
     fields.forEach(function (f) {
@@ -3441,6 +3677,7 @@ select.in { -webkit-appearance: none; appearance: none; }
     }
     if (d.agreed === false && !d.isAdmin) return showAgree(d);
     applyMe(d);
+    setTimeout(vmScore, 4000);
     DEVICE = deviceId();
     buildTiles();
     tickSession();
@@ -3522,6 +3759,48 @@ select.in { -webkit-appearance: none; appearance: none; }
       gpuState = gpuState || VM;
     } catch (e) { gpuState = false; }
     return gpuState;
+  }
+
+  // ---------- "looks like a virtual machine" score (flag only) ----------
+  // Weak hints that are each common on real computers, so they are only
+  // added up and logged (3 or more), never used to block. The real block is
+  // the graphics-name check above.
+  var VM_SIZES = ['1024x768', '800x600', '1280x800', '1152x864', '1280x768',
+    '1280x720', '1366x768'];
+  function vmScore() {
+    if (DEMO || !ME || ME.isAdmin) return;
+    try { if (sessionStorage.getItem('elevare.vms')) return; } catch (e) {}
+    noGpu();
+    if (VM) return;                   // already blocked and logged
+    var hits = [], brave = isBrave(); // Brave randomises cores/memory
+    var w = screen.width, h = screen.height;
+    if ((window.devicePixelRatio || 1) === 1 &&
+      VM_SIZES.indexOf(w + 'x' + h) >= 0) hits.push('screen ' + w + 'x' + h);
+    if (!brave && navigator.hardwareConcurrency &&
+      navigator.hardwareConcurrency <= 2) {
+      hits.push(navigator.hardwareConcurrency + ' CPU cores');
+    }
+    if (!brave && navigator.deviceMemory && navigator.deviceMemory <= 2) {
+      hits.push(navigator.deviceMemory + ' GB memory');
+    }
+    try {
+      var gl = document.createElement('canvas').getContext('webgl');
+      if (gl && gl.getParameter(gl.MAX_TEXTURE_SIZE) < 8192) {
+        hits.push('small GPU textures');
+      }
+    } catch (e) {}
+    function done() {
+      try { sessionStorage.setItem('elevare.vms', '1'); } catch (e) {}
+      if (hits.length >= 3) {
+        flag('vm-likely', hits.join(', ') + ' | ' + (GPU_INFO || 'gpu ?'));
+      }
+    }
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      navigator.mediaDevices.enumerateDevices().then(function (list) {
+        if (!list || !list.length) hits.push('no camera, mic or speakers');
+        done();
+      }, done);
+    } else done();
   }
 
   // ---------- recorder extensions ----------
@@ -3704,11 +3983,11 @@ select.in { -webkit-appearance: none; appearance: none; }
     return;
   }
   // Developer tools already open at load: load nothing until they close.
-  if (!DEV && (pausedByDebugger() || docked())) {
+  if (!DEV && pausedByDebugger()) {
     show('v-login');
     dtWall(true);
     var wait = setInterval(function () {
-      if (!pausedByDebugger() && !docked()) {
+      if (!pausedByDebugger()) {
         clearInterval(wait); location.reload();
       }
     }, 1000);

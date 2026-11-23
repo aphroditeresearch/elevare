@@ -20,9 +20,11 @@ function subtle(code, handle, uid, psid, stamp, color) {
   return [
     at(code, 10 + (n % 9) * 5, 8 + (n % 7) * 4, 11, 0.22),
     at(String(uid), 180 + (n % 13) * 15, 120 + (n % 11) * 12, 10, 0.08),
-    ghost(code, 15, 0.30, 1200, 21000 + (n % 9) * 1000),
-    ghost('@' + handle, 13, 0.26, 1200, 29000 + (n % 7) * 1000),
-    ghost('S-' + psid + ' \u00b7 ' + stamp, 11, 0.24, 1500, 37000 + (n % 5) * 1000),
+    // sturdy layer: big and clear enough to survive re-compression, resizing
+    // and phone recording, but only on screen for about a second at a time
+    ghost(code, 22, 0.36, 1200, 21000 + (n % 9) * 1000),
+    ghost('@' + handle, 19, 0.34, 1200, 29000 + (n % 7) * 1000),
+    ghost('S-' + psid + ' \u00b7 ' + stamp, 18, 0.32, 1500, 37000 + (n % 5) * 1000),
     ghost(code, 20, 0.07, 30000, 1000)
   ];
 }
@@ -61,10 +63,12 @@ module.exports = async function (req, res) {
       if (!free && !L.lectureOpen(c0, it0.id, done0)) return L.json(res, 403, { error: 'locked' });
       const started = Number(await L.kv('GET', L.K('start:' + s.uid + ':' + it0.id)));
       if (!started) return L.json(res, 409, { error: 'not_started' });
-      // must have had the lecture open for most of its running time
+      await L.recordWatched(s.uid, it0, b.w);
+      // done when 80% of it was actually watched (any speed), or, as before,
+      // when it has been open for most of its running time
       const need = Math.max(60, Math.round((it0.length || 0) * 0.85)) * 1000;
       const left = started + need - Date.now();
-      if (left > 0 && !free) {
+      if (left > 0 && !free && !(await L.watchedEnough(s.uid, it0))) {
         return L.json(res, 409, { error: 'too_soon', wait: Math.ceil(left / 1000) });
       }
       await L.kv('SADD', dk0, it0.id);
@@ -81,6 +85,10 @@ module.exports = async function (req, res) {
       if (!(await L.rateLimit('beat:' + s.uid, 30, 600))) return L.json(res, 429, { error: 'slow' });
       if (cur && cur !== device) return L.json(res, 409, { error: 'taken' });
       await L.kv('SET', dk, device, 'EX', DEVICE_TTL);
+      if (b.id && Array.isArray(b.w)) {
+        const cw = await L.loadContent();
+        await L.recordWatched(s.uid, cw.items.find(x => x.id === b.id && x.kind === 'lecture'), b.w);
+      }
       try {
         const lv = JSON.parse(await L.kv('HGET', L.K('live'), s.uid) || 'null');
         if (lv) { lv.t = Date.now(); await L.kv('HSET', L.K('live'), s.uid, JSON.stringify(lv)); }

@@ -2,7 +2,7 @@
 const L = require('./_lib');
 
 const FLAGS = ['devtools', 'devtools-open', 'printscreen', 'screenshot-keys', 'browser',
-  'automation', 'blocked-action', 'extension', 'no-gpu', 'vm', 'other'];
+  'automation', 'blocked-action', 'extension', 'no-gpu', 'vm', 'vm-likely', 'other'];
 
 // Strip anything a member should never see (video ids, upload state).
 function publicItem(it) {
@@ -71,6 +71,10 @@ module.exports = async function (req, res) {
       .filter(it => s.admin || it.status === 'ready')
       .map(publicItem);
     const seen = (await L.kv('SMEMBERS', L.K('seen:' + s.uid))) || [];
+    if (!s.admin) {
+      const healed = await L.healCompletions(s.uid, c);
+      if (healed && healed.length) await L.sessLog('completions-repaired:' + healed.length, s, req);
+    }
     const done = (await L.kv('SMEMBERS', L.K('done:' + s.uid))) || [];
     const unlocked = await L.isUnlocked(s.uid);
     const rules = L.rulesOf(c);

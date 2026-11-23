@@ -258,6 +258,30 @@ async function t(name, fn) {
     assert.strictEqual((await member.req('POST', '/api/play', { id: L2, device: 'deviceBBBB' })).status, 200);
     assert.ok((await member.req('GET', '/api/me')).data.done.indexOf(L1) >= 0);
   });
+  await t('watching at 2x completes (80% of the parts watched); skipping ahead does not', async () => {
+    // L2 was just opened; at 2x a 10-minute lecture is done in 5 minutes
+    let r = await member.req('POST', '/api/play', { action: 'complete', id: L2, w: [0, 1, 18, 19] });
+    assert.strictEqual(r.data.error, 'too_soon');                    // skipped the middle
+    await member.req('POST', '/api/play', { device: 'deviceBBBB', beat: true, id: L2, w: [2, 3, 4, 5, 6, 7, 8] });
+    r = await member.req('POST', '/api/play', { action: 'complete', id: L2, w: [9, 10, 11, 12, 13, 14, 15] });
+    assert.strictEqual(r.status, 200, JSON.stringify(r.data));
+    assert.ok(r.data.done.indexOf(L2) >= 0);
+    // junk part numbers are ignored
+    await member.req('POST', '/api/play', { action: 'complete', id: L2, w: [-1, 99999, 'x'] });
+  });
+  await t('one-time repair: lectures finished before the fix are marked complete', async () => {
+    const uid = '100000000000000010', c = client();
+    await c.signIn(uid);
+    const old = Date.parse('2026-11-22T12:00:00Z');
+    mocks.store.delete('elevare:heal1:' + uid);
+    mocks.store.delete('elevare:done:' + uid);
+    mocks.store.set('elevare:start:' + uid + ':' + L1, String(old));
+    mocks.store.set('elevare:start:' + uid + ':' + L2, String(old + 3600000));
+    const me = await c.req('GET', '/api/me');
+    assert.ok(me.data.done.indexOf(L1) >= 0 && me.data.done.indexOf(L2) >= 0, JSON.stringify(me.data.done));
+    mocks.store.delete('elevare:done:' + uid);                         // only ever runs once
+    assert.strictEqual((await c.req('GET', '/api/me')).data.done.length, 0);
+  });
   await t('owner can unlock everything for a proven member', async () => {
     const sec = (await admin.req('POST', '/api/admin', { action: 'section-save', kind: 'lecture', title: 'Unlock Test' })).data.section.id;
     await readyLecture(sec, 'U1'); const u3 = await readyLecture(sec, 'U2');
@@ -296,7 +320,8 @@ async function t(name, fn) {
     assert.strictEqual(ann[1].text, MEMBER);                       // faint mid-frame ID
     assert.strictEqual(ann[3].text, '@member');                    // ghost handle
     assert.ok(ann[4].text.indexOf(r.data.session) === 0);          // ghost session + time
-    assert.ok(ann.every(a => Number(a.alpha) <= 0.3));             // nothing obvious
+    assert.ok(ann.every(a => Number(a.alpha) <= 0.4));             // nothing obvious
+    assert.ok(ann.filter(a => a.type === 'rtext' && Number(a.size) >= 18).length >= 3); // sturdy ghosts
     const g = await admin.req('GET', '/api/admin');
     assert.strictEqual(g.data.plays[0].sid, r.data.session);
     assert.strictEqual(g.data.plays[0].code, r.data.code);
@@ -529,6 +554,24 @@ async function t(name, fn) {
     const g2 = await admin.req('GET', '/api/admin');
     assert.strictEqual(g2.data.alerts.filter(x => x.kind === 'vpn').length, 1); // once a day
     for (const k of Array.from(mocks.store.keys())) if (/^elevare:hook:/.test(k)) mocks.store.delete(k);
+  });
+
+  await t('captions: upload Korean (SRT converted to VTT) and Japanese, replace, remove', async () => {
+    const srt = '1\r\n00:00:01,000 --> 00:00:03,500\r\n\uc548\ub155\ud558\uc138\uc694\r\n';
+    let r = await admin.req('POST', '/api/admin', { action: 'caption-upload', id: L1, lang: 'ko', text: srt });
+    assert.strictEqual(r.status, 200, JSON.stringify(r.data));
+    r = await admin.req('POST', '/api/admin', { action: 'caption-upload', id: L1, lang: 'ja',
+      text: 'WEBVTT\n\n00:00:01.000 --> 00:00:03.000\n\u3053\u3093\u306b\u3061\u306f\n' });
+    assert.deepStrictEqual(r.data.captions.map(x => x.lang).sort(), ['ja', 'ko']);
+    r = await admin.req('POST', '/api/admin', { action: 'caption-upload', id: L1, lang: 'ko', text: srt });
+    assert.strictEqual(r.data.captions.filter(x => x.lang === 'ko').length, 1);      // replaced, not doubled
+    assert.strictEqual((await admin.req('POST', '/api/admin',
+      { action: 'caption-upload', id: L1, lang: 'ko', text: 'not a subtitle' })).data.error, 'format');
+    const ja = r.data.captions.find(x => x.lang === 'ja');
+    r = await admin.req('POST', '/api/admin', { action: 'caption-delete', id: L1, fileId: ja.id });
+    assert.deepStrictEqual(r.data.captions.map(x => x.lang), ['ko']);
+    assert.strictEqual((await member.req('POST', '/api/admin', { action: 'captions-list', id: L1 })).status, 403);
+    assert.strictEqual(require('../api/_lib').toVtt('1\n00:00:01,000 --> 00:00:02,000\nhi').indexOf('WEBVTT\n\n1\n00:00:01.000'), 0);
   });
 
   console.log('Discord alerts (rip intent only)');

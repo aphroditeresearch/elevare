@@ -40,7 +40,7 @@ function redis(c) {
     case 'TTL': if (!has) return -2; return exp.has(k) ? Math.ceil((exp.get(k) - Date.now()) / 1000) : -1;
     case 'SADD': case 'SREM': case 'SISMEMBER': case 'SMEMBERS': case 'SCARD': {
       const s = has ? store.get(k) : new Set(); store.set(k, s);
-      if (cmd === 'SADD') { const n = s.has(c[2]) ? 0 : 1; s.add(c[2]); return n; }
+      if (cmd === 'SADD') { let n = 0; c.slice(2).forEach(v => { if (!s.has(v)) { n++; s.add(v); } }); return n; }
       if (cmd === 'SREM') return s.delete(c[2]) ? 1 : 0;
       if (cmd === 'SISMEMBER') return s.has(c[2]) ? 1 : 0;
       if (cmd === 'SCARD') return s.size;
@@ -126,6 +126,24 @@ function start(port) {
       if (req.method === 'DELETE' && p === '/vdo/videos') {
         u.searchParams.get('videos').split(',').forEach(id => { deleted.push(id); delete videos[id]; });
         return send(res, 200, { message: 'deleted' });
+      }
+      // captions: list / upload (multipart, ?language=xx) / delete
+      let fm = /^\/vdo\/videos\/([^/]+)\/files\/?(\d+)?$/.exec(p);
+      if (fm) {
+        const v = videos[fm[1]]; if (!v) return send(res, 404, { message: 'nf' });
+        v.files = v.files || [];
+        if (req.method === 'GET') return send(res, 200, v.files);
+        if (req.method === 'POST') {
+          if (!/^multipart\/form-data/.test(req.headers['content-type'] || '') || raw.indexOf('WEBVTT') < 0) {
+            return send(res, 400, { message: 'bad caption' });
+          }
+          const f = { id: Math.floor(Math.random() * 1e8), time: new Date().toISOString(),
+            size: Math.ceil(raw.length / 1024) + ' kB', lang: u.searchParams.get('language') };
+          v.files.push(f); return send(res, 200, f);
+        }
+        if (req.method === 'DELETE') {
+          v.files = v.files.filter(f => String(f.id) !== fm[2]); return send(res, 200, { message: 'deleted' });
+        }
       }
       m = /^\/vdo\/videos\/([^/]+)(\/otp)?$/.exec(p);
       if (m && !m[2] && req.method === 'GET') {
