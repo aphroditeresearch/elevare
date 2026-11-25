@@ -274,39 +274,36 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   position: relative; z-index: 2; filter: none; animation: none; }
 .float { position: relative; z-index: 2; width: 100%; display: flex;
   justify-content: center; }
-/* the logo is cut into view along its own slash once, then never moves */
+/* slash entrance: two halves of the logo, cut along its own slash line,
+   slide in from opposite sides and lock together; then the plain logo
+   shows and nothing moves. No glow, no streak. */
 .mark { position: relative; width: 100%; max-width: 760px; }
-.mark:before {   /* still pool of light seating the logo */
-  content: ""; position: absolute; left: 50%; top: 52%; width: 92%;
-  aspect-ratio: 2.4; transform: translate(-50%, -50%); z-index: 0;
-  pointer-events: none; border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(var(--red-rgb),.30),
-    rgba(var(--red-rgb),.08) 60%, rgba(var(--red-rgb),0) 100%);
-  filter: blur(12px);
-}
 .mark .logo { width: 100%; max-width: none; display: block;
-  position: relative; z-index: 2;
-  animation: cut 1.05s .15s cubic-bezier(.7,0,.2,1) both; }
-@keyframes cut {
-  from { clip-path: polygon(0 0, 0 0, -14% 100%, -14% 100%); }
-  to { clip-path: polygon(0 0, 114% 0, 100% 100%, -14% 100%); }
+  position: relative; z-index: 2; animation: whole .01s .8s both; }
+@keyframes whole { from { opacity: 0; } to { opacity: 1; } }
+.half {
+  position: absolute; left: 0; top: 0; width: 100%; z-index: 3;
+  pointer-events: none; opacity: 0;
 }
-/* one streak of light running down the slash (angle matches the logo) */
-.streak {
-  position: absolute; z-index: 3; left: -4%; top: 72.3%; width: 28%;
-  height: 3px; margin-top: -1.5px; pointer-events: none; opacity: 0;
-  border-radius: 3px; transform-origin: 0 50%;
-  background: linear-gradient(90deg, rgba(255,255,255,0), #fff 70%,
-    rgba(var(--red2-rgb),.9) 85%, rgba(255,255,255,0));
-  box-shadow: 0 0 14px 2px rgba(var(--red2-rgb),.75);
-  animation: streak 1.15s .85s cubic-bezier(.4,0,.2,1) both;
+.half.cut-a {
+  clip-path: polygon(0 0, 100% 0, 100% 35.5%, 0 70.8%);
+  animation: slashT .55s .2s cubic-bezier(.2,.8,.2,1) both,
+    gone .01s .8s both;
 }
-@keyframes streak {
-  0% { opacity: 0; transform: rotate(-7.43deg) translateX(0); }
-  15% { opacity: 1; }
-  80% { opacity: 1; }
-  100% { opacity: 0; transform: rotate(-7.43deg) translateX(390%); }
+.half.cut-b {
+  clip-path: polygon(0 70.8%, 100% 35.5%, 100% 100%, 0 100%);
+  animation: slashB .55s .2s cubic-bezier(.2,.8,.2,1) both,
+    gone .01s .8s both;
 }
+@keyframes slashT {
+  from { opacity: 0; transform: translate(80px, -10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes slashB {
+  from { opacity: 0; transform: translate(-80px, 10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes gone { to { visibility: hidden; } }
 .entry {
   position: relative; padding: 46px 44px 38px; max-width: 460px;
   justify-self: center; width: 100%;
@@ -389,8 +386,8 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 }
 @media (prefers-reduced-motion: reduce) {
   .door .logo, .floor, .float, .entry, .entry:before, .mark .logo,
-  .streak,
   .btn.lit:after, .kick i, .emblem { animation: none; }
+  .half { display: none; }
 }
 
 /* ---------- app shell ---------- */
@@ -1107,7 +1104,8 @@ select.in { -webkit-appearance: none; appearance: none; }
       <div class="float" id="emblem-float">
         <div class="mark">
           <img class="logo" src="/logo.png" alt="Elevare">
-          <i class="streak" aria-hidden="true"></i>
+          <img class="half cut-a" src="/logo.png" alt="" aria-hidden="true">
+          <img class="half cut-b" src="/logo.png" alt="" aria-hidden="true">
         </div>
       </div>
     </div>
