@@ -263,7 +263,7 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 /* ---- sign in: logo on the left, entry card on the right ---- */
 .duo {
   position: relative; z-index: 2; width: 100%; max-width: 1240px;
-  display: grid; grid-template-columns: 1.25fr 1fr; gap: 40px;
+  display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px;
   align-items: center; text-align: left;
 }
 .emblem {
@@ -274,21 +274,38 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   position: relative; z-index: 2; filter: none; animation: none; }
 .float { position: relative; z-index: 2; width: 100%; display: flex;
   justify-content: center; }
-/* the logo stays still; only its blue L, V and R float, each on its own
-   beat (logo-base.png = logo without them, lvr-*.png = the letters) */
-.mark { position: relative; width: 100%; max-width: 680px; }
-.mark .logo { width: 100%; }
-.lvr {
-  position: absolute; left: 0; top: 0; width: 100%; height: auto;
-  pointer-events: none; will-change: transform; z-index: 3;
-  filter: drop-shadow(0 0 9px rgba(var(--red2-rgb),.55));
-  animation: hover 4.6s ease-in-out infinite;
+/* the logo is cut into view along its own slash once, then never moves */
+.mark { position: relative; width: 100%; max-width: 760px; }
+.mark:before {   /* still pool of light seating the logo */
+  content: ""; position: absolute; left: 50%; top: 52%; width: 92%;
+  aspect-ratio: 2.4; transform: translate(-50%, -50%); z-index: 0;
+  pointer-events: none; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(var(--red-rgb),.30),
+    rgba(var(--red-rgb),.08) 60%, rgba(var(--red-rgb),0) 100%);
+  filter: blur(12px);
 }
-.lvr.v { animation-delay: -1.5s; }
-.lvr.r { animation-delay: -3s; }
-@keyframes hover {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-7px); }
+.mark .logo { width: 100%; max-width: none; display: block;
+  position: relative; z-index: 2;
+  animation: cut 1.05s .15s cubic-bezier(.7,0,.2,1) both; }
+@keyframes cut {
+  from { clip-path: polygon(0 0, 0 0, -14% 100%, -14% 100%); }
+  to { clip-path: polygon(0 0, 114% 0, 100% 100%, -14% 100%); }
+}
+/* one streak of light running down the slash (angle matches the logo) */
+.streak {
+  position: absolute; z-index: 3; left: -4%; top: 72.3%; width: 28%;
+  height: 3px; margin-top: -1.5px; pointer-events: none; opacity: 0;
+  border-radius: 3px; transform-origin: 0 50%;
+  background: linear-gradient(90deg, rgba(255,255,255,0), #fff 70%,
+    rgba(var(--red2-rgb),.9) 85%, rgba(255,255,255,0));
+  box-shadow: 0 0 14px 2px rgba(var(--red2-rgb),.75);
+  animation: streak 1.15s .85s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes streak {
+  0% { opacity: 0; transform: rotate(-7.43deg) translateX(0); }
+  15% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(-7.43deg) translateX(390%); }
 }
 .entry {
   position: relative; padding: 46px 44px 38px; max-width: 460px;
@@ -367,11 +384,12 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 @media (max-width: 980px) {
   .duo { grid-template-columns: 1fr; gap: 10px; text-align: center; }
   .emblem { min-height: 0; }
-  .emblem .logo { max-width: 560px; }
+  .mark { max-width: 620px; }
   .entry { text-align: left; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .door .logo, .floor, .float, .entry, .entry:before, .lvr,
+  .door .logo, .floor, .float, .entry, .entry:before, .mark .logo,
+  .streak,
   .btn.lit:after, .kick i, .emblem { animation: none; }
 }
 
@@ -1088,10 +1106,8 @@ select.in { -webkit-appearance: none; appearance: none; }
     <div class="emblem">
       <div class="float" id="emblem-float">
         <div class="mark">
-          <img class="logo" src="/logo-base.png" alt="Elevare">
-          <img class="lvr l" src="/lvr-l.png" alt="">
-          <img class="lvr v" src="/lvr-v.png" alt="">
-          <img class="lvr r" src="/lvr-r.png" alt="">
+          <img class="logo" src="/logo.png" alt="Elevare">
+          <i class="streak" aria-hidden="true"></i>
         </div>
       </div>
     </div>
