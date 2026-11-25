@@ -390,151 +390,160 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   .half { display: none; }
 }
 
-/* ---------- sign-in: manga page ---------- */
-@font-face {
-  font-family: "Bangers"; font-style: normal; font-weight: 400;
-  font-display: swap; src: url(/fonts/bangers.woff2) format("woff2");
+/* ---------- sign-in: "domain gate" (comic strip, sealed centre panel) ---
+   Black void; a ring of brush kanji draws itself, the domain expands in a
+   circle to reveal the strip, two paper seals slap onto the middle panel.
+   The middle ELEVARE panel is the Discord button: hover tears the seals
+   away and lights it with blue energy. Still after ~1.8s. */
+.domain { background: radial-gradient(90% 80% at 50% 50%, #0a1022 0%,
+  #030407 70%); }
+.domain .sparks, .domain .bigv, .domain .floor, .domain .frame {
+  display: none; }
+.domain .ring {
+  position: absolute; left: 50%; top: 50%; z-index: 0;
+  width: min(118vmin, 1100px); height: auto; translate: -50% -50%;
+  pointer-events: none; opacity: .16; overflow: visible;
+  animation: ringIn 1s .05s cubic-bezier(.2,.8,.2,1) backwards;
 }
-.manga {
-  --paper: #f3efe4; --ink2: #111;
-  background: var(--paper); color: var(--ink2);
+.domain .ring text { fill: #8cc4ff;
+  font: 700 26px/1 "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP",
+    "MS Mincho", serif; letter-spacing: 6px; }
+.domain .rline { fill: none; stroke: #8cc4ff; stroke-width: 1.5;
+  stroke-dasharray: 1710; animation: draw 1s .05s ease-out backwards; }
+.domain .rline.thin { stroke-width: .8; stroke-dasharray: 4 7;
+  animation: none; }
+@keyframes ringIn {
+  0% { opacity: 0; rotate: -40deg; scale: .7; }
+  60% { opacity: .9; }
+  100% { opacity: .16; rotate: 0deg; scale: 1; }
 }
-.manga .glow, .manga .sparks, .manga .bigv, .manga .floor,
-.manga .frame { display: none; }
-/* screentone: halftone dots fading in from the edges */
-.manga .tone {
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background: radial-gradient(circle, #111 0 1.1px, transparent 1.5px)
-    0 0 / 7px 7px;
-  opacity: .22;
-  -webkit-mask: radial-gradient(75% 70% at 50% 50%, transparent 55%,
-    #000 100%);
-  mask: radial-gradient(75% 70% at 50% 50%, transparent 55%, #000 100%);
+@keyframes draw { from { stroke-dashoffset: 1710; } to { stroke-dashoffset: 0; } }
+/* blue flash as the domain opens */
+.domain .burst {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(160,205,255,.95),
+    rgba(31,107,255,.55) 30%, transparent 65%);
+  opacity: 0; animation: bflash .5s .72s ease-out backwards;
 }
-/* focus lines aimed at the emblem: they jolt on impact, then settle */
-.manga .focus {
-  position: absolute; left: 50%; top: 50%; z-index: 0; width: 160vmax;
-  height: 160vmax; margin: -80vmax 0 0 -80vmax; pointer-events: none;
-  background:
-    repeating-conic-gradient(from 0deg, #111 0deg .35deg,
-      transparent .35deg 2.1deg),
-    repeating-conic-gradient(from 1deg, #111 0deg .18deg,
-      transparent .18deg 3.3deg);
-  -webkit-mask: radial-gradient(closest-side, transparent 30%, #000 62%);
-  mask: radial-gradient(closest-side, transparent 30%, #000 62%);
-  opacity: .14; transition: opacity .18s ease, transform .18s ease;
-  animation: jolt 1.2s .2s ease-out backwards, jitter .1s .5s steps(2) 6;
-}
-@keyframes jolt { 0% { opacity: .5; } 30% { opacity: .62; }
-  100% { opacity: .14; } }
-@keyframes jitter { 50% { rotate: 1.4deg; } }
-.manga:has(#go:hover) .focus, .manga:has(#go:focus-visible) .focus {
-  opacity: .42; transform: scale(.96);
-}
-/* the page's own panel border */
-.manga .panel {
-  position: absolute; inset: 18px; z-index: 1; pointer-events: none;
-  border: 3px solid #111; box-shadow: inset 0 0 0 6px var(--paper),
-    inset 0 0 0 7px #111;
-}
-/* paper-white flash at the moment of impact */
-.manga .flash {
-  position: absolute; inset: 0; z-index: 5; pointer-events: none;
-  background: #fff; opacity: 0; animation: inkflash .34s .52s ease-out both;
-}
-@keyframes inkflash { 0% { opacity: 0; } 18% { opacity: .9; }
+@keyframes bflash { 0% { opacity: 0; } 20% { opacity: 1; }
   100% { opacity: 0; } }
-.manga .page {
-  position: relative; z-index: 2; display: flex; flex-direction: column;
-  align-items: center; text-align: center; padding: 40px 24px;
-  animation: quake .38s .52s steps(7) both;
+.domain .page {
+  position: relative; z-index: 2; width: 100%; display: flex;
+  flex-direction: column; align-items: center; text-align: center;
+  padding: 28px 24px;
 }
-/* the page shakes once when the emblem lands */
+.domain .cap {
+  margin: 0 0 14px; font: 700 13px/1 "Cinzel", Georgia, serif;
+  letter-spacing: .5em; padding-left: .5em; text-transform: uppercase;
+  color: #9fb6dd; display: flex; align-items: center; gap: 14px;
+  animation: drise .4s 1.2s ease backwards;
+}
+.domain .cap:before, .domain .cap:after { content: ""; width: 36px;
+  height: 1px; background: rgba(140,196,255,.5); }
+/* the strip: the domain expands from the centre to reveal it */
+.gate {
+  position: relative;
+  width: min(1400px, calc(100vw - 48px), calc((100vh - 250px) * 3));
+  aspect-ratio: 3; animation: expand .75s .7s cubic-bezier(.7,0,.2,1)
+    backwards, quake .3s 1.32s steps(6) 1;
+}
+@keyframes expand {
+  from { clip-path: circle(0% at 50% 55%); }
+  to { clip-path: circle(75% at 50% 55%); }
+}
 @keyframes quake {
-  0% { translate: 0 0; } 15% { translate: -11px 7px; }
-  30% { translate: 10px -8px; } 45% { translate: -7px -5px; }
-  60% { translate: 6px 7px; } 75% { translate: -3px 3px; }
-  100% { translate: 0 0; }
+  0% { translate: 0 0; } 20% { translate: -7px 4px; }
+  40% { translate: 6px -5px; } 60% { translate: -4px -3px; }
+  80% { translate: 3px 4px; } 100% { translate: 0 0; }
 }
-/* small manga caption box */
-.manga .cap {
-  margin: 0 0 6px; padding: 6px 16px 4px; background: #fff;
-  border: 2.5px solid #111; box-shadow: 4px 4px 0 #111;
-  font: 400 19px/1 "Bangers", "Arial Narrow", sans-serif;
-  letter-spacing: .14em; text-transform: uppercase; rotate: -2deg;
-  animation: popin .3s .82s cubic-bezier(.3,1.6,.5,1) backwards;
-}
-/* the emblem is the Discord sign-in; it stamps onto the page */
+.gate .strip { display: block; width: 100%; height: 100%;
+  transition: filter .25s ease; }
+/* middle panel = the button; box matches the panel's bounds in the art */
 .seal {
-  position: relative; display: block; text-decoration: none; color: inherit;
-  width: min(900px, 86vw, calc((100vh - 250px) * 1.86));
-  cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+  position: absolute; left: 19.5%; top: 34.5%; width: 60.8%; height: 45.3%;
+  display: block; cursor: pointer; outline: none; z-index: 2;
+  -webkit-tap-highlight-color: transparent;
 }
-.seal:focus-visible { outline: 3px dashed #111; outline-offset: 8px; }
-.seal .emb { display: block; width: 100%; height: auto;
-  animation: stamp .3s .22s cubic-bezier(.2,1.45,.4,1) backwards; }
-@keyframes stamp {
-  0% { opacity: 0; transform: scale(2.4) rotate(-4deg); }
-  100% { opacity: 1; transform: none; }
+.seal .lift { position: absolute; inset: 0; display: block;
+  transition: transform .22s cubic-bezier(.3,1.5,.5,1), filter .22s ease; }
+.seal .art {
+  position: absolute; inset: 0; display: block; overflow: hidden;
+  clip-path: polygon(8.2% 2.9%, 100% 0, 93.3% 95.1%, 0 100%);
 }
+.seal .art img { position: absolute; left: -32.07%; top: -76.16%;
+  width: 164.47%; height: 220.75%; max-width: none; }
+.gate:has(.seal:hover) .strip, .gate:has(.seal:focus-visible) .strip {
+  filter: brightness(.42) saturate(.6);
+}
+.seal:hover .lift, .seal:focus-visible .lift {
+  transform: scale(1.045) rotate(-.6deg);
+  filter: drop-shadow(0 0 2px #cfe4ff) drop-shadow(0 0 14px #4fa3ff)
+    drop-shadow(0 0 42px rgba(31,107,255,.9));
+}
+.seal:focus-visible .lift { outline: none; }
+/* paper seals (ofuda) slapped across the panel's edges */
+.ofuda {
+  position: absolute; z-index: 3; display: flex; flex-direction: row;
+  align-items: center; gap: 4px; width: clamp(26px, 3vw, 46px);
+  padding: clamp(6px, .8vw, 10px) 0; background: #efe6cf;
+  border: 1px solid #b9ab86; outline: 2px solid #efe6cf;
+  box-shadow: inset 0 0 0 2px #efe6cf, inset 0 0 0 3px #9e1b1b,
+    4px 6px 14px rgba(0,0,0,.6);
+  color: #9e1b1b; writing-mode: vertical-rl;
+  font: 700 clamp(9px, 1vw, 14px)/1 "Yu Mincho", "Hiragino Mincho ProN",
+    "Noto Serif JP", "MS Mincho", serif;
+  transition: transform .3s cubic-bezier(.5,0,.75,0), opacity .3s ease;
+  animation: slap .26s cubic-bezier(.2,1.5,.4,1) backwards;
+}
+.ofuda b { font-size: 2.1em; font-weight: 700; color: #111; }
+.ofuda.o1 { left: 3%; top: -14%; height: clamp(90px, 13vw, 190px);
+  rotate: -14deg; animation-delay: 1.22s; }
+.ofuda.o2 { right: 1%; top: 30%; height: clamp(90px, 13vw, 190px);
+  rotate: 12deg; animation-delay: 1.34s; }
+@keyframes slap { from { opacity: 0; transform: scale(2.2); }
+  to { opacity: 1; transform: none; } }
+.seal:hover .o1, .seal:focus-visible .o1 {
+  transform: translate(-60px, 90px) rotate(-40deg); opacity: 0; }
+.seal:hover .o2, .seal:focus-visible .o2 {
+  transform: translate(70px, 90px) rotate(38deg); opacity: 0; }
 #v-login #go[hidden] { display: block; pointer-events: none; cursor: default; }
-#go[hidden] .bubble { display: none; }
-/* the button lives inside the art: an ink speech bubble on the moon,
-   its tail pointing at the samurai */
-.bubble {
-  position: absolute; left: 25%; top: 19%; z-index: 4;
-  display: flex; flex-direction: column; align-items: center;
-  padding: 12px 22px 11px; background: #fff; color: #111;
-  border: 3px solid #111; border-radius: 50%;
-  font: 400 clamp(11px, 1.4vw, 16px)/1 "Bangers", "Arial Narrow",
-    sans-serif;
-  letter-spacing: .08em; text-transform: uppercase; white-space: nowrap;
-  box-shadow: 4px 4px 0 var(--red); transform-origin: 95% 70%;
-  transition: scale .16s cubic-bezier(.3,1.6,.5,1),
-    rotate .16s cubic-bezier(.3,1.6,.5,1), box-shadow .16s ease;
-  animation: popin .4s 1.05s cubic-bezier(.3,1.6,.5,1) backwards;
+#go[hidden] .ofuda, .domain:has(#go[hidden]) .hint { display: none; }
+/* prompt under the strip (forwards its click to the panel) */
+.hint {
+  margin: 22px 0 0; display: inline-flex; align-items: center; gap: 12px;
+  padding: 12px 22px; cursor: pointer; color: #e8f0ff;
+  background: rgba(10,16,34,.8); border: 1px solid rgba(79,163,255,.45);
+  font: 700 12px/1 "Cinzel", Georgia, serif; letter-spacing: .22em;
+  text-transform: uppercase; transition: border-color .2s ease,
+    box-shadow .2s ease; animation: drise .4s 1.45s ease backwards;
 }
-.bubble b { font-weight: 400; font-size: clamp(20px, 2.6vw, 32px);
-  color: var(--red); letter-spacing: .04em; line-height: .95; }
-.bubble i { font-style: normal; font-size: 1.2em; margin-top: 2px;
-  transition: transform .16s ease; }
-.bubble:before, .bubble:after {   /* tail, pointing right at his face */
-  content: ""; position: absolute; right: -18px; top: 46%; width: 0;
-  height: 0; border: 8px solid transparent; border-left: 20px solid #111;
-  border-right: 0; rotate: -18deg;
+.hint i { font: 700 18px/1 "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-style: normal; color: #8cc4ff; }
+.hint span { color: #8cc4ff; }
+.hint em { font-style: normal; transition: transform .2s ease; }
+.hint:hover, .hint:focus-visible, .domain:has(.seal:hover) .hint {
+  border-color: #4fa3ff; box-shadow: 0 0 24px rgba(31,107,255,.55);
+  outline: none; }
+.hint:hover em, .domain:has(.seal:hover) .hint em {
+  transform: translateX(4px); }
+.domain .tagline {
+  margin: 20px 0 0; font: 700 clamp(14px, 1.6vw, 20px)/1 "Cinzel", Georgia,
+    serif; letter-spacing: .42em; padding-left: .42em; color: #f2f5fb;
+  text-transform: uppercase; animation: drise .4s 1.55s ease backwards;
 }
-.bubble:after { right: -12px; border-width: 5px; border-left-width: 14px;
-  border-left-color: #fff; margin-top: 3px; }
-.seal:hover .bubble, .seal:focus-visible .bubble {
-  scale: 1.1; rotate: -3deg; box-shadow: 6px 6px 0 var(--red);
-}
-.seal:hover .bubble i, .seal:focus-visible .bubble i {
-  transform: translateX(4px);
-}
-@keyframes popin { from { opacity: 0; transform: scale(.3); }
+.domain .err { margin-top: 14px; color: #ff6b73; font-weight: 600; }
+.domain .fine { margin: 14px 0 0; font-size: 10px; letter-spacing: .3em;
+  text-transform: uppercase; color: #59617a;
+  animation: drise .4s 1.65s ease backwards; }
+@keyframes drise { from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; } }
-.manga .tagline {
-  margin: 4px 0 0; display: flex; align-items: center; gap: 14px;
-  font: 400 24px/1 "Bangers", "Arial Narrow", sans-serif;
-  letter-spacing: .22em; text-transform: uppercase; color: #111;
-  animation: mrise .35s .92s cubic-bezier(.2,.9,.2,1) backwards;
-}
-.manga .tagline:before, .manga .tagline:after {
-  content: ""; width: 54px; height: 3px; background: #111;
-}
-@keyframes mrise { from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: none; } }
-.manga .err { margin-top: 14px; color: #b3121b; font-weight: 600; }
-.manga .fine { margin: 18px 0 0; font-size: 10px; letter-spacing: .3em;
-  text-transform: uppercase; color: #6d6a62;
-  animation: mrise .35s 1.05s ease backwards; }
 @media (max-width: 700px) {
-  .bubble { padding: 8px 14px 7px; border-width: 2px; }
-  .manga .tagline { font-size: 18px; letter-spacing: .16em; }
+  .hint { font-size: 10px; letter-spacing: .14em; padding: 10px 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .manga .focus, .manga .flash, .manga .page, .manga .cap, .seal .emb,
-  .bubble, .manga .tagline, .manga .fine { animation: none; }
+  .domain .ring, .domain .rline, .domain .burst, .gate, .ofuda,
+  .domain .cap, .hint, .domain .tagline, .domain .fine { animation: none; }
+  .seal .lift, .ofuda { transition: none; }
 }
 
 /* ---------- app shell ---------- */
@@ -1238,19 +1247,36 @@ select.in { -webkit-appearance: none; appearance: none; }
 </section>
 
 <!-- Sign in: logo on the left, Discord entry on the right -->
-<section id="v-login" class="view door manga">
-  <i class="tone" aria-hidden="true"></i>
-  <i class="focus" aria-hidden="true"></i>
-  <div class="panel" aria-hidden="true"></div>
-  <i class="flash" aria-hidden="true"></i>
+<section id="v-login" class="view door domain">
+  <i class="glow" aria-hidden="true"></i>
+  <svg class="ring" viewBox="0 0 600 600" aria-hidden="true">
+    <defs><path id="ringpath" d="M300,300 m-250,0 a250,250 0 1,1 500,0
+      a250,250 0 1,1 -500,0"/></defs>
+    <circle class="rline" cx="300" cy="300" r="272"/>
+    <circle class="rline thin" cx="300" cy="300" r="228"/>
+    <text><textPath href="#ringpath">&#x5C01; &#xB7; &#x9580; &#xB7; &#x6708; &#xB7; &#x5203; &#xB7;
+      &#x591C; &#xB7; &#x685C; &#xB7; &#x9B42; &#xB7; &#x6607; &#xB7;
+      &#x5C01; &#xB7; &#x9580; &#xB7; &#x6708; &#xB7; &#x5203; &#xB7;
+      &#x591C; &#xB7; &#x685C; &#xB7; &#x9B42; &#xB7; &#x6607; &#xB7;</textPath></text>
+  </svg>
+  <i class="burst" aria-hidden="true"></i>
   <div class="page">
     <p class="cap">Welcome to</p>
-    <a id="go" class="seal" href="/api/login"
-      aria-label="Sign in with Discord">
-      <img class="emb" src="/emblem.png" alt="Elevare">
-      <span class="bubble" aria-hidden="true"><b>Sign in</b>with Discord
-        <i>&#x2192;</i></span>
-    </a>
+    <div class="gate">
+      <img class="strip" src="/strip.webp" alt="">
+      <a id="go" class="seal" href="/api/login"
+        aria-label="Elevare. Sign in with Discord">
+        <span class="lift">
+          <span class="art"><img src="/strip.webp" alt=""></span>
+        </span>
+        <span class="ofuda o1" aria-hidden="true"><b>&#x5C01;</b>&#x5370;</span>
+        <span class="ofuda o2" aria-hidden="true"><b>&#x9580;</b>&#x9589;</span>
+      </a>
+    </div>
+    <button class="hint" type="button" id="go-hint">
+      <i aria-hidden="true">&#x958B;</i>Break the seal<span>Sign in with
+      Discord</span><em aria-hidden="true">&#x2192;</em>
+    </button>
     <p class="tagline" id="brand-tag">Private Trading Community</p>
     <div id="err" class="err" role="alert"></div>
     <p class="fine">Protected. Every visit is logged.</p>
@@ -3828,6 +3854,14 @@ select.in { -webkit-appearance: none; appearance: none; }
     var first = (d.user.name || '').split(' ')[0];
     setTimeout(function () { toast(greeting() + ', ' + first + '.'); }, 500);
   }
+  // "Break the seal" prompt under the strip clicks the sign-in panel
+  (function () {
+    var h = document.getElementById('go-hint');
+    if (h) h.addEventListener('click', function () {
+      var g = document.getElementById('go');
+      if (g && !g.hidden) g.click();
+    });
+  })();
   // soft light following the cursor on the door screens: one transform per
   // frame, composited on the GPU, so it tracks the mouse with no lag
   (function () {
