@@ -390,6 +390,135 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   .half { display: none; }
 }
 
+/* ---------- sign-in: manga page ---------- */
+@font-face {
+  font-family: "Bangers"; font-style: normal; font-weight: 400;
+  font-display: swap; src: url(/fonts/bangers.woff2) format("woff2");
+}
+.manga {
+  --paper: #f3efe4; --ink2: #111;
+  background: var(--paper); color: var(--ink2);
+}
+.manga .glow, .manga .sparks, .manga .bigv, .manga .floor,
+.manga .frame { display: none; }
+/* screentone: halftone dots fading in from the edges */
+.manga .tone {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(circle, #111 0 1.1px, transparent 1.5px)
+    0 0 / 7px 7px;
+  opacity: .22;
+  -webkit-mask: radial-gradient(75% 70% at 50% 50%, transparent 55%,
+    #000 100%);
+  mask: radial-gradient(75% 70% at 50% 50%, transparent 55%, #000 100%);
+}
+/* focus lines (manga "speed lines") aimed at the emblem */
+.manga .focus {
+  position: absolute; left: 50%; top: 50%; z-index: 0; width: 160vmax;
+  height: 160vmax; margin: -80vmax 0 0 -80vmax; pointer-events: none;
+  background:
+    repeating-conic-gradient(from 0deg, #111 0deg .35deg,
+      transparent .35deg 2.1deg),
+    repeating-conic-gradient(from 1deg, #111 0deg .18deg,
+      transparent .18deg 3.3deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 30%, #000 62%);
+  mask: radial-gradient(closest-side, transparent 30%, #000 62%);
+  opacity: .14; transition: opacity .18s ease, transform .18s ease;
+}
+.manga:has(#go:hover) .focus, .manga:has(#go:focus-visible) .focus {
+  opacity: .42; transform: scale(.96);
+}
+/* the page's own panel border */
+.manga .panel {
+  position: absolute; inset: 18px; z-index: 1; pointer-events: none;
+  border: 3px solid #111; box-shadow: inset 0 0 0 6px var(--paper),
+    inset 0 0 0 7px #111;
+}
+.manga .page {
+  position: relative; z-index: 2; display: flex; flex-direction: column;
+  align-items: center; text-align: center; padding: 40px 24px;
+}
+/* small manga caption box */
+.manga .cap {
+  margin: 0 0 6px; padding: 6px 16px 4px; background: #fff;
+  border: 2.5px solid #111; box-shadow: 4px 4px 0 #111;
+  font: 400 19px/1 "Bangers", "Arial Narrow", sans-serif;
+  letter-spacing: .14em; text-transform: uppercase; transform: rotate(-2deg);
+}
+/* the emblem is the Discord sign-in */
+.seal {
+  position: relative; display: block;
+  width: min(880px, 86vw, calc((100vh - 250px) * 1.67));
+  cursor: pointer; text-decoration: none; color: inherit;
+  outline: none; -webkit-tap-highlight-color: transparent;
+}
+.seal:focus-visible { outline: 3px dashed #111; outline-offset: 8px; }
+.seal .emb { display: block; width: 100%; height: auto; }
+#v-login #go[hidden] { display: block; pointer-events: none; cursor: default; }
+#go[hidden] .bubble { display: none; }
+/* speech bubble from the samurai */
+.bubble {
+  position: absolute; left: 69%; top: 3%; z-index: 4;
+  padding: 14px 22px 12px; background: #fff; color: #111;
+  border: 2.5px solid #111; border-radius: 50%;
+  font: 400 19px/1.05 "Bangers", "Arial Narrow", sans-serif;
+  letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+  box-shadow: 3px 3px 0 #111; transform-origin: 10% 90%;
+  transition: transform .16s cubic-bezier(.3,1.6,.5,1);
+  animation: pop .45s 1s cubic-bezier(.3,1.6,.5,1) both;
+}
+.bubble b { display: block; font-weight: 400; font-size: 27px;
+  color: var(--red); letter-spacing: .05em; }
+.bubble:before, .bubble:after {   /* the tail, pointing at the samurai */
+  content: ""; position: absolute; left: 14%; bottom: -15px; width: 0;
+  height: 0; border: 9px solid transparent; border-top: 16px solid #111;
+  border-bottom: 0; transform: rotate(28deg);
+}
+.bubble:after { bottom: -10px; left: calc(14% + 2px);
+  border-width: 6px; border-top-width: 12px; border-top-color: #fff; }
+.seal:hover .bubble, .seal:focus-visible .bubble {
+  transform: scale(1.08) rotate(-3deg);
+}
+@keyframes pop { from { transform: scale(.2); opacity: 0; }
+  to { transform: none; opacity: 1; } }
+/* sword-cut entrance: two halves meet along a katana stroke, then the
+   plain emblem shows and nothing moves */
+.seal .emb { animation: whole .01s .8s both; }
+.emb-cut {
+  position: absolute; left: 0; top: 0; width: 100%; height: auto;
+  pointer-events: none; opacity: 0; z-index: 3;
+}
+.emb-cut.cut-a { clip-path: polygon(0 0, 100% 0, 100% 22%, 0 78%);
+  animation: swordA .5s .2s cubic-bezier(.2,.8,.2,1) both,
+    gone .01s .8s both; }
+.emb-cut.cut-b { clip-path: polygon(0 78%, 100% 22%, 100% 100%, 0 100%);
+  animation: swordB .5s .2s cubic-bezier(.2,.8,.2,1) both,
+    gone .01s .8s both; }
+@keyframes swordA { from { opacity: 0; transform: translate(70px, -40px); }
+  to { opacity: 1; transform: none; } }
+@keyframes swordB { from { opacity: 0; transform: translate(-70px, 40px); }
+  to { opacity: 1; transform: none; } }
+.manga .tagline {
+  margin: 4px 0 0; display: flex; align-items: center; gap: 14px;
+  font: 400 24px/1 "Bangers", "Arial Narrow", sans-serif;
+  letter-spacing: .22em; text-transform: uppercase; color: #111;
+}
+.manga .tagline:before, .manga .tagline:after {
+  content: ""; width: 54px; height: 3px; background: #111;
+}
+.manga .err { margin-top: 14px; color: #b3121b; font-weight: 600; }
+.manga .fine { margin: 18px 0 0; font-size: 10px; letter-spacing: .3em;
+  text-transform: uppercase; color: #6d6a62; }
+@media (max-width: 700px) {
+  .bubble { left: 58%; top: -4%; font-size: 15px; }
+  .bubble b { font-size: 21px; }
+  .manga .tagline { font-size: 18px; letter-spacing: .16em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bubble, .seal .emb { animation: none; }
+  .emb-cut { display: none; }
+  .manga .focus { transition: none; }
+}
+
 /* ---------- app shell ---------- */
 .app { flex-direction: column; }
 .top {
@@ -1091,41 +1220,22 @@ select.in { -webkit-appearance: none; appearance: none; }
 </section>
 
 <!-- Sign in: logo on the left, Discord entry on the right -->
-<section id="v-login" class="view door">
-  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
-  <i class="glow" aria-hidden="true"></i>
-  <div class="floor" aria-hidden="true"></div>
-  <div class="frame" aria-hidden="true">
-    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
-  </div>
-  <span class="bigv" aria-hidden="true">V2</span>
-  <div class="duo">
-    <div class="emblem">
-      <div class="float" id="emblem-float">
-        <div class="mark">
-          <img class="logo" src="/logo.png" alt="Elevare">
-          <img class="half cut-a" src="/logo.png" alt="" aria-hidden="true">
-          <img class="half cut-b" src="/logo.png" alt="" aria-hidden="true">
-        </div>
-      </div>
-    </div>
-    <div class="entry">
-      <div class="kick"><i></i>Members only</div>
-      <h1><small>Welcome to</small><span class="bmk" id="door-wm">ELEVARE</span></h1>
-      <p class="tag" id="brand-tag">Private Trading Community</p>
-      <p class="blurb">Sign in with the Discord account that holds your member
-        role. Your lectures, breakdowns and progress are waiting.</p>
-      <a id="go" class="btn lit" href="/api/login">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
-          aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8
-          10 8 10z"/></svg>
-        Continue with Discord
-        <span class="arr" aria-hidden="true">&#x2192;</span>
-      </a>
-      <div id="err" class="err" role="alert"></div>
-      <div class="invite">Protected. Every visit is logged.</div>
-    </div>
+<section id="v-login" class="view door manga">
+  <i class="tone" aria-hidden="true"></i>
+  <i class="focus" aria-hidden="true"></i>
+  <div class="panel" aria-hidden="true"></div>
+  <div class="page">
+    <p class="cap">Welcome to</p>
+    <a id="go" class="seal" href="/api/login"
+      aria-label="Sign in with Discord">
+      <img class="emb" src="/emblem.png" alt="Elevare">
+      <img class="emb-cut cut-a" src="/emblem.png" alt="" aria-hidden="true">
+      <img class="emb-cut cut-b" src="/emblem.png" alt="" aria-hidden="true">
+      <span class="bubble" aria-hidden="true">Sign in with<b>Discord!</b></span>
+    </a>
+    <p class="tagline" id="brand-tag">Private Trading Community</p>
+    <div id="err" class="err" role="alert"></div>
+    <p class="fine">Protected. Every visit is logged.</p>
   </div>
 </section>
 
