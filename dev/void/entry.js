@@ -1,29 +1,33 @@
-// ELEVARE sign-in intro: "the void".
+// ELEVARE sign-in intro: "Unlimited Void V2".
 // Built into /domain.js by `npm run build` in this folder (see README).
 //
-// Three render passes on one full-screen triangle:
-//   A  energy   - lensing, streaks, the point of light and the energy
-//                 currents around the central void (rendered at an adaptive
-//                 fraction of screen resolution)
-//   B  bloom    - only the brightest parts of A, blurred at half of A's size
-//   C  final    - A + selective bloom, chromatic separation toward the
-//                 edges, gentle tone curve, grain and vignette, to the screen
-// The ELEVARE logo is an ordinary <img> above the canvas, so it is never
-// touched by any of this and stays perfectly sharp.
+// Every picture on screen is one of the supplied textures in /void/
+// (01 flash, 02 reality tear, 03 acceleration, 04 void environment,
+// 05 ink transition, 10 ink mask). The shader only moves, masks, blends
+// and distorts those pixels; it never draws new artwork. The logo is a
+// separate transparent <img> above the canvas and is never processed.
+//
+// Timing (from the storyboard README):
+//   0.0-1.0  flash         1.0-2.5  reality tears     2.5-4.5  acceleration
+//   4.5-7.5  the void      7.5-9.5  ink transition    9.5-13   logo + hold
+// Anime language: anticipation before each move, impact frames (1-2
+// frames of inverted black/white) on each hit, decaying camera shake,
+// radial speed smears on fast moves, and short held beats between cuts.
 
 import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer.js';
-import { WebGLRenderTarget } from 'three/src/renderers/WebGLRenderTarget.js';
 import { Scene } from 'three/src/scenes/Scene.js';
 import { OrthographicCamera } from 'three/src/cameras/OrthographicCamera.js';
 import { Mesh } from 'three/src/objects/Mesh.js';
 import { BufferGeometry } from 'three/src/core/BufferGeometry.js';
 import { BufferAttribute } from 'three/src/core/BufferAttribute.js';
 import { ShaderMaterial } from 'three/src/materials/ShaderMaterial.js';
+import { Texture } from 'three/src/textures/Texture.js';
 import { Vector2 } from 'three/src/math/Vector2.js';
-import { HalfFloatType, LinearFilter } from 'three/src/constants.js';
+import { LinearFilter, ClampToEdgeWrapping } from 'three/src/constants.js';
 import { gsap } from 'gsap';
 
 const SEEN_KEY = 'elevare.voidSeen';
+const TEX = ['t01', 't02', 't03', 't04', 't05', 't10'];
 
 const VERT = `
 varying vec2 vUv;
@@ -32,318 +36,262 @@ void main() {
   gl_Position = vec4(position.xy, 0.0, 1.0);
 }`;
 
-const NOISE = `
+const FRAG = `
+precision highp float;
+uniform sampler2D t01, t02, t03, t04, t05, t10;
+uniform vec2 uRes;        // canvas size in px
+uniform vec2 uAsp;        // aspect (w/h): x = panels 01-03, y = 04/05/10
+uniform vec2 uCenter04;   // the ring's centre inside texture 04 (uv)
+uniform float uT;         // ambient time (s)
+uniform float wFlash, wTear, wAcc, wVoid, wInk;
+uniform float zFlash, zTear, zAcc, zVoid, zInk;
+uniform float tearOpen;   // 0..1 how far the tear has spread
+uniform float accT;       // acceleration travel
+uniform float smear;      // radial speed smear 0..1
+uniform float inkCover;   // 0..1 ink sweeps across
+uniform float inkSlide;   // ink drift along its stroke
+uniform float impact;     // 0..1 impact frame (invert)
+uniform vec2 shake;       // camera shake offset (screen units)
+uniform float rot;        // small camera roll
+uniform float idle;       // 0..1 ambient life in the void
+uniform float fade;       // 0..1 fade from black at the very start
+varying vec2 vUv;
+
 float hash(vec2 p) {
-  p = fract(p * vec2(123.34, 456.21));
-  p += dot(p, p + 45.32);
+  p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32);
   return fract(p.x * p.y);
 }
 float noise(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-             mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+  vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x),
+             mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
 }
-float hash3(vec3 p) {
-  p = fract(p * vec3(0.1031, 0.1030, 0.0973));
-  p += dot(p, p.yxz + 33.33);
-  return fract((p.x + p.y) * p.z);
+// screen point -> texture uv for a cover-fitted panel, zoomed about c
+vec2 cover(vec2 p, float asp, vec2 c, float zoom) {
+  float sa = uRes.x / uRes.y;
+  vec2 s = sa > asp ? vec2(1.0, asp / sa) : vec2(sa / asp, 1.0);
+  return c + p * s / zoom;
 }
-float noise3(vec3 p) {
-  vec3 i = floor(p), f = fract(p);
-  vec3 u = f * f * (3.0 - 2.0 * f);
-  float a = mix(mix(hash3(i), hash3(i + vec3(1,0,0)), u.x),
-                mix(hash3(i + vec3(0,1,0)), hash3(i + vec3(1,1,0)), u.x), u.y);
-  float b = mix(mix(hash3(i + vec3(0,0,1)), hash3(i + vec3(1,0,1)), u.x),
-                mix(hash3(i + vec3(0,1,1)), hash3(i + vec3(1,1,1)), u.x), u.y);
-  return mix(a, b, u.z);
+vec3 tex(sampler2D t, vec2 uv) {
+  return texture2D(t, clamp(uv, vec2(0.001), vec2(0.999))).rgb;
 }
-float fbm3(vec3 p) {
-  float v = 0.0, a = 0.5;
-  for (int i = 0; i < 6; i++) { v += a * noise3(p); p = p * 2.03 + 1.7; a *= 0.5; }
-  return v;
+// radial smear toward the focal point: several taps along the ray
+vec3 smeared(sampler2D t, vec2 p, float asp, vec2 c, float z, float amt) {
+  if (amt < 0.01) return tex(t, cover(p, asp, c, z));
+  vec3 acc = vec3(0.0); float wsum = 0.0;
+  float j = hash(p * uRes + uT) / 11.0;      // dither: no banding
+  for (int i = 0; i < 12; i++) {
+    float k = float(i) / 11.0 + j;
+    float w = 1.0 - k * 0.6;
+    acc += tex(t, cover(p, asp, c, z * (1.0 + amt * 0.22 * k))) * w;
+    wsum += w;
+  }
+  return acc / wsum;
 }
-float fbm(vec2 p) {
-  float v = 0.0, a = 0.5;
-  mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
-  for (int i = 0; i < 5; i++) { v += a * noise(p); p = m * p; a *= 0.5; }
-  return v;
-}`;
+mat2 rot2(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
 
-const FRAG_ENERGY = `
-precision highp float;
-uniform vec2 uRes;      // render-target size in px
-uniform vec2 uAxis;     // semi-axes of the central void (screen-height units)
-uniform float uTime;    // flow time (already scaled by the current speed)
-uniform float uPoint;   // 0..1 the first point of light
-uniform float uCollapse;// 0..1 the point pulls inward before expanding
-uniform float uLens;    // gravitational pull toward the centre
-uniform float uExpand;  // 0..1 the void opens to full size
-uniform float uStreak;  // 0..1 radial light streaks
-uniform float uFlash;   // 0..1 white-blue flash at the moment of expansion
-uniform float uEnergy;  // 0..1 the energy currents around the void
-varying vec2 vUv;
-${NOISE}
-mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
 void main() {
-  vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
-  float r0 = length(p);
-  vec2 dir = p / max(r0, 1e-4);
-
-  // gravitational lensing: space is pulled toward the centre
-  vec2 pl = p - dir * uLens * 0.035 / (r0 + 0.06);
-
-  vec2 q = pl / uAxis;            // void-shaped (elliptical) space
-  float r = length(q);
-  float t = uTime;
+  vec2 p = vUv - 0.5;
+  p = rot2(rot) * p + shake;
   vec3 col = vec3(0.0);
+  vec2 C = vec2(0.5);
 
-  // faint midnight depth so the black has distance in it
-  col += vec3(0.0, 0.010, 0.035) * smoothstep(0.15, 1.5, r0)
-       * (0.35 + 0.65 * uEnergy);
+  // 01 flash: white burst, pulled slightly toward the viewer
+  if (wFlash > 0.001) col += tex(t01, cover(p, uAsp.x, C, zFlash)) * wFlash;
 
-  // ---- the domain: cel-shaded fractal clouds spiralling into the void ----
-  float R = uExpand;
-  float ang = atan(q.y, q.x);
-  vec2 cs0 = vec2(cos(ang), sin(ang));
-  // the void's edge breathes a little so it never reads as a perfect ring
-  R *= 1.0 + 0.045 * (fbm(cs0 * 2.0 + t * 0.03) - 0.5);
-  float lr = log(max(r, 1e-3));
-  // logarithmic spiral: angle twists with depth, and the clouds drift
-  // inward toward the void over time (a tunnel converging on the centre)
-  float twist = ang + 1.15 * lr + t * 0.035;
-  vec2 cs = vec2(cos(twist), sin(twist));
-  vec3 cp = vec3(cs * 3.2, lr * 4.2 + t * 0.22);
-  vec3 warp = vec3(fbm3(cp * 0.7 + 3.1), fbm3(cp * 0.7 + 7.7), 0.0) - 0.5;
-  float v = fbm3(cp + warp * 0.9);                 // cloud field
-  // fractal edge breakup: jagged, snowflake-like cloud borders
-  float jag = fbm3(cp * 5.5 + warp * 2.0 + 21.0) - 0.5;
-  v += jag * 0.22;
-  float v2 = fbm3(cp * 1.9 + warp * 1.4 + 11.0);   // inner shading
-  // denser further out, sparse wisps near the void, and a dark moat
-  float th = mix(0.55, 0.45, smoothstep(R + 0.02, R + 0.9, r));
-  float aa = 0.007;
-  float cloud = smoothstep(th - aa, th + aa, v);
-  float lit   = smoothstep(th + 0.05 - aa, th + 0.05 + aa, v * 0.7 + v2 * 0.42);
-  float hi    = smoothstep(th + 0.13 - aa, th + 0.13 + aa, v * 0.6 + v2 * 0.55);
-  vec3 cobalt = vec3(0.09, 0.20, 0.95);
-  vec3 lav    = vec3(0.60, 0.66, 1.00);
-  vec3 white  = vec3(0.95, 0.97, 1.00);
-  vec3 cel = mix(cobalt * 0.85, mix(lav, white, hi), lit);
-  float reach = smoothstep(R, R + 0.05, r);
-  col += cel * cloud * reach * uEnergy;
-  // faint cobalt haze between the clouds, deepening toward the edges
-  col += cobalt * 0.05 * (1.0 - cloud) * reach * uEnergy
-       * smoothstep(R + 0.2, R + 1.4, r);
+  // 02 reality tear: the panel's own darkness spreads by thresholding its
+  // luminance; anything not yet torn stays the flash white
+  if (wTear > 0.001) {
+    vec2 uv = cover(p, uAsp.x, C, zTear);
+    vec3 c2 = smeared(t02, p, uAsp.x, C, zTear, smear);
+    float lum = dot(tex(t02, uv), vec3(0.3, 0.55, 0.15));
+    float th = mix(1.05, -0.05, tearOpen);   // darkest parts tear first
+    float torn = smoothstep(th - 0.08, th + 0.08, 1.0 - lum);
+    vec3 white = tex(t01, cover(p, uAsp.x, C, 1.0));
+    col += mix(white, c2, torn) * wTear;
+  }
 
-  // the void itself: absolute darkness with a hairline edge
-  col *= smoothstep(R - 0.012, R + 0.03, r);
+  // 03 acceleration: an endless push through the tunnel. Two copies of
+  // the panel an octave apart cross-fade, so the zoom never ends
+  if (wAcc > 0.001) {
+    float f = fract(accT);
+    vec2 pr = rot2(accT * 0.12) * p;
+    vec3 a = smeared(t03, pr, uAsp.x, C, exp2(f) * zAcc, smear);
+    vec3 b = smeared(t03, pr, uAsp.x, C, exp2(f - 1.0) * zAcc, smear);
+    col += mix(b, a, smoothstep(0.0, 1.0, 1.0 - f)) * wAcc;
+  }
 
-  // the first point of light, shrinking and brightening as it collapses
-  float sz = mix(0.0032, 0.0016, uCollapse);
-  float core = exp(-r0 * r0 / (sz * sz));
-  float halo = (0.00006 + 0.00022 * uCollapse) / (r0 * r0 + 0.00004);
-  float spike = exp(-abs(p.y) * 900.0) * exp(-abs(p.x) * 22.0)
-              + 0.55 * exp(-abs(p.x) * 900.0) * exp(-abs(p.y) * 38.0);
-  col += vec3(0.62, 0.78, 1.0) * uPoint * (core * 1.6 + halo + spike * 0.9);
+  // 04 the void. Ambient life is UV displacement of the panel itself:
+  // the energy band ripples sideways, the clouds breathe, and the ring's
+  // light drifts very slowly around it
+  if (wVoid > 0.001) {
+    vec2 uv = cover(p, uAsp.y, uCenter04, zVoid);
+    vec2 d = uv - uCenter04;
+    float rr = length(d * vec2(uAsp.y, 1.0));
+    float n1 = noise(uv * vec2(9.0, 5.0) + vec2(uT * 0.06, 0.0)) - 0.5;
+    float n2 = noise(uv * vec2(4.0, 7.0) - vec2(0.0, uT * 0.05)) - 0.5;
+    float band = exp(-pow((uv.y - uCenter04.y) / 0.08, 2.0));
+    vec2 disp = vec2(n1 * 0.006 + band * sin(uv.x * 18.0 - uT * 0.6) * 0.0025,
+                     n2 * 0.006);
+    float ringW = exp(-pow((rr - 0.2) / 0.07, 2.0));
+    disp += vec2(-d.y, d.x) * ringW * 0.03 * sin(uT * 0.2);
+    vec3 v4 = smeared(t04, p, uAsp.y, uCenter04, zVoid, smear * 0.6);
+    v4 = mix(v4, tex(t04, uv + disp), idle);
+    col += v4 * wVoid;
+  }
 
-  // directional light streaks thrown out as space is stretched apart
-  float pa = atan(p.y, p.x);
-  float lane = hash(vec2(floor((pa + 3.14159) * 57.3 * 1.4), 7.0));
-  float fine = noise(vec2(pa * 140.0, 3.0));
-  float streak = pow(fine, 14.0) * 0.9 + pow(lane, 30.0) * 2.2;
-  streak *= exp(-r0 * mix(9.0, 1.4, uStreak)) * smoothstep(0.0, 0.02, r0);
-  col += mix(vec3(0.10, 0.30, 1.0), vec3(0.70, 0.82, 1.0), pow(lane, 30.0))
-       * streak * uStreak * 1.1;
-  col += vec3(0.30, 0.52, 1.0) * uStreak * (0.05 / (r0 * r0 * 40.0 + 0.05)) * 0.9;
+  // 05 ink transition: the ink panel sweeps over the void through the
+  // supplied ink mask (10), sliding along its stroke direction
+  if (wInk > 0.001) {
+    vec2 uv5 = cover(p, uAsp.y, C, zInk) + vec2(-0.10, 0.045) * inkSlide;
+    float m = dot(tex(t10, uv5), vec3(0.3333));
+    float th = mix(1.05, -0.05, inkCover);
+    float a = smoothstep(th - 0.06, th + 0.06, m);
+    col = mix(col, tex(t05, uv5), a * wInk);
+  }
 
-  // the flash as the domain opens
-  col += vec3(0.62, 0.78, 1.0) * uFlash * exp(-r0 * 4.0) * 0.9;
+  // impact frame: inverted black and white for a beat
+  float g = dot(col, vec3(0.3, 0.55, 0.15));
+  col = mix(col, vec3(1.0 - smoothstep(0.15, 0.6, g)), impact);
 
+  // a breath of grain so the panels sit together as one film
+  col += (hash(vUv * uRes + fract(uT) * 97.0) - 0.5) * 0.018;
+  col *= fade;
   gl_FragColor = vec4(col, 1.0);
 }`;
 
-const FRAG_BLOOM = `
-precision highp float;
-uniform sampler2D uSrc;
-uniform vec2 uTexel;   // 1 / size of the energy target
-varying vec2 vUv;
-vec3 bright(vec2 uv) {
-  vec3 c = texture2D(uSrc, uv).rgb;
-  float l = max(c.r, max(c.g, c.b));
-  return c * smoothstep(0.62, 1.1, l);   // only the brightest energy blooms
+function loadTexture(img) {
+  const t = new Texture(img);
+  t.minFilter = LinearFilter; t.magFilter = LinearFilter;
+  t.generateMipmaps = false;
+  t.wrapS = t.wrapT = ClampToEdgeWrapping;
+  t.needsUpdate = true;
+  return t;
 }
-void main() {
-  vec3 acc = vec3(0.0); float wsum = 0.0;
-  for (int i = 0; i < 24; i++) {          // golden-angle spiral gather
-    float fi = float(i);
-    float rad = sqrt(fi + 0.5) * 3.2;
-    float a = fi * 2.39996;
-    vec2 o = vec2(cos(a), sin(a)) * rad * uTexel;
-    float wt = 1.0 - fi / 26.0;
-    acc += bright(vUv + o) * wt; wsum += wt;
-  }
-  gl_FragColor = vec4(acc / wsum, 1.0);
-}`;
-
-const FRAG_FINAL = `
-precision highp float;
-uniform sampler2D uSrc;
-uniform sampler2D uBloom;
-uniform vec2 uRes;
-uniform float uChroma;   // chromatic separation strength
-uniform float uGrainT;
-varying vec2 vUv;
-float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-void main() {
-  vec2 d = vUv - 0.5;
-  float edge = dot(d, d) * 4.0;                       // 0 centre .. ~2 corners
-  vec2 off = d * uChroma * 0.008 * edge;
-  vec3 col;
-  col.r = texture2D(uSrc, vUv + off).r;
-  col.g = texture2D(uSrc, vUv).g;
-  col.b = texture2D(uSrc, vUv - off).b;
-  col += texture2D(uBloom, vUv).rgb * 0.75;
-  col = 1.0 - exp(-col * 1.3);                         // soft shoulder
-  col *= 1.0 - 0.38 * pow(clamp(edge * 0.55, 0.0, 1.0), 1.5);   // vignette
-  col += (h(vUv * uRes + uGrainT) - 0.5) * 0.022;     // film grain
-  gl_FragColor = vec4(max(col, 0.0), 1.0);
-}`;
 
 function start(section) {
   const canvas = section.querySelector('.uv-gl');
-  const logo = section.querySelector('.uv-logo');
-  const disp = document.getElementById('uvDisp');
-  const smear = document.getElementById('uvSmear');
-  const fadeIns = section.querySelectorAll('.uv-in');
   const skipBtn = section.querySelector('.uv-skip');
+  const imgs = {};
+  TEX.forEach(k => { imgs[k] = section.querySelector('img[data-tex="' + k + '"]'); });
   const calm = window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let seen = false;
   try { seen = sessionStorage.getItem(SEEN_KEY) === '1'; } catch (e) {}
 
-  // logo reveal state (needed even without WebGL)
-  const S = { flow: 1 };      // flow speed: 1 during the void, slow after
-  const L = { disp: 24, blur: 46, op: 0 };
-  function setLogo() {
-    disp.setAttribute('scale', L.disp.toFixed(2));
-    logo.style.opacity = L.op;
-    smear.setAttribute('stdDeviation', L.blur.toFixed(2) + ' ' + (L.blur * 0.04).toFixed(2));
-    logo.style.filter = L.disp > 0.05 || L.blur > 0.05 ? 'url(#uvWarp)' : 'none';
+  function finishUI(instant) {
+    try { sessionStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
+    section.classList.add('uv-done', 'uv-logo-in');
+    if (instant) section.classList.add('uv-instant');
+    if (skipBtn) skipBtn.hidden = true;
   }
-  setLogo();
 
-  // ---- WebGL ----
-  let renderer;
+  let renderer = null;
   try {
     renderer = new WebGLRenderer({ canvas, antialias: false, alpha: false,
       powerPreference: 'high-performance' });
   } catch (e) { renderer = null; }
   if (!renderer || !renderer.capabilities) {
-    section.classList.add('uv-nogl');
-    finishUI(true);
-    return;
+    section.classList.add('uv-nogl'); finishUI(true); return;
   }
   renderer.setPixelRatio(1);
-  const cam = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+  const U = {
+    uRes: { value: new Vector2(1, 1) }, uAsp: { value: new Vector2(2.25, 2.29) },
+    uCenter04: { value: new Vector2(0.5, 0.5) }, uT: { value: 0 },
+    wFlash: { value: 0 }, wTear: { value: 0 }, wAcc: { value: 0 },
+    wVoid: { value: 0 }, wInk: { value: 0 },
+    zFlash: { value: 1 }, zTear: { value: 1 }, zAcc: { value: 1 },
+    zVoid: { value: 1 }, zInk: { value: 1 },
+    tearOpen: { value: 0 }, accT: { value: 0 }, smear: { value: 0 },
+    inkCover: { value: 0 }, inkSlide: { value: 0 }, impact: { value: 0 },
+    shake: { value: new Vector2() }, rot: { value: 0 }, idle: { value: 0 },
+    fade: { value: 0 }
+  };
+  TEX.forEach(k => { U[k] = { value: loadTexture(imgs[k]) }; });
+  const c04 = (section.getAttribute('data-ring') || '0.5 0.5').split(' ');
+  U.uCenter04.value.set(+c04[0], +c04[1]);
+  U.uAsp.value.set(imgs.t01.naturalWidth / imgs.t01.naturalHeight,
+    imgs.t04.naturalWidth / imgs.t04.naturalHeight);
+
+  const mat = new ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG,
+    uniforms: U, depthTest: false, depthWrite: false });
   const geo = new BufferGeometry();
   geo.setAttribute('position', new BufferAttribute(
     new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3));
-  const mesh = new Mesh(geo);
-  mesh.frustumCulled = false;
+  const mesh = new Mesh(geo, mat); mesh.frustumCulled = false;
   const scene = new Scene(); scene.add(mesh);
+  const cam = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-  const U = {
-    uRes: { value: new Vector2(1, 1) }, uAxis: { value: new Vector2(.6, .3) },
-    uTime: { value: 0 }, uPoint: { value: 0 }, uCollapse: { value: 0 },
-    uLens: { value: 0 }, uExpand: { value: 0 }, uStreak: { value: 0 },
-    uFlash: { value: 0 }, uEnergy: { value: 0 }
-  };
-  const mA = new ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG_ENERGY,
-    uniforms: U, depthTest: false, depthWrite: false });
-  const UB = { uSrc: { value: null }, uTexel: { value: new Vector2() } };
-  const mB = new ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG_BLOOM,
-    uniforms: UB, depthTest: false, depthWrite: false });
-  const UC = { uSrc: { value: null }, uBloom: { value: null },
-    uRes: { value: new Vector2() }, uChroma: { value: 1 }, uGrainT: { value: 0 } };
-  const mC = new ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG_FINAL,
-    uniforms: UC, depthTest: false, depthWrite: false });
-
-  const rtOpts = { type: HalfFloatType, minFilter: LinearFilter,
-    magFilter: LinearFilter, depthBuffer: false };
-  const rtA = new WebGLRenderTarget(4, 4, rtOpts);
-  const rtB = new WebGLRenderTarget(4, 4, rtOpts);
-
-  // adaptive resolution: energy pass at a fraction of the screen
+  // adaptive resolution
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const MAXS = Math.min(1, 0.9 * dpr), MINS = 0.4;
-  let scale = Math.min(MAXS, 0.75 * dpr);
+  const MAXS = Math.min(1.25, dpr), MINS = 0.45;
+  let scale = Math.min(MAXS, 1);
   let W = 0, H = 0;
   function resize() {
     W = section.clientWidth; H = section.clientHeight;
-    renderer.setSize(Math.round(W * Math.min(dpr, 1.5)),
-      Math.round(H * Math.min(dpr, 1.5)), false);
-    const aw = Math.max(2, Math.round(W * scale)), ah = Math.max(2, Math.round(H * scale));
-    rtA.setSize(aw, ah);
-    rtB.setSize(Math.max(2, aw >> 1), Math.max(2, ah >> 1));
-    U.uRes.value.set(aw, ah);
-    UB.uTexel.value.set(1 / aw, 1 / ah);
-    UC.uRes.value.set(W, H);
-    // the void hugs the logo: width from the logo, height from the screen
-    const lw = logo.getBoundingClientRect().width || W * 0.6;
-    U.uAxis.value.set(Math.max(0.3, (lw / H) * 0.62), 0.27);
+    const w = Math.max(2, Math.round(W * scale)), h = Math.max(2, Math.round(H * scale));
+    renderer.setSize(w, h, false);
+    U.uRes.value.set(w, h);
   }
   resize();
   window.addEventListener('resize', resize);
 
-  function render(dt) {
-    mesh.material = mA; renderer.setRenderTarget(rtA); renderer.render(scene, cam);
-    UB.uSrc.value = rtA.texture;
-    mesh.material = mB; renderer.setRenderTarget(rtB); renderer.render(scene, cam);
-    UC.uSrc.value = rtA.texture; UC.uBloom.value = rtB.texture;
-    UC.uGrainT.value = (UC.uGrainT.value + 17.3) % 1000;
-    mesh.material = mC; renderer.setRenderTarget(null); renderer.render(scene, cam);
-  }
+  // camera shake: a decaying kick, re-triggered on each impact
+  const K = { amp: 0 };
+  function kick(a) { K.amp = Math.max(K.amp, a); }
 
   // ---- the sequence ----
+  const tl = gsap.timeline({ paused: true });
+  // 0.0-1.0 flash: open from black into white, gently pulled toward us
+  tl.to(U.fade, { value: 1, duration: 0.25, ease: 'power2.out' }, 0)
+    .set(U.wFlash, { value: 1 }, 0)
+    .fromTo(U.zFlash, { value: 1.25 }, { value: 1.0, duration: 1.0, ease: 'expo.out' }, 0)
+  // 1.0-2.5 reality tears: anticipation (a small pull back), then the
+  // tear spreads out of the centre while the camera pushes in
+    .to(U.zFlash, { value: 0.96, duration: 0.18, ease: 'sine.inOut' }, 0.82)
+    .set(U.wTear, { value: 1 }, 1.0).set(U.wFlash, { value: 0 }, 1.0)
+    .fromTo(U.zTear, { value: 0.96 }, { value: 1.4, duration: 1.5, ease: 'power2.in' }, 1.0)
+    .fromTo(U.tearOpen, { value: 0 }, { value: 1, duration: 1.15, ease: 'expo.out' }, 1.0)
+    .fromTo(U.smear, { value: 0 }, { value: 1, duration: 0.5, ease: 'power3.in' }, 2.0)
+  // 2.5-4.5 acceleration: punch through into the tunnel
+    .set(U.wTear, { value: 0 }, 2.5).set(U.wAcc, { value: 1 }, 2.5)
+    .fromTo(U.accT, { value: 0 }, { value: 5.2, duration: 2.0, ease: 'power1.in' }, 2.5)
+    .fromTo(U.zAcc, { value: 1.0 }, { value: 1.12, duration: 2.0, ease: 'none' }, 2.5)
+    .to(U.smear, { value: 0.5, duration: 0.6, ease: 'power2.out' }, 2.5)
+    .to(U.smear, { value: 1.1, duration: 1.2, ease: 'power2.in' }, 3.2)
+    .fromTo(U.rot, { value: 0 }, { value: 0.05, duration: 2.0, ease: 'sine.inOut' }, 2.5)
+  // white flash on the way out of the tunnel
+    .set(U.zFlash, { value: 1.0 }, 4.25)
+    .fromTo(U.wFlash, { value: 0 }, { value: 1, duration: 0.2, ease: 'power2.in' }, 4.25)
+  // 4.5-7.5 the void: hard cut in, overshooting zoom settles, ambient life
+    .set(U.wAcc, { value: 0 }, 4.5).set(U.wVoid, { value: 1 }, 4.5)
+    .set(U.rot, { value: 0 }, 4.5)
+    .to(U.wFlash, { value: 0, duration: 0.55, ease: 'power2.out' }, 4.5)
+    .fromTo(U.zVoid, { value: 1.55 }, { value: 1.0, duration: 1.3, ease: 'expo.out' }, 4.5)
+    .fromTo(U.smear, { value: 0.9 }, { value: 0, duration: 0.9, ease: 'power3.out' }, 4.5)
+    .to(U.idle, { value: 1, duration: 2.0, ease: 'sine.inOut' }, 5.2)
+  // 7.5-9.5 ink transition: the void draws back, the ink slashes across,
+  // holds a beat, then drags off to reveal the void again
+    .to(U.zVoid, { value: 0.97, duration: 0.25, ease: 'sine.inOut' }, 7.25)
+    .set(U.wInk, { value: 1 }, 7.5)
+    .fromTo(U.inkCover, { value: 0 }, { value: 1, duration: 0.42, ease: 'expo.out' }, 7.5)
+    .fromTo(U.inkSlide, { value: -0.6 }, { value: 0.6, duration: 2.0, ease: 'power1.inOut' }, 7.5)
+    .fromTo(U.zInk, { value: 1.08 }, { value: 1.0, duration: 2.0, ease: 'power1.out' }, 7.5)
+    .to(U.zVoid, { value: 1.0, duration: 1.6, ease: 'power2.out' }, 7.6)
+    .to(U.inkCover, { value: 0, duration: 0.75, ease: 'power3.in' }, 8.75)
+    .set(U.wInk, { value: 0 }, 9.5)
+  // 9.5-13 logo reveal, then hold
+    .call(() => section.classList.add('uv-logo-in'), null, 9.55)
+    .call(() => finishUI(false), null, 11.2)
+    .to({}, { duration: 1.8 }, 11.2);
+  // impact frames: inverted black and white on each hit, with a shake
+  [[1.0, 0.05], [2.5, 0.07], [4.5, 0.05], [7.5, 0.035]].forEach(([at, len]) => {
+    tl.set(U.impact, { value: 1 }, at).set(U.impact, { value: 0 }, at + len)
+      .call(() => kick(0.02), null, at);
+  });
 
-  const tl = gsap.timeline({ paused: true, onComplete: () => finishUI(false) });
-  // Phase 1: the silence (0-1s)
-  tl.to(U.uPoint, { value: 1, duration: 0.75, ease: 'power2.out' }, 0.25)
-    .to(U.uLens, { value: 0.35, duration: 0.75, ease: 'sine.inOut' }, 0.25)
-  // Phase 2: collapse, then space is stretched apart (1-2.5s)
-    .to(U.uCollapse, { value: 1, duration: 0.35, ease: 'power3.in' }, 1.0)
-    .to(U.uLens, { value: 1, duration: 0.35, ease: 'power3.in' }, 1.0)
-    .to(U.uFlash, { value: 1, duration: 0.08, ease: 'none' }, 1.35)
-    .to(U.uFlash, { value: 0, duration: 0.95, ease: 'power2.out' }, 1.43)
-    .to(U.uPoint, { value: 0, duration: 0.3, ease: 'power2.out' }, 1.38)
-    .to(U.uStreak, { value: 1, duration: 0.12, ease: 'power2.out' }, 1.35)
-    .to(U.uStreak, { value: 0, duration: 1.35, ease: 'power2.inOut' }, 1.5)
-    .to(U.uExpand, { value: 1, duration: 1.25, ease: 'expo.out' }, 1.35)
-    .to(U.uLens, { value: 0.22, duration: 1.1, ease: 'power2.out' }, 1.4)
-  // Phase 3: the void (2.5-4.5s)
-    .to(U.uEnergy, { value: 1, duration: 1.8, ease: 'power2.out' }, 1.55)
-  // Phase 4: the energy settles; the logo resolves out of a distortion
-    .to(S, { flow: 0.2, duration: 1.6, ease: 'power2.inOut' }, 4.5)
-    .to(UC.uChroma, { value: 0.35, duration: 1.6, ease: 'power2.inOut' }, 4.5)
-    .to(L, { op: 1, duration: 0.5, ease: 'power1.out', onUpdate: setLogo }, 4.5)
-    .to(L, { disp: 0, blur: 0, duration: 1.3, ease: 'expo.out',
-      onUpdate: setLogo }, 4.55)
-    .to(section, { '--glint': 1, duration: 0.9, ease: 'power2.out' }, 5.5)
-  // Phase 5: the infinite state
-    .add(() => finishUI(false), 5.9);
-
-  function finishUI(instant) {
-    try { sessionStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
-    L.disp = 0; L.blur = 0; L.op = 1; setLogo();
-    section.style.setProperty('--glint', '1');
-    section.classList.add('uv-done');
-    if (instant) section.classList.add('uv-instant');
-    if (skipBtn) skipBtn.hidden = true;
-  }
-  function skip() {
-    tl.progress(1); S.flow = 0.2; finishUI(false);
-  }
+  function skip() { tl.progress(1); finishUI(false); }
   if (skipBtn) skipBtn.addEventListener('click', skip);
 
   // test hook: lets automated checks hold the sequence at a given moment
@@ -352,57 +300,48 @@ function start(section) {
   window.__elevareVoid = hook;
 
   // ---- loop ----
-  let flowT = 0, last = 0, acc = 0, frames = 0, lastGrow = 0, raf = 0;
-  let started = false;
-  function visible() {
-    return section.classList.contains('on') && !document.hidden;
-  }
+  let last = 0, acc = 0, frames = 0, lastGrow = 0, started = false, amb = 0;
+  function visible() { return section.classList.contains('on') && !document.hidden; }
+  function draw() { renderer.render(scene, cam); }
   function begin() {
     started = true;
-    if (calm) {                       // reduced motion: one still frame
-      tl.progress(1); S.flow = 0.2; finishUI(true);
-      flowT = 40; U.uTime.value = flowT; resize(); render(0);
-      return;
-    }
-    if (seen) {                        // already seen this visit: no replay
-      tl.progress(1); S.flow = 0.2; finishUI(true); flowT = 40;
-    } else {
-      if (skipBtn) skipBtn.hidden = false;
-      tl.play(0);
-    }
+    if (calm || seen) { tl.progress(1); amb = 40; finishUI(true); }
+    else { if (skipBtn) skipBtn.hidden = false; tl.play(0); }
+    if (calm) { resize(); draw(); }
   }
   function frame(now) {
-    raf = requestAnimationFrame(frame);
+    requestAnimationFrame(frame);
     if (!visible()) { last = 0; tl.pause(); return; }
-    // the screen may have been hidden (size 0) when we started
     if (section.clientWidth !== W || section.clientHeight !== H) resize();
     if (!started) { begin(); if (calm) return; }
     if (calm) return;
-    if (!hook.hold && tl.paused() && tl.progress() < 1 && started) tl.resume();
+    if (!hook.hold && tl.paused() && tl.progress() < 1) tl.resume();
     const dt = last ? Math.min(0.1, (now - last) / 1000) : 0.016;
     last = now;
-    flowT += dt * S.flow;
-    U.uTime.value = flowT;
-    render(dt);
-    // adapt resolution to keep the frame rate up
+    amb += dt * (tl.progress() >= 1 ? 0.6 : 1);     // calmer once settled
+    U.uT.value = amb;
+    K.amp *= Math.exp(-dt * 7.5);                     // shake decays
+    U.shake.value.set(Math.sin(now * 0.163) * K.amp,
+      Math.cos(now * 0.131) * K.amp * 0.7);
+    draw();
     acc += dt; frames++;
     if (frames >= 40 && !hook.fixed) {
       const avg = acc / frames; acc = 0; frames = 0;
-      if (avg > 0.024 && scale > MINS) { scale = Math.max(MINS, scale * 0.8); resize(); }
+      if (avg > 0.024 && scale > MINS) { scale = Math.max(MINS, scale * 0.82); resize(); }
       else if (avg < 0.0145 && scale < MAXS && now - lastGrow > 4000) {
-        scale = Math.min(MAXS, scale * 1.12); lastGrow = now; resize();
+        scale = Math.min(MAXS, scale * 1.1); lastGrow = now; resize();
       }
     }
   }
-  raf = requestAnimationFrame(frame);
+  requestAnimationFrame(frame);
 }
 
 function boot() {
   const s = document.getElementById('v-login');
   if (!s || !s.classList.contains('uv')) return;
-  const img = s.querySelector('.uv-logo');
-  if (img && !img.complete) img.addEventListener('load', () => start(s), { once: true });
-  else start(s);
+  const all = [].slice.call(s.querySelectorAll('img[data-tex], .uv-logo'));
+  Promise.all(all.map(i => (i.decode ? i.decode() : Promise.resolve())
+    .catch(() => {}))).then(() => start(s));
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', boot);

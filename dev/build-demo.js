@@ -49,8 +49,8 @@ html = html
   .replace('<script src="/brand.js"></script>', '<script>' + fs.readFileSync(R('brand.js'), 'utf8') + '</script>')
   .split('src="/logo.png"').join('src="" data-logo')
   .split('src="/emblem.png"').join('src="data:image/png;base64,' + b64('emblem.png') + '"')
-  .split('src="/elevare-wordmark.png"').join('src="data:image/png;base64,' +
-    b64('elevare-wordmark.png') + '"')
+  .replace(/(src="|url\()\/void\/([\w.]+)/g, (m, pre, f) => pre + 'data:image/' +
+    (f.endsWith('.png') ? 'png' : 'webp') + ';base64,' + b64('void/' + f))
   .replace('<script src="/domain.js" defer></script>', () => '<script>' +
     fs.readFileSync(R('domain.js'), 'utf8').split('</script').join('<\\/script') + '</script>')
   .replace('url(/fonts/bangers.woff2)', 'url(data:font/woff2;base64,' +

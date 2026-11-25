@@ -403,21 +403,19 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   position: relative; z-index: 2; display: flex; flex-direction: column;
   align-items: center; text-align: center; padding: 24px;
 }
-.uv-mark { position: relative; width: min(820px, 74vw); }
-.uv-logo { position: relative; z-index: 1; display: block; width: 100%;
-  height: auto; opacity: 0; user-select: none; }
-/* soft blue glint behind the star in the logo (not on the lettering) */
-.uv-glint {
-  position: absolute; left: 48.8%; top: 70.4%; z-index: 0; width: 42%;
-  height: 34%; translate: -50% -50%; pointer-events: none;
-  opacity: var(--glint, 0);
-  background:
-    radial-gradient(closest-side, rgba(150,190,255,.75), rgba(31,107,255,.25)
-      45%, transparent 75%) center / 22% 100% no-repeat,
-    radial-gradient(closest-side, rgba(120,170,255,.45), transparent 70%)
-      center / 100% 18% no-repeat;
-}
-.uv-nogl .uv-glint { opacity: 1; }
+/* textures for the shader (never shown directly) */
+.uv-tex { position: absolute; width: 1px; height: 1px; overflow: hidden;
+  opacity: 0; pointer-events: none; }
+.uv-tex img { width: 1px; height: 1px; }
+/* the logo: flat, independent, untouched. Size and position follow the
+   hero reference (about 39% of the width, centred in the ring). */
+.uv-mark { width: clamp(300px, 39vw, 760px); }
+.uv-logo { display: block; width: 100%; height: auto; user-select: none;
+  opacity: 0; clip-path: inset(0 50% 0 50%); transform: translateY(6px);
+  transition: opacity .5s ease, transform 1.1s cubic-bezier(.16,1,.3,1),
+    clip-path 1.1s cubic-bezier(.16,1,.3,1); }
+.uv-logo-in .uv-logo { opacity: 1; clip-path: inset(0 0 0 0);
+  transform: none; }
 /* navigation and entrance fade in once the logo has resolved */
 .uv-in { opacity: 0; visibility: hidden;
   transition: opacity 1.2s ease, visibility 0s 1.2s; }
@@ -434,7 +432,8 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 .uv-brand { color: #fff; letter-spacing: .5em; }
 .uv-navr { color: #7f8db0; }
 .uv-enter {
-  margin-top: 34px; display: inline-flex; align-items: baseline; gap: 12px;
+  margin-top: clamp(28px, 5vh, 56px); display: inline-flex;
+  align-items: baseline; gap: 12px;
   padding: 15px 34px 14px; color: #f2f6ff; text-decoration: none;
   border: 1px solid rgba(220,232,255,.38); background: rgba(2,4,12,.35);
   font: 700 13px/1 "Cinzel", Georgia, serif; letter-spacing: .42em;
@@ -459,13 +458,8 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   text-transform: uppercase; color: rgba(207,217,238,.55);
 }
 .uv-skip:hover, .uv-skip:focus-visible { color: #fff; outline: none; }
-/* no WebGL: a still rendition of the final state */
-.uv-nogl {
-  background:
-    radial-gradient(ellipse 44% 30% at 50% 50%, #000 62%, transparent 63%),
-    radial-gradient(ellipse 70% 55% at 50% 50%, rgba(160,190,255,.22),
-      rgba(31,107,255,.12) 45%, transparent 72%), #000;
-}
+/* no WebGL / reduced data: the supplied void panel as a still */
+.uv-nogl { background: #000 url(/void/04.webp) 50% 50% / cover no-repeat; }
 .uv-nogl .uv-gl { display: none; }
 @media (max-width: 700px) {
   .uv-nav { padding: 20px; letter-spacing: .3em; }
@@ -1173,26 +1167,23 @@ select.in { -webkit-appearance: none; appearance: none; }
 </section>
 
 <!-- Sign in: logo on the left, Discord entry on the right -->
-<section id="v-login" class="view door uv">
+<section id="v-login" class="view door uv" data-ring="0.508 0.511">
   <canvas class="uv-gl" data-lvr="1" aria-hidden="true"></canvas>
-  <svg class="uv-defs" width="0" height="0" aria-hidden="true" focusable="false">
-    <filter id="uvWarp" x="-35%" y="-30%" width="170%" height="160%">
-      <feGaussianBlur id="uvSmear" in="SourceGraphic" stdDeviation="46 2"
-        result="b"/>
-      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.05"
-        numOctaves="2" seed="11" result="n"/>
-      <feDisplacementMap id="uvDisp" in="b" in2="n" scale="24"
-        xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-  </svg>
+  <div class="uv-tex" aria-hidden="true">
+    <img data-tex="t01" src="/void/01.webp" alt="" data-lvr="1">
+    <img data-tex="t02" src="/void/02.webp" alt="" data-lvr="1">
+    <img data-tex="t03" src="/void/03.webp" alt="" data-lvr="1">
+    <img data-tex="t04" src="/void/04.webp" alt="" data-lvr="1">
+    <img data-tex="t05" src="/void/05.webp" alt="" data-lvr="1">
+    <img data-tex="t10" src="/void/10.webp" alt="" data-lvr="1">
+  </div>
   <header class="uv-nav uv-in">
     <span class="uv-brand">Elevare</span>
     <span class="uv-navr" id="brand-tag">Private Trading Community</span>
   </header>
   <div class="page">
     <div class="uv-mark">
-      <i class="uv-glint" aria-hidden="true"></i>
-      <img class="uv-logo" src="/elevare-wordmark.png" alt="Elevare">
+      <img class="uv-logo" src="/void/logo.png" alt="Elevare">
     </div>
     <a id="go" class="uv-enter uv-in" href="/api/login">
       <span>Enter</span><small>with Discord</small>
