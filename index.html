@@ -403,8 +403,21 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   position: relative; z-index: 2; display: flex; flex-direction: column;
   align-items: center; text-align: center; padding: 24px;
 }
-.uv-logo { display: block; width: min(820px, 74vw); height: auto;
-  opacity: 0; user-select: none; }
+.uv-mark { position: relative; width: min(820px, 74vw); }
+.uv-logo { position: relative; z-index: 1; display: block; width: 100%;
+  height: auto; opacity: 0; user-select: none; }
+/* soft blue glint behind the star in the logo (not on the lettering) */
+.uv-glint {
+  position: absolute; left: 48.8%; top: 70.4%; z-index: 0; width: 42%;
+  height: 34%; translate: -50% -50%; pointer-events: none;
+  opacity: var(--glint, 0);
+  background:
+    radial-gradient(closest-side, rgba(150,190,255,.75), rgba(31,107,255,.25)
+      45%, transparent 75%) center / 22% 100% no-repeat,
+    radial-gradient(closest-side, rgba(120,170,255,.45), transparent 70%)
+      center / 100% 18% no-repeat;
+}
+.uv-nogl .uv-glint { opacity: 1; }
 /* navigation and entrance fade in once the logo has resolved */
 .uv-in { opacity: 0; visibility: hidden;
   transition: opacity 1.2s ease, visibility 0s 1.2s; }
@@ -1163,10 +1176,12 @@ select.in { -webkit-appearance: none; appearance: none; }
 <section id="v-login" class="view door uv">
   <canvas class="uv-gl" data-lvr="1" aria-hidden="true"></canvas>
   <svg class="uv-defs" width="0" height="0" aria-hidden="true" focusable="false">
-    <filter id="uvWarp" x="-10%" y="-30%" width="120%" height="160%">
+    <filter id="uvWarp" x="-35%" y="-30%" width="170%" height="160%">
+      <feGaussianBlur id="uvSmear" in="SourceGraphic" stdDeviation="46 2"
+        result="b"/>
       <feTurbulence type="fractalNoise" baseFrequency="0.006 0.05"
         numOctaves="2" seed="11" result="n"/>
-      <feDisplacementMap id="uvDisp" in="SourceGraphic" in2="n" scale="70"
+      <feDisplacementMap id="uvDisp" in="b" in2="n" scale="24"
         xChannelSelector="R" yChannelSelector="G"/>
     </filter>
   </svg>
@@ -1175,7 +1190,10 @@ select.in { -webkit-appearance: none; appearance: none; }
     <span class="uv-navr" id="brand-tag">Private Trading Community</span>
   </header>
   <div class="page">
-    <img class="uv-logo" src="/elevare-wordmark.png" alt="Elevare">
+    <div class="uv-mark">
+      <i class="uv-glint" aria-hidden="true"></i>
+      <img class="uv-logo" src="/elevare-wordmark.png" alt="Elevare">
+    </div>
     <a id="go" class="uv-enter uv-in" href="/api/login">
       <span>Enter</span><small>with Discord</small>
     </a>

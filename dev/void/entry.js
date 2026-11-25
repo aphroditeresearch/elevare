@@ -60,7 +60,7 @@ float noise3(vec3 p) {
 }
 float fbm3(vec3 p) {
   float v = 0.0, a = 0.5;
-  for (int i = 0; i < 4; i++) { v += a * noise3(p); p = p * 2.03 + 1.7; a *= 0.5; }
+  for (int i = 0; i < 6; i++) { v += a * noise3(p); p = p * 2.03 + 1.7; a *= 0.5; }
   return v;
 }
 float fbm(vec2 p) {
@@ -102,60 +102,50 @@ void main() {
   col += vec3(0.0, 0.010, 0.035) * smoothstep(0.15, 1.5, r0)
        * (0.35 + 0.65 * uEnergy);
 
-  // energy currents: domain-warped noise, bent around the void.
-  // The bend is strongest at the void's edge and fades outward; the slow
-  // time terms move the flow without turning it into a spinning galaxy.
+  // ---- the domain: cel-shaded fractal clouds spiralling into the void ----
   float R = uExpand;
-  vec2 s = rot(0.42 / (r + 0.3) + 0.25 * sin(t * 0.021)) * q;
-  s *= 1.55 / (0.55 + 0.45 * r);          // compress outward: depth
-  vec2 w = vec2(fbm(s + vec2(0.0, t * 0.040)),
-                fbm(s + vec2(5.2, 1.3) - t * 0.033));
-  vec2 w2 = vec2(fbm(s + 2.8 * w + vec2(1.7, 9.2) + t * 0.018),
-                 fbm(s + 2.8 * w + vec2(8.3, 2.8) - t * 0.021));
-  float e = fbm(s * 1.3 + 3.0 * w2);
-
   float ang = atan(q.y, q.x);
-  vec2 cs = vec2(cos(ang), sin(ang));
-  // organic, uneven domain: the edge breathes a little and the energy is
-  // denser in some directions than others (never a uniform ring)
-  float dens = smoothstep(0.32, 0.72, fbm3(vec3(cs * 1.3, t * 0.045 + 3.0)));
-  R *= 1.0 + 0.05 * (fbm3(vec3(cs * 2.2, t * 0.03 + 9.0)) - 0.5);
-  float reach = mix(1.5, 0.55, dens);
-  float band = smoothstep(R, R + 0.06, r) * exp(-max(r - R, 0.0) * reach)
-             * (0.3 + 0.7 * dens);
-  float body  = smoothstep(0.47, 0.74, e);   // the cloud shapes
-  float crest = smoothstep(0.60, 0.66, e);   // their crisp icy edges
-  vec3 cobalt = vec3(0.07, 0.22, 1.0);
-  vec3 ice    = vec3(0.84, 0.92, 1.0);
-
-  // currents: ridged 3D noise, long along the void's edge and fine across
-  // it, so the energy streams around the darkness instead of spinning
+  vec2 cs0 = vec2(cos(ang), sin(ang));
+  // the void's edge breathes a little so it never reads as a perfect ring
+  R *= 1.0 + 0.045 * (fbm(cs0 * 2.0 + t * 0.03) - 0.5);
   float lr = log(max(r, 1e-3));
-  vec3 cp = vec3(cs * 1.6 + w2 * 0.9, lr * 5.0 - t * 0.12);
-  float f1 = 1.0 - abs(2.0 * fbm3(cp) - 1.0);
-  float f2 = 1.0 - abs(2.0 * fbm3(cp * vec3(1.9, 1.9, 1.7) + 4.1) - 1.0);
-  float fil = pow(f1, 9.0) * 0.9 + pow(f2, 14.0) * 0.7;
-  fil *= smoothstep(R, R + 0.04, r) * exp(-max(r - R, 0.0) * (0.8 + reach));
+  // logarithmic spiral: angle twists with depth, and the clouds drift
+  // inward toward the void over time (a tunnel converging on the centre)
+  float twist = ang + 1.15 * lr + t * 0.035;
+  vec2 cs = vec2(cos(twist), sin(twist));
+  vec3 cp = vec3(cs * 3.2, lr * 4.2 + t * 0.22);
+  vec3 warp = vec3(fbm3(cp * 0.7 + 3.1), fbm3(cp * 0.7 + 7.7), 0.0) - 0.5;
+  float v = fbm3(cp + warp * 0.9);                 // cloud field
+  // fractal edge breakup: jagged, snowflake-like cloud borders
+  float jag = fbm3(cp * 5.5 + warp * 2.0 + 21.0) - 0.5;
+  v += jag * 0.22;
+  float v2 = fbm3(cp * 1.9 + warp * 1.4 + 11.0);   // inner shading
+  // denser further out, sparse wisps near the void, and a dark moat
+  float th = mix(0.55, 0.45, smoothstep(R + 0.02, R + 0.9, r));
+  float aa = 0.007;
+  float cloud = smoothstep(th - aa, th + aa, v);
+  float lit   = smoothstep(th + 0.05 - aa, th + 0.05 + aa, v * 0.7 + v2 * 0.42);
+  float hi    = smoothstep(th + 0.13 - aa, th + 0.13 + aa, v * 0.6 + v2 * 0.55);
+  vec3 cobalt = vec3(0.09, 0.20, 0.95);
+  vec3 lav    = vec3(0.60, 0.66, 1.00);
+  vec3 white  = vec3(0.95, 0.97, 1.00);
+  vec3 cel = mix(cobalt * 0.85, mix(lav, white, hi), lit);
+  float reach = smoothstep(R, R + 0.05, r);
+  col += cel * cloud * reach * uEnergy;
+  // faint cobalt haze between the clouds, deepening toward the edges
+  col += cobalt * 0.05 * (1.0 - cloud) * reach * uEnergy
+       * smoothstep(R + 0.2, R + 1.4, r);
 
-  // fractal grain inside the clouds so no area is a flat fill
-  float grain = fbm(s * 7.0 + w2 * 2.0 - t * 0.05);
-  float tex = smoothstep(0.30, 0.72, grain);
-  vec3 en = mix(cobalt * 0.5, ice, crest * (0.55 + 0.45 * tex))
-          * (body * (0.25 + 0.45 * tex) + crest * (0.45 + 0.4 * tex));
-  en += mix(cobalt, ice, smoothstep(0.25, 0.9, fil)) * fil * 1.3;
-  col += en * band * uEnergy * 1.25;
-  col += cobalt * 0.03 * band * uEnergy * (1.0 - body);   // blue in the gaps
-
-  // the void itself: absolute darkness with a hairline event horizon
+  // the void itself: absolute darkness with a hairline edge
   col *= smoothstep(R - 0.012, R + 0.03, r);
-  float hz = exp(-pow((r - R - 0.012) / 0.010, 2.0));
-  col += mix(cobalt, ice, 0.55) * hz * 0.22 * uEnergy * step(0.05, R);
 
   // the first point of light, shrinking and brightening as it collapses
   float sz = mix(0.0032, 0.0016, uCollapse);
   float core = exp(-r0 * r0 / (sz * sz));
   float halo = (0.00006 + 0.00022 * uCollapse) / (r0 * r0 + 0.00004);
-  col += vec3(0.78, 0.89, 1.0) * uPoint * (core * 1.6 + halo);
+  float spike = exp(-abs(p.y) * 900.0) * exp(-abs(p.x) * 22.0)
+              + 0.55 * exp(-abs(p.x) * 900.0) * exp(-abs(p.y) * 38.0);
+  col += vec3(0.62, 0.78, 1.0) * uPoint * (core * 1.6 + halo + spike * 0.9);
 
   // directional light streaks thrown out as space is stretched apart
   float pa = atan(p.y, p.x);
@@ -163,11 +153,12 @@ void main() {
   float fine = noise(vec2(pa * 140.0, 3.0));
   float streak = pow(fine, 14.0) * 0.9 + pow(lane, 30.0) * 2.2;
   streak *= exp(-r0 * mix(9.0, 1.4, uStreak)) * smoothstep(0.0, 0.02, r0);
-  col += mix(vec3(0.16, 0.38, 1.0), vec3(0.85, 0.92, 1.0), pow(lane, 30.0))
-       * streak * uStreak;
+  col += mix(vec3(0.10, 0.30, 1.0), vec3(0.70, 0.82, 1.0), pow(lane, 30.0))
+       * streak * uStreak * 1.1;
+  col += vec3(0.30, 0.52, 1.0) * uStreak * (0.05 / (r0 * r0 * 40.0 + 0.05)) * 0.9;
 
   // the flash as the domain opens
-  col += vec3(0.84, 0.91, 1.0) * uFlash * exp(-r0 * 4.0) * 0.9;
+  col += vec3(0.62, 0.78, 1.0) * uFlash * exp(-r0 * 4.0) * 0.9;
 
   gl_FragColor = vec4(col, 1.0);
 }`;
@@ -223,6 +214,7 @@ function start(section) {
   const canvas = section.querySelector('.uv-gl');
   const logo = section.querySelector('.uv-logo');
   const disp = document.getElementById('uvDisp');
+  const smear = document.getElementById('uvSmear');
   const fadeIns = section.querySelectorAll('.uv-in');
   const skipBtn = section.querySelector('.uv-skip');
   const calm = window.matchMedia &&
@@ -232,12 +224,12 @@ function start(section) {
 
   // logo reveal state (needed even without WebGL)
   const S = { flow: 1 };      // flow speed: 1 during the void, slow after
-  const L = { disp: 70, blur: 10, op: 0 };
+  const L = { disp: 24, blur: 46, op: 0 };
   function setLogo() {
     disp.setAttribute('scale', L.disp.toFixed(2));
     logo.style.opacity = L.op;
-    logo.style.filter = L.disp > 0.05 || L.blur > 0.05 ?
-      'url(#uvWarp) blur(' + L.blur.toFixed(2) + 'px)' : 'none';
+    smear.setAttribute('stdDeviation', L.blur.toFixed(2) + ' ' + (L.blur * 0.04).toFixed(2));
+    logo.style.filter = L.disp > 0.05 || L.blur > 0.05 ? 'url(#uvWarp)' : 'none';
   }
   setLogo();
 
@@ -284,8 +276,8 @@ function start(section) {
 
   // adaptive resolution: energy pass at a fraction of the screen
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const MAXS = Math.min(1, 0.75 * dpr), MINS = 0.4;
-  let scale = Math.min(MAXS, 0.6 * dpr);
+  const MAXS = Math.min(1, 0.9 * dpr), MINS = 0.4;
+  let scale = Math.min(MAXS, 0.75 * dpr);
   let W = 0, H = 0;
   function resize() {
     W = section.clientWidth; H = section.clientHeight;
@@ -335,14 +327,16 @@ function start(section) {
     .to(S, { flow: 0.2, duration: 1.6, ease: 'power2.inOut' }, 4.5)
     .to(UC.uChroma, { value: 0.35, duration: 1.6, ease: 'power2.inOut' }, 4.5)
     .to(L, { op: 1, duration: 0.5, ease: 'power1.out', onUpdate: setLogo }, 4.5)
-    .to(L, { disp: 0, blur: 0, duration: 1.4, ease: 'power3.out',
+    .to(L, { disp: 0, blur: 0, duration: 1.3, ease: 'expo.out',
       onUpdate: setLogo }, 4.55)
+    .to(section, { '--glint': 1, duration: 0.9, ease: 'power2.out' }, 5.5)
   // Phase 5: the infinite state
     .add(() => finishUI(false), 5.9);
 
   function finishUI(instant) {
     try { sessionStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
     L.disp = 0; L.blur = 0; L.op = 1; setLogo();
+    section.style.setProperty('--glint', '1');
     section.classList.add('uv-done');
     if (instant) section.classList.add('uv-instant');
     if (skipBtn) skipBtn.hidden = true;
@@ -353,7 +347,8 @@ function start(section) {
   if (skipBtn) skipBtn.addEventListener('click', skip);
 
   // test hook: lets automated checks hold the sequence at a given moment
-  const hook = { tl: tl, hold: false };
+  const hook = { tl: tl, hold: false, fixed: false,
+    setScale: (v) => { scale = v; hook.fixed = true; resize(); } };
   window.__elevareVoid = hook;
 
   // ---- loop ----
@@ -391,7 +386,7 @@ function start(section) {
     render(dt);
     // adapt resolution to keep the frame rate up
     acc += dt; frames++;
-    if (frames >= 40) {
+    if (frames >= 40 && !hook.fixed) {
       const avg = acc / frames; acc = 0; frames = 0;
       if (avg > 0.024 && scale > MINS) { scale = Math.max(MINS, scale * 0.8); resize(); }
       else if (avg < 0.0145 && scale < MAXS && now - lastGrow > 4000) {
