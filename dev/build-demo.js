@@ -49,10 +49,9 @@ html = html
   .replace('<script src="/brand.js"></script>', '<script>' + fs.readFileSync(R('brand.js'), 'utf8') + '</script>')
   .split('src="/logo.png"').join('src="" data-logo')
   .split('src="/emblem.png"').join('src="data:image/png;base64,' + b64('emblem.png') + '"')
-  .replace(/(src="|url\()\/void\/([\w.]+)/g, (m, pre, f) => pre + 'data:image/' +
-    (f.endsWith('.png') ? 'png' : 'webp') + ';base64,' + b64('void/' + f))
-  .replace('<script src="/domain.js" defer></script>', () => '<script>' +
-    fs.readFileSync(R('domain.js'), 'utf8').split('</script').join('<\\/script') + '</script>')
+  .replace(/(src="|url\(|poster="|data-src=")\/media\/([\w.-]+)/g, (m, pre, f) =>
+    pre + 'data:' + ({ png: 'image/png', jpg: 'image/jpeg', mp4: 'video/mp4' })[f.split('.').pop()] +
+    ';base64,' + b64('media/' + f))
   .replace('url(/fonts/bangers.woff2)', 'url(data:font/woff2;base64,' +
     b64('fonts/bangers.woff2') + ')');
 

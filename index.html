@@ -9,7 +9,6 @@
 <title>Elevare</title>
 <link rel="icon" href="/favicon.png" type="image/png">
 <script src="/brand.js"></script>
-<script src="/domain.js" defer></script>
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preload" href="/fonts/cinzel.woff2" as="font" type="font/woff2"
   crossorigin>
@@ -391,32 +390,34 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   .half { display: none; }
 }
 
-/* ---------- sign-in: the void (WebGL intro, see dev/void/entry.js) -----
-   /domain.js draws the environment on .uv-gl; the logo is a separate,
-   untouched <img> above it so it stays perfectly sharp. */
+/* ---------- sign-in: supplied video intro + looping domain ----------
+   /media/intro.mp4 plays once per browser session, then hands off to
+   /media/domain-loop.mp4, which keeps running behind the sign-in screen.
+   No effects are added to the video; the logo is the supplied PNG. */
 .uv { background: #000; }
 .uv .glow, .uv .sparks, .uv .bigv, .uv .floor, .uv .frame { display: none; }
-.uv-gl { position: absolute; inset: 0; width: 100%; height: 100%;
-  display: block; }
-.uv-defs { position: absolute; width: 0; height: 0; }
-.uv .page {
-  position: relative; z-index: 2; display: flex; flex-direction: column;
-  align-items: center; text-align: center; padding: 24px;
+.uv-stage { position: absolute; inset: 0; overflow: hidden; background: #000; }
+.uv-stage video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: 50% 50%; display: block;
+  pointer-events: none;
 }
-/* textures for the shader (never shown directly) */
-.uv-tex { position: absolute; width: 1px; height: 1px; overflow: hidden;
-  opacity: 0; pointer-events: none; }
-.uv-tex img { width: 1px; height: 1px; }
-/* the logo: flat, independent, untouched. Size and position follow the
-   hero reference (about 39% of the width, centred in the ring). */
-.uv-mark { width: clamp(300px, 39vw, 760px); }
-.uv-logo { display: block; width: 100%; height: auto; user-select: none;
-  opacity: 0; clip-path: inset(0 50% 0 50%); transform: translateY(6px);
-  transition: opacity .5s ease, transform 1.1s cubic-bezier(.16,1,.3,1),
-    clip-path 1.1s cubic-bezier(.16,1,.3,1); }
-.uv-logo-in .uv-logo { opacity: 1; clip-path: inset(0 0 0 0);
-  transform: none; }
-/* navigation and entrance fade in once the logo has resolved */
+.uv-loop { z-index: 0; }
+.uv-intro { z-index: 1; }
+.uv-intro.gone { visibility: hidden; }
+/* the logo sits at the measured centre of the domain (placed by script) */
+.uv-logo {
+  position: absolute; left: 50%; top: 50%; z-index: 2; height: auto;
+  width: 240px; translate: -50% -50%; user-select: none; pointer-events: none;
+  opacity: 0; transition: opacity .9s ease;
+}
+.uv-logo-in .uv-logo { opacity: 1; }
+.uv .page {
+  position: absolute; left: 0; right: 0; bottom: clamp(28px, 9vh, 110px);
+  z-index: 3; display: flex; flex-direction: column; align-items: center;
+  text-align: center; padding: 0 20px;
+}
+/* navigation and interface fade in once the domain has established */
 .uv-in { opacity: 0; visibility: hidden;
   transition: opacity 1.2s ease, visibility 0s 1.2s; }
 .uv-done .uv-in { opacity: 1; visibility: visible;
@@ -430,40 +431,37 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   text-transform: uppercase; color: #cfd9ee;
 }
 .uv-brand { color: #fff; letter-spacing: .5em; }
-.uv-navr { color: #7f8db0; }
+.uv-navr { color: #8f9bb8; }
 .uv-enter {
-  margin-top: clamp(28px, 5vh, 56px); display: inline-flex;
-  align-items: baseline; gap: 12px;
+  display: inline-flex; align-items: baseline; gap: 12px;
   padding: 15px 34px 14px; color: #f2f6ff; text-decoration: none;
-  border: 1px solid rgba(220,232,255,.38); background: rgba(2,4,12,.35);
+  border: 1px solid rgba(220,232,255,.42); background: rgba(0,0,0,.45);
   font: 700 13px/1 "Cinzel", Georgia, serif; letter-spacing: .42em;
   text-transform: uppercase;
   transition: border-color .25s ease, background .25s ease,
-    box-shadow .25s ease, opacity 1.2s ease .15s, visibility 0s;
+    opacity 1.2s ease .15s, visibility 0s;
 }
 .uv-enter small { font: 500 10px/1 Inter, system-ui, sans-serif;
-  letter-spacing: .28em; color: #8fa6d6; }
+  letter-spacing: .28em; color: #a8b8dc; }
 .uv-enter:hover, .uv-enter:focus-visible {
-  border-color: rgba(120,165,255,.85); background: rgba(31,107,255,.14);
-  box-shadow: 0 0 28px rgba(31,107,255,.28); outline: none;
+  border-color: rgba(255,255,255,.85); background: rgba(0,0,0,.65);
+  outline: none;
 }
 #v-login #go[hidden] { display: none; }
 .uv .err { margin-top: 14px; color: #ff6b73; font-weight: 600; }
-.uv .fine { margin: 22px 0 0; font-size: 10px; letter-spacing: .3em;
-  text-transform: uppercase; color: #5f6a86; }
+.uv .fine { margin: 18px 0 0; font-size: 10px; letter-spacing: .3em;
+  text-transform: uppercase; color: #8a93ad; }
 .uv-skip {
-  position: absolute; left: clamp(16px, 3vw, 40px); bottom: 28px;
-  z-index: 3; padding: 8px 2px; background: none; border: 0; cursor: pointer;
+  position: absolute; left: clamp(16px, 3vw, 40px); bottom: 24px; z-index: 4;
+  padding: 8px 2px; background: none; border: 0; cursor: pointer;
   font: 600 10px/1 Inter, system-ui, sans-serif; letter-spacing: .3em;
-  text-transform: uppercase; color: rgba(207,217,238,.55);
+  text-transform: uppercase; color: rgba(230,236,250,.55);
 }
 .uv-skip:hover, .uv-skip:focus-visible { color: #fff; outline: none; }
-/* no WebGL / reduced data: the supplied void panel as a still */
-.uv-nogl { background: #000 url(/void/04.webp) 50% 50% / cover no-repeat; }
-.uv-nogl .uv-gl { display: none; }
 @media (max-width: 700px) {
   .uv-nav { padding: 20px; letter-spacing: .3em; }
   .uv-navr { display: none; }
+  .uv-skip { left: auto; right: 16px; top: 18px; bottom: auto; }
 }
 
 /* ---------- app shell ---------- */
@@ -1167,24 +1165,22 @@ select.in { -webkit-appearance: none; appearance: none; }
 </section>
 
 <!-- Sign in: logo on the left, Discord entry on the right -->
-<section id="v-login" class="view door uv" data-ring="0.508 0.511">
-  <canvas class="uv-gl" data-lvr="1" aria-hidden="true"></canvas>
-  <div class="uv-tex" aria-hidden="true">
-    <img data-tex="t01" src="/void/01.webp" alt="" data-lvr="1">
-    <img data-tex="t02" src="/void/02.webp" alt="" data-lvr="1">
-    <img data-tex="t03" src="/void/03.webp" alt="" data-lvr="1">
-    <img data-tex="t04" src="/void/04.webp" alt="" data-lvr="1">
-    <img data-tex="t05" src="/void/05.webp" alt="" data-lvr="1">
-    <img data-tex="t10" src="/void/10.webp" alt="" data-lvr="1">
+<section id="v-login" class="view door uv" data-domain="0.4992 0.4986 0.1719"
+  data-vw="640" data-vh="360">
+  <div class="uv-stage">
+    <video class="uv-loop" muted loop playsinline preload="auto"
+      disablepictureinpicture data-lvr="1" aria-hidden="true"
+      poster="/media/loop-poster.jpg" data-src="/media/domain-loop.mp4"></video>
+    <video class="uv-intro" muted playsinline preload="none"
+      disablepictureinpicture data-lvr="1" aria-hidden="true"
+      poster="/media/intro-poster.jpg" data-src="/media/intro.mp4"></video>
+    <img class="uv-logo" src="/media/logo.png" alt="Elevare">
   </div>
   <header class="uv-nav uv-in">
     <span class="uv-brand">Elevare</span>
     <span class="uv-navr" id="brand-tag">Private Trading Community</span>
   </header>
   <div class="page">
-    <div class="uv-mark">
-      <img class="uv-logo" src="/void/logo.png" alt="Elevare">
-    </div>
     <a id="go" class="uv-enter uv-in" href="/api/login">
       <span>Enter</span><small>with Discord</small>
     </a>
@@ -3765,6 +3761,155 @@ select.in { -webkit-appearance: none; appearance: none; }
     var first = (d.user.name || '').split(' ')[0];
     setTimeout(function () { toast(greeting() + ', ' + first + '.'); }, 500);
   }
+  // ---------- sign-in video: intro once per session, then the loop ----------
+  (function () {
+    var sec = document.getElementById('v-login');
+    if (!sec || !sec.classList.contains('uv')) return;
+    var intro = sec.querySelector('.uv-intro');
+    var loop = sec.querySelector('.uv-loop');
+    var logo = sec.querySelector('.uv-logo');
+    var skipBtn = sec.querySelector('.uv-skip');
+    var KEY = 'elevare.introSeen';
+    var calm = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var seen = false;
+    try { seen = sessionStorage.getItem(KEY) === '1'; } catch (e) {}
+    var d = (sec.getAttribute('data-domain') || '0.5 0.5 0.17').split(' ');
+    var VW = +sec.getAttribute('data-vw') || 1920;
+    var VH = +sec.getAttribute('data-vh') || 1080;
+    var state = 'idle';           // idle -> intro -> loop
+    var uiTimer = 0;
+
+    // Put the logo on the domain's centre for the current screen. Videos
+    // are cover-fitted, so map the measured point through the same scale.
+    function place() {
+      var W = sec.clientWidth, H = sec.clientHeight;
+      if (!W || !H) return;
+      var s = Math.max(W / VW, H / VH);
+      var x = W / 2 + (+d[0] - 0.5) * VW * s;
+      var y = H / 2 + (+d[1] - 0.5) * VH * s;
+      var core = +d[2] * VW * s;            // dark core diameter, px
+      var w = Math.min(core * 0.92, W * 0.86);
+      logo.style.left = x + 'px'; logo.style.top = y + 'px';
+      logo.style.width = Math.round(w) + 'px';
+    }
+    window.addEventListener('resize', place);
+
+    function play(v) {
+      try {
+        var p = v.play();
+        if (p && p.catch) p.catch(function () { autoplayBlocked(); });
+      } catch (e) { autoplayBlocked(); }
+    }
+    function showUI(instant) {
+      try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+      if (instant) setCls(sec, 'uv-instant', true);
+      setCls(sec, 'uv-logo-in', true);
+      setCls(sec, 'uv-done', true);
+      if (skipBtn) skipBtn.hidden = true;
+    }
+    // hand off to the loop. Its first frame is the intro's last frame and
+    // is also its poster, so nothing visible changes at the cut
+    function toLoop(fromSkip) {
+      if (state === 'loop') return;
+      state = 'loop';
+      if (skipBtn) skipBtn.hidden = true;
+      try { loop.currentTime = 0; } catch (e) {}
+      if (!calm) play(loop);
+      var hide = function () {
+        intro.pause(); setCls(intro, 'gone', true);
+      };
+      if (fromSkip || !loop.requestVideoFrameCallback) hide();
+      else loop.requestVideoFrameCallback(hide);   // first loop frame is up
+      // the domain establishes, then the logo and the interface arrive
+      setCls(sec, 'uv-logo-in', true);
+      clearTimeout(uiTimer);
+      uiTimer = setTimeout(function () { showUI(false); }, fromSkip ? 150 : 900);
+    }
+    function autoplayBlocked() {
+      // muted autoplay refused (rare): show the domain still and the site,
+      // then start the loop on the first touch or click
+      setCls(intro, 'gone', true); state = 'loop'; showUI(true);
+      var go = function () {
+        document.removeEventListener('pointerdown', go, true);
+        if (!calm) { var p = loop.play(); if (p && p.catch) p.catch(function () {}); }
+      };
+      document.addEventListener('pointerdown', go, true);
+    }
+    if (skipBtn) skipBtn.addEventListener('click', function () { toLoop(true); });
+
+    function startIntro() {
+      state = 'intro';
+      intro.src = intro.getAttribute('data-src');
+      intro.preload = 'auto';
+      intro.load();
+      var begun = false;
+      var begin = function () {
+        if (begun || state !== 'intro') return;
+        begun = true;
+        if (skipBtn) skipBtn.hidden = false;
+        play(intro);
+      };
+      // start once enough is buffered to play through without stalling
+      // (the intro poster, its first frame, shows meanwhile: no black)
+      intro.addEventListener('canplaythrough', begin);
+      setTimeout(begin, 4000);
+      // start the loop a hair early so its first frame is decoded and
+      // waiting underneath when the intro reaches its last frame
+      var armed = false;
+      var watch = function (now, meta) {
+        var left = intro.duration - (meta ? meta.mediaTime : intro.currentTime);
+        if (!armed && left < 0.25) {
+          armed = true;
+          try { loop.currentTime = 0; } catch (e) {}
+        }
+        if (state === 'intro' && intro.requestVideoFrameCallback) {
+          intro.requestVideoFrameCallback(watch);
+        }
+      };
+      if (intro.requestVideoFrameCallback) intro.requestVideoFrameCallback(watch);
+      intro.addEventListener('ended', function () { toLoop(false); });
+      intro.addEventListener('error', function () { toLoop(true); });
+    }
+
+    function start() {
+      loop.src = loop.getAttribute('data-src');
+      loop.load();
+      place();
+      if (calm) {               // reduced motion: the domain as a still
+        setCls(intro, 'gone', true); state = 'loop'; showUI(true); return;
+      }
+      if (seen) {               // already seen this session: straight to loop
+        setCls(intro, 'gone', true); state = 'loop'; play(loop);
+        showUI(true); return;
+      }
+      startIntro();
+    }
+
+    // run only while the sign-in screen is showing; pause the loop behind
+    // the members' area so it costs nothing there
+    var started = false;
+    function tick() {
+      var on = sec.classList.contains('on') && !document.hidden;
+      if (on && !started) { started = true; start(); }
+      if (!started) return;
+      if (on) {
+        place();
+        if (state === 'loop' && !calm && loop.paused &&
+          sec.classList.contains('uv-done')) {
+          var p = loop.play(); if (p && p.catch) p.catch(function () {});
+        }
+        if (state === 'intro' && intro.paused && intro.currentTime > 0 &&
+          !intro.ended) play(intro);
+      } else {
+        if (!loop.paused) loop.pause();
+        if (state === 'intro' && !intro.paused) intro.pause();
+      }
+    }
+    setInterval(tick, 300);
+    document.addEventListener('visibilitychange', tick);
+    tick();
+  })();
   // soft light following the cursor on the door screens: one transform per
   // frame, composited on the GPU, so it tracks the mouse with no lag
   (function () {

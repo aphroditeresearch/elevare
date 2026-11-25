@@ -10,27 +10,27 @@ lives in `brand.js` plus the three images.
 Stack: static `index.html` + 6 Vercel serverless functions + Upstash Redis
 (keys prefixed `elevare:`, or `REDIS_PREFIX`). No servers to run, no npm dependencies.
 
-## Sign-in intro (the void)
+## Sign-in intro (video)
 
-The sign-in screen's animation is `/domain.js`: Three.js (WebGL shaders)
-and GSAP, bundled into one self-hosted file. The logo is a plain image
-above it (`elevare-wordmark.png`) so it is never blurred by the effects.
+The sign-in screen plays `media/intro.mp4` once per browser session, then
+hands off to `media/domain-loop.mp4`, which loops behind the sign-in page.
+The logo is `media/logo.png`, placed at the centre of the domain.
 
-- Plays once per browser visit; later visits in the same tab session go
-  straight to the finished screen. A "Skip intro" link shows while it runs.
-- Reduced-motion users get the finished screen without the animation;
-  browsers without WebGL get a still version.
-- Resolution adapts on slower computers to keep it smooth.
+To replace the videos, overwrite these files (same names):
 
-To change it, edit `dev/void/entry.js`, then rebuild:
+| File | What it must be |
+|---|---|
+| `media/intro.mp4` | The intro. H.264, ideally 1920x1080 or larger, `+faststart`. Its **last frame** must equal the loop's first frame. |
+| `media/domain-loop.mp4` | A seamless loop of the established domain (last frame flows into the first). |
+| `media/intro-poster.jpg` | The intro's first frame (shown while it buffers). |
+| `media/loop-poster.jpg` | The loop's first frame (reduced-motion still, and the frame under the handoff). |
 
-```
-cd dev/void
-npm install
-npm run build      # writes /domain.js
-```
+If the new videos are a different size, or the domain is in a different
+place, update `data-vw`, `data-vh` and `data-domain` ("x y core", all as
+fractions of the video width/height) on the `#v-login` section.
 
-and commit both files. (`dev/` is never uploaded to the live site.)
+Reduced-motion users get the domain still and no intro; a "Skip intro"
+link shows while the intro plays.
 
 ## Keeping Elevare separate from Akon V2
 
