@@ -10,6 +10,28 @@ lives in `brand.js` plus the three images.
 Stack: static `index.html` + 6 Vercel serverless functions + Upstash Redis
 (keys prefixed `elevare:`, or `REDIS_PREFIX`). No servers to run, no npm dependencies.
 
+## Sign-in intro (the void)
+
+The sign-in screen's animation is `/domain.js`: Three.js (WebGL shaders)
+and GSAP, bundled into one self-hosted file. The logo is a plain image
+above it (`elevare-wordmark.png`) so it is never blurred by the effects.
+
+- Plays once per browser visit; later visits in the same tab session go
+  straight to the finished screen. A "Skip intro" link shows while it runs.
+- Reduced-motion users get the finished screen without the animation;
+  browsers without WebGL get a still version.
+- Resolution adapts on slower computers to keep it smooth.
+
+To change it, edit `dev/void/entry.js`, then rebuild:
+
+```
+cd dev/void
+npm install
+npm run build      # writes /domain.js
+```
+
+and commit both files. (`dev/` is never uploaded to the live site.)
+
 ## Keeping Elevare separate from Akon V2
 
 Elevare started from the same code as Akon V2 but is its own project. Nothing

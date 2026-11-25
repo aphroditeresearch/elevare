@@ -1,0 +1,13 @@
+{
+  "name": "elevare-void-build",
+  "private": true,
+  "description": "Builds /domain.js (the sign-in intro: Three.js + GSAP + shaders) from entry.js.",
+  "scripts": {
+    "build": "esbuild entry.js --bundle --minify --format=iife --target=chrome100 --legal-comments=none --outfile=../../domain.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.0",
+    "gsap": "3.12.5",
+    "three": "0.170.0"
+  }
+}

@@ -9,6 +9,7 @@
 <title>Elevare</title>
 <link rel="icon" href="/favicon.png" type="image/png">
 <script src="/brand.js"></script>
+<script src="/domain.js" defer></script>
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preload" href="/fonts/cinzel.woff2" as="font" type="font/woff2"
   crossorigin>
@@ -390,108 +391,72 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   .half { display: none; }
 }
 
-/* ---------- sign-in: void expansion ----------
-   Black. A point of light tears open into a slit, the slit floods the
-   screen white, then a sphere of darkness expands from the centre and
-   swallows it: inside is an endless starfield rushing outward through
-   blue nebulae. The rush slows, a light gathers at the centre and the
-   ELEVARE wordmark resolves out of it. (~3.8s; stars then drift.) */
-.void { background: #000; }
-.void .glow, .void .sparks, .void .bigv, .void .floor, .void .frame {
-  display: none; }
-.v-white { position: absolute; inset: 0; z-index: 1; background: #fff;
-  opacity: 0; pointer-events: none;
-  animation: vWhite 1.1s .55s linear backwards; }
-@keyframes vWhite { 0% { opacity: 0; } 8% { opacity: 1; }
-  99% { opacity: 1; } 100% { opacity: 0; } }
-.v-slit {
-  position: absolute; left: 0; right: 0; top: 50%; z-index: 2; height: 2px;
-  margin-top: -1px; background: #fff; pointer-events: none; opacity: 0;
-  box-shadow: 0 0 18px 4px rgba(160,205,255,.9),
-    0 0 60px 12px rgba(31,107,255,.6);
-  animation: vSlit .62s .12s cubic-bezier(.7,0,.3,1) backwards;
-}
-@keyframes vSlit {
-  0% { opacity: 1; transform: scaleX(0); }
-  65% { opacity: 1; transform: scaleX(1) scaleY(1); }
-  100% { opacity: 1; transform: scaleX(1) scaleY(500); }
-}
-.v-stage { position: absolute; inset: 0; z-index: 3; display: flex;
-  align-items: center; justify-content: center;
-  animation: vOpen .7s .82s cubic-bezier(.55,0,.25,1) backwards; }
-@keyframes vOpen { from { clip-path: circle(0% at 50% 50%); }
-  to { clip-path: circle(75% at 50% 50%); } }
-/* glowing boundary of the expanding domain */
-.v-rim {
-  position: absolute; left: 50%; top: 50%; z-index: 4; width: 150vmax;
-  height: 150vmax; margin: -75vmax 0 0 -75vmax; border-radius: 50%;
-  pointer-events: none; opacity: 0;
-  box-shadow: 0 0 0 2px #fff, 0 0 40px 10px rgba(140,196,255,.9),
-    inset 0 0 60px 14px rgba(31,107,255,.8);
-  animation: vRim .7s .82s cubic-bezier(.55,0,.25,1) backwards;
-}
-@keyframes vRim { 0% { opacity: 1; transform: scale(0); }
-  85% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
-.v-sky { position: absolute; inset: 0; width: 100%; height: 100%;
+/* ---------- sign-in: the void (WebGL intro, see dev/void/entry.js) -----
+   /domain.js draws the environment on .uv-gl; the logo is a separate,
+   untouched <img> above it so it stays perfectly sharp. */
+.uv { background: #000; }
+.uv .glow, .uv .sparks, .uv .bigv, .uv .floor, .uv .frame { display: none; }
+.uv-gl { position: absolute; inset: 0; width: 100%; height: 100%;
   display: block; }
-/* light gathering at the centre before the wordmark resolves */
-.v-core {
-  position: absolute; left: 50%; top: 50%; width: 70vmin; height: 70vmin;
-  margin: -35vmin 0 0 -35vmin; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, #fff, rgba(190,220,255,.8) 18%,
-    rgba(31,107,255,.35) 45%, transparent 70%);
-  opacity: 0; animation: vCore 1s 2.45s ease-in-out backwards;
-}
-@keyframes vCore { 0% { opacity: 0; transform: scale(.05); }
-  55% { opacity: 1; transform: scale(.55); }
-  100% { opacity: 0; transform: scale(1.6); } }
-.void .page {
+.uv-defs { position: absolute; width: 0; height: 0; }
+.uv .page {
   position: relative; z-index: 2; display: flex; flex-direction: column;
   align-items: center; text-align: center; padding: 24px;
 }
-.void .page:before {   /* deep space pooled behind the wordmark */
-  content: ""; position: absolute; left: 50%; top: 50%; z-index: -1;
-  width: 150%; height: 190%; translate: -50% -50%; pointer-events: none;
-  background: radial-gradient(closest-side, rgba(1,2,10,.82),
-    rgba(1,2,10,.5) 55%, transparent);
-  animation: vFade2 1s 2.9s ease backwards;
+.uv-logo { display: block; width: min(820px, 74vw); height: auto;
+  opacity: 0; user-select: none; }
+/* navigation and entrance fade in once the logo has resolved */
+.uv-in { opacity: 0; visibility: hidden;
+  transition: opacity 1.2s ease, visibility 0s 1.2s; }
+.uv-done .uv-in { opacity: 1; visibility: visible;
+  transition: opacity 1.2s ease .15s, visibility 0s; }
+.uv-instant .uv-in, .uv-instant .uv-logo { transition: none; }
+.uv-nav {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 26px clamp(20px, 4vw, 56px);
+  font: 700 11px/1 "Cinzel", Georgia, serif; letter-spacing: .42em;
+  text-transform: uppercase; color: #cfd9ee;
 }
-@keyframes vFade2 { from { opacity: 0; } to { opacity: 1; } }
-.void .cap {
-  margin: 0 0 6px; font: 700 13px/1 "Cinzel", Georgia, serif;
-  letter-spacing: .6em; padding-left: .6em; text-transform: uppercase;
-  color: #b9d3ff; animation: vFade .6s 3.5s ease backwards;
+.uv-brand { color: #fff; letter-spacing: .5em; }
+.uv-navr { color: #7f8db0; }
+.uv-enter {
+  margin-top: 34px; display: inline-flex; align-items: baseline; gap: 12px;
+  padding: 15px 34px 14px; color: #f2f6ff; text-decoration: none;
+  border: 1px solid rgba(220,232,255,.38); background: rgba(2,4,12,.35);
+  font: 700 13px/1 "Cinzel", Georgia, serif; letter-spacing: .42em;
+  text-transform: uppercase;
+  transition: border-color .25s ease, background .25s ease,
+    box-shadow .25s ease, opacity 1.2s ease .15s, visibility 0s;
 }
-.v-mark { display: block; width: min(780px, 80vw); cursor: pointer;
-  outline: none; -webkit-tap-highlight-color: transparent;
-  transition: filter .3s ease;
-  animation: vMark .75s 2.95s cubic-bezier(.2,.8,.2,1) backwards; }
-.v-mark img { display: block; width: 100%; height: auto; }
-@keyframes vMark {
-  0% { opacity: 0; transform: scale(1.35); filter: blur(18px)
-    brightness(3); }
-  100% { opacity: 1; transform: none; filter: none; }
+.uv-enter small { font: 500 10px/1 Inter, system-ui, sans-serif;
+  letter-spacing: .28em; color: #8fa6d6; }
+.uv-enter:hover, .uv-enter:focus-visible {
+  border-color: rgba(120,165,255,.85); background: rgba(31,107,255,.14);
+  box-shadow: 0 0 28px rgba(31,107,255,.28); outline: none;
 }
-.v-mark:hover, .v-mark:focus-visible {
-  filter: drop-shadow(0 0 10px rgba(160,205,255,.9))
-    drop-shadow(0 0 34px rgba(31,107,255,.85));
+#v-login #go[hidden] { display: none; }
+.uv .err { margin-top: 14px; color: #ff6b73; font-weight: 600; }
+.uv .fine { margin: 22px 0 0; font-size: 10px; letter-spacing: .3em;
+  text-transform: uppercase; color: #5f6a86; }
+.uv-skip {
+  position: absolute; left: clamp(16px, 3vw, 40px); bottom: 28px;
+  z-index: 3; padding: 8px 2px; background: none; border: 0; cursor: pointer;
+  font: 600 10px/1 Inter, system-ui, sans-serif; letter-spacing: .3em;
+  text-transform: uppercase; color: rgba(207,217,238,.55);
 }
-#v-login #go[hidden] { pointer-events: none; cursor: default; }
-.void .tagline {
-  margin: 6px 0 0; font: 700 clamp(12px, 1.3vw, 16px)/1 "Cinzel", Georgia,
-    serif; letter-spacing: .5em; padding-left: .5em; color: #f2f5fb;
-  text-transform: uppercase; animation: vFade .6s 3.65s ease backwards;
+.uv-skip:hover, .uv-skip:focus-visible { color: #fff; outline: none; }
+/* no WebGL: a still rendition of the final state */
+.uv-nogl {
+  background:
+    radial-gradient(ellipse 44% 30% at 50% 50%, #000 62%, transparent 63%),
+    radial-gradient(ellipse 70% 55% at 50% 50%, rgba(160,190,255,.22),
+      rgba(31,107,255,.12) 45%, transparent 72%), #000;
 }
-.void .err { margin-top: 14px; color: #ff6b73; font-weight: 600; }
-.void .fine { margin: 22px 0 0; font-size: 10px; letter-spacing: .3em;
-  text-transform: uppercase; color: #8a93ad;
-  animation: vFade .6s 3.8s ease backwards; }
-@keyframes vFade { from { opacity: 0; letter-spacing: 1.1em; }
-  to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) {
-  .v-white, .v-slit, .v-rim, .v-core { display: none; }
-  .v-stage, .void .cap, .v-mark, .void .tagline, .void .fine {
-    animation: none; }
+.uv-nogl .uv-gl { display: none; }
+@media (max-width: 700px) {
+  .uv-nav { padding: 20px; letter-spacing: .3em; }
+  .uv-navr { display: none; }
 }
 
 /* ---------- app shell ---------- */
@@ -1195,24 +1160,29 @@ select.in { -webkit-appearance: none; appearance: none; }
 </section>
 
 <!-- Sign in: logo on the left, Discord entry on the right -->
-<section id="v-login" class="view door void">
-  <i class="v-white" aria-hidden="true"></i>
-  <i class="v-slit" aria-hidden="true"></i>
-  <div class="v-stage">
-    <canvas class="v-sky" data-lvr="1" aria-hidden="true"></canvas>
-    <i class="v-core" aria-hidden="true"></i>
-    <div class="page">
-      <p class="cap">Welcome to</p>
-      <a id="go" class="v-mark" href="/api/login"
-        aria-label="Elevare. Sign in with Discord">
-        <img src="/elevare-wordmark.png" alt="Elevare">
-      </a>
-      <p class="tagline" id="brand-tag">Private Trading Community</p>
-      <div id="err" class="err" role="alert"></div>
-      <p class="fine">Protected. Every visit is logged.</p>
-    </div>
+<section id="v-login" class="view door uv">
+  <canvas class="uv-gl" data-lvr="1" aria-hidden="true"></canvas>
+  <svg class="uv-defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <filter id="uvWarp" x="-10%" y="-30%" width="120%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.05"
+        numOctaves="2" seed="11" result="n"/>
+      <feDisplacementMap id="uvDisp" in="SourceGraphic" in2="n" scale="70"
+        xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+  <header class="uv-nav uv-in">
+    <span class="uv-brand">Elevare</span>
+    <span class="uv-navr" id="brand-tag">Private Trading Community</span>
+  </header>
+  <div class="page">
+    <img class="uv-logo" src="/elevare-wordmark.png" alt="Elevare">
+    <a id="go" class="uv-enter uv-in" href="/api/login">
+      <span>Enter</span><small>with Discord</small>
+    </a>
+    <div id="err" class="err" role="alert"></div>
+    <p class="fine uv-in">Protected. Every visit is logged.</p>
   </div>
-  <i class="v-rim" aria-hidden="true"></i>
+  <button class="uv-skip" type="button" hidden>Skip intro</button>
 </section>
 
 <!-- Community rules (agree before entering) -->
@@ -3786,105 +3756,6 @@ select.in { -webkit-appearance: none; appearance: none; }
     var first = (d.user.name || '').split(' ')[0];
     setTimeout(function () { toast(greeting() + ', ' + first + '.'); }, 500);
   }
-  // ---------- void: endless starfield + nebulae on the sign-in screen ----
-  (function () {
-    var CALMV = window.matchMedia &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var cv = null, g = null, W = 0, H = 0, t0 = 0, last = 0, boost = 0;
-    var stars = [], neb = [], N = 520, k;
-    function star(z) {
-      return { x: (Math.random() - 0.5) * 2, y: (Math.random() - 0.5) * 2,
-        z: z === undefined ? Math.random() : z, px: null, py: null,
-        b: Math.random() < 0.25 };
-    }
-    for (k = 0; k < N; k++) stars.push(star());
-    function blob(col, a) {
-      var c = document.createElement('canvas'); c.width = c.height = 256;
-      var x = c.getContext('2d');
-      var r = x.createRadialGradient(128, 128, 0, 128, 128, 128);
-      r.addColorStop(0, 'rgba(' + col + ',' + a + ')');
-      r.addColorStop(1, 'rgba(' + col + ',0)');
-      x.fillStyle = r; x.fillRect(0, 0, 256, 256); return c;
-    }
-    var BL = [blob('31,107,255', 0.55), blob('110,90,255', 0.4),
-      blob('200,225,255', 0.35)];
-    for (k = 0; k < 9; k++) {
-      neb.push({ a: Math.random() * 6.28, r: 0.12 + Math.random() * 0.4,
-        s: 0.5 + Math.random() * 0.9, i: k % 3,
-        w: (Math.random() < 0.5 ? -1 : 1) * (0.02 + Math.random() * 0.05) });
-    }
-    function speed(t) {           // warp: fast, then ease to a slow drift
-      if (t < 0.9) return 0;
-      if (t < 2.5) return 0.045;
-      if (t < 3.3) return 0.045 - (t - 2.5) / 0.8 * 0.0425;
-      return 0.0025;
-    }
-    function fit(c) {
-      var d = Math.min(window.devicePixelRatio || 1, 1.5);
-      W = c.clientWidth; H = c.clientHeight;
-      c.width = Math.round(W * d); c.height = Math.round(H * d);
-      g = c.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0);
-    }
-    function draw(t) {
-      var cx = W / 2, cy = H / 2, F = Math.max(W, H) * 0.55, i, s;
-      g.globalCompositeOperation = 'source-over';
-      g.fillStyle = '#01020a'; g.fillRect(0, 0, W, H);
-      g.globalCompositeOperation = 'lighter';
-      var na = Math.min(1, Math.max(0, (t - 0.9) / 1.2));
-      for (i = 0; i < neb.length; i++) {      // slow-turning nebulae
-        var n = neb[i], ang = n.a + t * n.w, R = n.r * Math.max(W, H);
-        var sz = n.s * Math.max(W, H) * 0.7;
-        g.globalAlpha = na * (t < 2.6 ? 0.8 : Math.max(0.28, 0.8 - (t - 2.6) * 0.6));
-        g.drawImage(BL[n.i], cx + Math.cos(ang) * R - sz / 2,
-          cy + Math.sin(ang) * R * 0.6 - sz / 2, sz, sz);
-      }
-      g.globalAlpha = 1;
-      var v = speed(t) + boost * 0.02;
-      for (i = 0; i < stars.length; i++) {
-        s = stars[i]; s.z -= v;
-        if (s.z <= 0.02) { stars[i] = star(1); continue; }
-        var x = cx + s.x / s.z * F * 0.5, y = cy + s.y / s.z * F * 0.5;
-        if (x < -50 || x > W + 50 || y < -50 || y > H + 50) {
-          stars[i] = star(1); continue; }
-        var near = 1 - s.z, a = Math.min(1, near * 1.4);
-        g.strokeStyle = s.b ? 'rgba(140,196,255,' + a + ')' :
-          'rgba(255,255,255,' + a + ')';
-        g.lineWidth = 0.4 + near * 2.2;
-        g.beginPath();
-        if (s.px !== null && v > 0.006) g.moveTo(s.px, s.py);
-        else g.moveTo(x - 0.6, y);
-        g.lineTo(x, y); g.stroke();
-        s.px = x; s.py = y;
-      }
-      if (t > 1 && t < 2.9) {                  // flickering light streams
-        var fa = t < 2.5 ? 0.5 : (2.9 - t) / 0.4 * 0.5;
-        for (i = 0; i < 26; i++) {
-          var an = Math.random() * 6.28, r1 = 40 + Math.random() * W * 0.3;
-          var r2 = r1 + 60 + Math.random() * W * 0.35;
-          g.strokeStyle = 'rgba(190,220,255,' + (fa * Math.random()) + ')';
-          g.lineWidth = Math.random() * 1.4;
-          g.beginPath(); g.moveTo(cx + Math.cos(an) * r1, cy + Math.sin(an) * r1);
-          g.lineTo(cx + Math.cos(an) * r2, cy + Math.sin(an) * r2); g.stroke();
-        }
-      }
-    }
-    function frame(now) {
-      window.requestAnimationFrame(frame);
-      var on = document.querySelector('.view.door.on .v-sky');
-      if (!on) { cv = null; t0 = 0; return; }
-      if (on !== cv || on.clientWidth !== W || on.clientHeight !== H) {
-        cv = on; fit(on); if (!t0) t0 = now;
-      }
-      if (now - last < 16) return;
-      last = now;
-      var t = (now - t0) / 1000;
-      if (CALMV) { if (t > 0.05 && t < 0.2) draw(6); return; }
-      var hov = document.querySelector('.v-mark:hover, .v-mark:focus-visible');
-      boost += ((hov ? 1 : 0) - boost) * 0.08;
-      draw(t);
-    }
-    window.requestAnimationFrame(frame);
-  })();
   // soft light following the cursor on the door screens: one transform per
   // frame, composited on the GPU, so it tracks the mouse with no lag
   (function () {

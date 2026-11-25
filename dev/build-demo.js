@@ -51,6 +51,8 @@ html = html
   .split('src="/emblem.png"').join('src="data:image/png;base64,' + b64('emblem.png') + '"')
   .split('src="/elevare-wordmark.png"').join('src="data:image/png;base64,' +
     b64('elevare-wordmark.png') + '"')
+  .replace('<script src="/domain.js" defer></script>', () => '<script defer src="data:text/javascript;base64,' +
+    b64('domain.js') + '"></script>')
   .replace('url(/fonts/bangers.woff2)', 'url(data:font/woff2;base64,' +
     b64('fonts/bangers.woff2') + ')');
 
