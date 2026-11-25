@@ -404,14 +404,17 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   flex-direction: column; align-items: center; text-align: center;
   padding: 28px 24px;
 }
+/* anime title-card lettering (Anton, slanted, hard offset shadows) */
 .comic .cap {
-  margin: 0 0 16px; font: 700 13px/1 "Cinzel", Georgia, serif;
-  letter-spacing: .5em; padding-left: .5em; text-transform: uppercase;
-  color: #9fb6dd; display: flex; align-items: center; gap: 14px;
-  animation: crise .4s 2.55s ease backwards;
+  margin: 0 0 18px; padding: 7px 20px 6px; background: var(--red);
+  color: #fff; font: 400 17px/1 "Anton", Impact, sans-serif;
+  letter-spacing: .2em; text-transform: uppercase; transform: skewX(-14deg);
+  box-shadow: 5px 5px 0 #000, 5px 5px 0 1px rgba(140,196,255,.5);
+  animation: tagIn .32s 2.55s cubic-bezier(.2,1.5,.4,1) backwards;
 }
-.comic .cap:before, .comic .cap:after { content: ""; width: 36px;
-  height: 1px; background: rgba(140,196,255,.5); }
+.comic .cap span { display: inline-block; transform: skewX(14deg); }
+@keyframes tagIn { from { opacity: 0; transform: skewX(-14deg)
+  translateX(-60px); } to { opacity: 1; transform: skewX(-14deg); } }
 .gate {
   position: relative;
   width: min(1400px, calc(100vw - 48px), calc((100vh - 250px) * 3));
@@ -487,36 +490,32 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
     drop-shadow(0 0 42px rgba(31,107,255,.9));
 }
 #v-login #go[hidden] { display: block; pointer-events: none; cursor: default; }
-.comic:has(#go[hidden]) .hint { display: none; }
-/* prompt under the strip (forwards its click to the panel) */
-.hint {
-  margin: 22px 0 0; display: inline-flex; align-items: center; gap: 10px;
-  padding: 12px 22px; cursor: pointer; color: #e8f0ff;
-  background: rgba(10,16,34,.8); border: 1px solid rgba(79,163,255,.45);
-  font: 700 12px/1 "Cinzel", Georgia, serif; letter-spacing: .22em;
-  text-transform: uppercase; transition: border-color .2s ease,
-    box-shadow .2s ease; animation: crise .4s 2.7s ease backwards;
-}
-.hint span { color: #8cc4ff; }
-.hint em { font-style: normal; transition: transform .2s ease; }
-.hint:hover, .hint:focus-visible, .comic:has(.seal:hover) .hint {
-  border-color: #4fa3ff; box-shadow: 0 0 24px rgba(31,107,255,.55);
-  outline: none; }
-.hint:hover em, .comic:has(.seal:hover) .hint em {
-  transform: translateX(4px); }
 .comic .tagline {
-  margin: 20px 0 0; font: 700 clamp(14px, 1.6vw, 20px)/1 "Cinzel", Georgia,
-    serif; letter-spacing: .42em; padding-left: .42em; color: #f2f5fb;
-  text-transform: uppercase; animation: crise .4s 2.8s ease backwards;
+  position: relative; margin: 26px 0 0; color: #fff;
+  font: 400 clamp(26px, 3.6vw, 50px)/1 "Anton", Impact, sans-serif;
+  letter-spacing: .06em; text-transform: uppercase;
+  transform: skewX(-10deg);
+  text-shadow: 3px 3px 0 var(--red), 6px 6px 0 #000;
+  -webkit-text-stroke: 1px #000; paint-order: stroke fill;
+  animation: titleIn .34s 2.62s cubic-bezier(.2,1.5,.4,1) backwards;
+}
+.comic .tagline:after {   /* speed slash under the title */
+  content: ""; position: absolute; left: 6%; right: -4%; bottom: -12px;
+  height: 4px; background: linear-gradient(90deg, transparent,
+    var(--red2) 20%, #fff 60%, transparent);
+}
+@keyframes titleIn {
+  0% { opacity: 0; transform: skewX(-10deg) scale(1.8); }
+  100% { opacity: 1; transform: skewX(-10deg); }
 }
 .comic .err { margin-top: 14px; color: #ff6b73; font-weight: 600; }
-.comic .fine { margin: 14px 0 0; font-size: 10px; letter-spacing: .3em;
+.comic .fine { margin: 30px 0 0; font-size: 10px; letter-spacing: .3em;
   text-transform: uppercase; color: #59617a;
   animation: crise .4s 2.9s ease backwards; }
 @keyframes crise { from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .gate, .gate .strip, .seal, .comic .flash, .comic .cap, .hint,
+  .gate, .gate .strip, .seal, .comic .flash, .comic .cap,
   .comic .tagline, .comic .fine { animation: none; }
   .pc { display: none; }
   .seal .lift { transition: none; }
@@ -1227,7 +1226,7 @@ select.in { -webkit-appearance: none; appearance: none; }
   <i class="glow" aria-hidden="true"></i>
   <i class="flash" aria-hidden="true"></i>
   <div class="page">
-    <p class="cap">Welcome to</p>
+    <p class="cap"><span>Welcome to</span></p>
     <div class="gate">
       <img class="strip" src="/strip2.webp" alt="">
       <i class="pc p1" aria-hidden="true"></i>
@@ -1243,8 +1242,6 @@ select.in { -webkit-appearance: none; appearance: none; }
         </span>
       </a>
     </div>
-    <button class="hint" type="button" id="go-hint">Sign in with
-      <span>Discord</span><em aria-hidden="true">&#x2192;</em></button>
     <p class="tagline" id="brand-tag">Private Trading Community</p>
     <div id="err" class="err" role="alert"></div>
     <p class="fine">Protected. Every visit is logged.</p>
@@ -3822,14 +3819,6 @@ select.in { -webkit-appearance: none; appearance: none; }
     var first = (d.user.name || '').split(' ')[0];
     setTimeout(function () { toast(greeting() + ', ' + first + '.'); }, 500);
   }
-  // "Sign in with Discord" prompt under the strip clicks the panel
-  (function () {
-    var h = document.getElementById('go-hint');
-    if (h) h.addEventListener('click', function () {
-      var g = document.getElementById('go');
-      if (g && !g.hidden) g.click();
-    });
-  })();
   // soft light following the cursor on the door screens: one transform per
   // frame, composited on the GPU, so it tracks the mouse with no lag
   (function () {
