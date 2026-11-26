@@ -29,6 +29,8 @@ function client(ua) {
     return { status: r.status, loc: r.headers.get('location'), data, text };
   }
   async function signIn(code) {
+    // tests sign in far more often than the 20-per-10-minutes limit allows
+    for (const k of Array.from(mocks.store.keys())) if (/^vault:rl:login:/.test(k)) mocks.store.delete(k);
     const a = await req('GET', '/api/login');
     if (!/discord\.com\/oauth2\/authorize/.test(a.loc || '')) return a.loc;
     const state = new URL(a.loc).searchParams.get('state');
@@ -145,7 +147,7 @@ async function t(name, fn) {
     const r = await member.req('POST', '/api/play', { id: itemId, device: 'deviceAAAA' });
     assert.strictEqual(r.status, 200); assert.strictEqual(r.data.otp, 'otp_' + vid1);
     const o = mocks.otps[mocks.otps.length - 1];
-    assert.strictEqual(o.body.ttl, 300);
+    assert.strictEqual(o.body.ttl, 90);
     const ann = JSON.parse(o.body.annotate);
     assert.ok(ann.some(a => a.text.indexOf(MEMBER) >= 0));
     assert.ok(ann.some(a => a.type === 'text' && a.x && a.y));          // corner + mid-frame marks
@@ -572,6 +574,72 @@ async function t(name, fn) {
     assert.deepStrictEqual(r.data.captions.map(x => x.lang), ['ko']);
     assert.strictEqual((await member.req('POST', '/api/admin', { action: 'captions-list', id: L1 })).status, 403);
     assert.strictEqual(require('../api/_lib').toVtt('1\n00:00:01,000 --> 00:00:02,000\nhi').indexOf('WEBVTT\n\n1\n00:00:01.000'), 0);
+  });
+
+  let c9;
+  await t('video keys expire in 90 s; keys taken without watching ping admins', async () => {
+    const c = c9 = client(); await c.signIn('100000000000000009');
+    await admin.req('POST', '/api/admin', { action: 'unlock', uid: '100000000000000009' });
+    await admin.req('POST', '/api/admin', { action: 'devices-reset', uid: '100000000000000009' });
+    mocks.store.delete('elevare:ps:100000000000000009'); mocks.store.delete('elevare:nowatch:100000000000000009');
+    // a watched session: heartbeat carries the session id
+    const r = await c.req('POST', '/api/play', { id: L1, device: 'devAAAAAAAA1', take: true });
+    assert.strictEqual(mocks.otps[mocks.otps.length - 1].body.ttl, 90);
+    await c.req('POST', '/api/play', { device: 'devAAAAAAAA1', beat: true, s: r.data.session });
+    // five keys never played, all "older than 2 minutes"
+    for (let i = 0; i < 5; i++) await c.req('POST', '/api/play', { id: L1, device: 'devAAAAAAAA1', take: true });
+    const pk = 'elevare:ps:100000000000000009';
+    mocks.store.set(pk, mocks.store.get(pk).map(x => x.split('|')[0] + '|' + (Date.now() - 600000)));
+    await c.req('POST', '/api/play', { id: L1, device: 'devAAAAAAAA1', take: true });
+    const g = await admin.req('GET', '/api/admin');
+    assert.ok(g.data.alerts.some(x => x.kind === 'keys-no-watch' && x.uid === '100000000000000009'));
+    for (const k of Array.from(mocks.store.keys())) if (/^vault:hook:/.test(k)) mocks.store.delete(k);
+  });
+  await t('daily cap on different videos (admins exempt)', async () => {
+    process.env.DAILY_VIDEO_LIMIT = '2';
+    const c = c9;
+    const day = new Date().toISOString().slice(0, 10);
+    mocks.store.delete('elevare:dv:100000000000000009:' + day);
+    assert.strictEqual((await c.req('POST', '/api/play', { id: L1, device: 'devAAAAAAAA1', take: true })).status, 200);
+    assert.strictEqual((await c.req('POST', '/api/play', { id: L2, device: 'devAAAAAAAA1', take: true })).status, 200);
+    assert.strictEqual((await c.req('POST', '/api/play', { id: L1, device: 'devAAAAAAAA1', take: true })).status, 200); // same video again is fine
+    const sec = (await admin.req('POST', '/api/admin', { action: 'section-save', kind: 'lecture', title: 'Cap Test' })).data.section.id;
+    const L9 = await readyLecture(sec, 'Cap Three');
+    const r = await c.req('POST', '/api/play', { id: L9, device: 'devAAAAAAAA1', take: true });
+    assert.strictEqual(r.status, 429); assert.strictEqual(r.data.error, 'daily_limit');
+    delete process.env.DAILY_VIDEO_LIMIT;
+    for (const k of Array.from(mocks.store.keys())) if (/^vault:hook:/.test(k)) mocks.store.delete(k);
+  });
+
+  await t('a trusted VPN member gets no VPN / country alerts; others still do', async () => {
+    const vpnIp = { 'x-vercel-forwarded-for': '146.70.201.77' };
+    await admin.req('POST', '/api/admin', { action: 'vpn-trust', uid: MEMBER, on: true });
+    const before = (await admin.req('GET', '/api/admin')).data.alerts.filter(x => x.kind === 'vpn' && x.uid === MEMBER).length;
+    mocks.store.delete('elevare:vpnseen:' + MEMBER + ':AS9009');
+    await member.req('POST', '/api/play', { id: L1, device: 'deviceBBBB', take: true }, vpnIp);
+    const g = await admin.req('GET', '/api/admin');
+    assert.strictEqual(g.data.alerts.filter(x => x.kind === 'vpn' && x.uid === MEMBER).length, before);
+    assert.ok(g.data.vpnok.indexOf(MEMBER) >= 0);
+    process.env.LOCK_OTP_IP = '1';
+    await member.req('POST', '/api/play', { id: L1, device: 'deviceBBBB', take: true },
+      { 'x-vercel-forwarded-for': '146.70.201.77' });
+    assert.ok(!mocks.otps[mocks.otps.length - 1].body.ipGeo);      // trusted: no IP lock
+    await admin.req('POST', '/api/admin', { action: 'vpn-trust', uid: MEMBER, on: false });
+    await member.req('POST', '/api/play', { id: L1, device: 'deviceBBBB', take: true },
+      { 'x-vercel-forwarded-for': '146.70.201.77' });
+    assert.deepStrictEqual(mocks.otps[mocks.otps.length - 1].body.ipGeo, { allow: ['146.70.201.77'] });
+    delete process.env.LOCK_OTP_IP;
+    await member.req('POST', '/api/play', { id: L1, device: 'deviceBBBB', take: true }, vpnIp);
+    assert.ok((await admin.req('GET', '/api/admin')).data.alerts.filter(x => x.kind === 'vpn' && x.uid === MEMBER).length > before);
+  });
+
+  await t('admin can allow extensions for one member', async () => {
+    assert.strictEqual((await member.req('GET', '/api/me')).data.relaxed, false);
+    await admin.req('POST', '/api/admin', { action: 'relax', uid: MEMBER, on: true });
+    assert.strictEqual((await member.req('GET', '/api/me')).data.relaxed, true);
+    assert.ok((await admin.req('GET', '/api/admin')).data.relaxed.indexOf(MEMBER) >= 0);
+    await admin.req('POST', '/api/admin', { action: 'relax', uid: MEMBER, on: false });
+    assert.strictEqual((await member.req('GET', '/api/me')).data.relaxed, false);
   });
 
   console.log('Discord alerts (rip intent only)');

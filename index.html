@@ -150,6 +150,11 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   color: var(--err); max-width: 360px; line-height: 1.5;
 }
 .err:empty { display: none; }
+/* site-wide watermark: four bands around the video player, never over it */
+.pwm {
+  position: fixed; z-index: 60; pointer-events: none; display: none;
+  background-repeat: repeat;
+}
 /* rules agreement + timeout */
 .agree { max-width: 560px; }
 .rules {
@@ -1808,9 +1813,19 @@ select.in { -webkit-appearance: none; appearance: none; }
       flag('printscreen');
     }
   }, true);
-  // Clicking another window or monitor (notes, Discord, a chart) no longer
-  // pauses or covers the video: DRM handles screenshots, and members watch
-  // with other apps open. Switching tabs or minimising still pauses.
+  // When the browser loses focus (Snipping Tool's overlay, a screen
+  // recorder's controls, another window) the page shows the "Protected
+  // content" screen and the video pauses, so a recording or delayed snip
+  // captures the shield, not the lesson. Clicking into the video player
+  // itself doesn't count. Clicking back into the page brings it back.
+  window.addEventListener('blur', function () {
+    setTimeout(function () {
+      var a = document.activeElement;
+      if (a && a.tagName === 'IFRAME') return;
+      if (pickerOpen) return;
+      if (ME && !ME.relaxed) shield(true);
+    }, 0);
+  });
   window.addEventListener('focus', function () {
     shield(false);
     setTimeout(function () { pickerOpen = false; }, 600);
@@ -2259,7 +2274,7 @@ select.in { -webkit-appearance: none; appearance: none; }
   }
 
   // Auto-complete near the end, using VdoCipher's player API.
-  var progT = null;
+  var progT = null, SESS = null;
   // which 30-second parts of each lecture actually played (any speed)
   var WATCHED = {}, UNSENT = {};
   function notePart(id, t) {
@@ -2344,7 +2359,7 @@ select.in { -webkit-appearance: none; appearance: none; }
   }
   function play(take) {
     if (!current) return;
-    if (foreignOn()) { foreignWarn(); return; }
+    if (!(ME && ME.relaxed) && foreignOn()) { foreignWarn(); return; }
     if (noGpu()) {
       if (ME && !ME.isAdmin && !gpuFlagged) {
         gpuFlagged = true; flag(VM ? 'vm' : 'no-gpu', GPU_INFO);
@@ -2371,7 +2386,7 @@ select.in { -webkit-appearance: none; appearance: none; }
             ' device can play at a time.', 'Watch here instead',
             function () { play(true); });
         }
-        if (st === 429) {
+        if (st === 429 && d.error !== 'daily_limit') {
           return pmsg('Too many plays in a short time. Take a breather and' +
             ' try again in a few minutes.', 'Try again',
             function () { play(false); });
@@ -2388,6 +2403,11 @@ select.in { -webkit-appearance: none; appearance: none; }
         if (st === 403 && d.error === 'tier') {
           return pmsg('This lesson is for ' + d.tier + ' members.', 'OK',
             function () { unmount(); });
+        }
+        if (st === 429 && d.error === 'daily_limit') {
+          return pmsg('You\u2019ve opened ' + (d.limit || 30) + ' different videos' +
+            ' today, the daily maximum. Videos you already opened today still' +
+            ' play. The limit resets tomorrow.', 'OK', function () { unmount(); });
         }
         if (st === 403 && d.error === 'device_limit') {
           return pmsg('This account is already used on ' + (d.limit || 3) +
@@ -2437,6 +2457,10 @@ select.in { -webkit-appearance: none; appearance: none; }
     watchProgress();
     // (no site overlay: VdoCipher draws the watermarks)
 
+    SESS = d.session || null;
+    // first heartbeat soon after starting (tells the server this session
+    // really plays), then every minute
+    setTimeout(function () { if (frame) beat(); }, 15000);
     beatT = setInterval(beat, 60000);
     renderWatch();
   }
@@ -2451,7 +2475,8 @@ select.in { -webkit-appearance: none; appearance: none; }
   function beat() {
     var bid = current && current.kind === 'lecture' ? current.id : null;
     var w = bid ? takeUnsent(bid) : [];
-    api('POST', '/api/play', { device: DEVICE, beat: true, id: bid, w: w },
+    api('POST', '/api/play', { device: DEVICE, beat: true, id: bid, w: w,
+      s: SESS },
       function (st) {
       if (st !== 200 && bid) {
         (UNSENT[bid] || (UNSENT[bid] = [])).push.apply(UNSENT[bid], w);
@@ -3576,6 +3601,36 @@ select.in { -webkit-appearance: none; appearance: none; }
         evidence(id);
       }));
       act.appendChild(document.createTextNode(' '));
+      var trusted = (ADM.data.vpnok || []).indexOf(id) >= 0;
+      if (trusted) {
+        var tv = el('div', 'id', 'Trusted VPN');
+        tv.style.color = '#4fae74';
+        loc.appendChild(tv);
+      }
+      var relaxedOn = (ADM.data.relaxed || []).indexOf(id) >= 0;
+      if (relaxedOn) {
+        var rx = el('div', 'id', 'Extensions allowed');
+        rx.style.color = '#4fae74';
+        loc.appendChild(rx);
+      }
+      act.appendChild(btn(relaxedOn ? 'Block extensions' : 'Allow extensions',
+        'line sm', function () {
+          admCall({ action: 'relax', uid: id, on: !relaxedOn }, function () {
+            toast(relaxedOn ? 'Extension checks are back on for this member.' :
+              'Extensions allowed for this member (still logged).');
+            admLoad();
+          });
+        }));
+      act.appendChild(document.createTextNode(' '));
+      act.appendChild(btn(trusted ? 'Untrust VPN' : 'Trust VPN', 'line sm',
+        function () {
+          admCall({ action: 'vpn-trust', uid: id, on: !trusted }, function () {
+            toast(trusted ? 'VPN alerts are back on for this member.' :
+              'VPN, network and country alerts are off for this member.');
+            admLoad();
+          });
+        }));
+      act.appendChild(document.createTextNode(' '));
       act.appendChild(btn('Reset devices', 'line sm', function () {
         admCall({ action: 'devices-reset', uid: id }, function () {
           toast('Devices reset. Their next browser is allowed.');
@@ -4027,6 +4082,83 @@ select.in { -webkit-appearance: none; appearance: none; }
     } else done();
   }
 
+  // ---------- site-wide watermark ----------
+  // Every page carries a faint tiled mark with the member's viewer code and
+  // @username, so screenshots of titles, lists or the profile are traceable
+  // too. It is drawn as four bands AROUND the video player and never over
+  // it: anything on top of the player stops DRM blacking out recordings.
+  var PWM = [], pwmTile = '', pwmKey = '';
+  function pwmMake() {
+    if (PWM.length) return;
+    for (var i = 0; i < 4; i++) {
+      var d = document.createElement('div');
+      d.className = 'pwm'; d.setAttribute('data-lvr', '1');
+      d.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(d); PWM.push(d);
+    }
+  }
+  function pwmTileFor(text) {
+    var t = String(text).replace(/[&<>"']/g, function (c) {
+      return '&#' + c.charCodeAt(0) + ';';
+    });
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="300"' +
+      ' height="170"><text x="10" y="110" transform="rotate(-22 150 85)"' +
+      ' font-family="Inter, Arial, sans-serif" font-size="13"' +
+      ' font-weight="600" letter-spacing="1" fill="#ffffff"' +
+      ' fill-opacity="0.055">' + t + '</text></svg>';
+    return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+  }
+  function pwmSet(d, x, y, w, h) {
+    if (w <= 0 || h <= 0) { d.style.display = 'none'; return; }
+    d.style.display = 'block';
+    d.style.left = x + 'px'; d.style.top = y + 'px';
+    d.style.width = w + 'px'; d.style.height = h + 'px';
+    d.style.backgroundImage = pwmTile;
+    d.style.backgroundPosition = (-x) + 'px ' + (-y) + 'px'; // one pattern
+  }
+  var pwmQueued = false;
+  function pagemark() {
+    if (pwmQueued) return;
+    pwmQueued = true;
+    (window.requestAnimationFrame || setTimeout)(function () {
+      pwmQueued = false;
+      pwmMake();
+      var off = !ME || DEMO || (route && route.tab === 'admin') ||
+        !/\bon\b/.test(($('v-app') || {}).className || '');
+      if (off) {
+        for (var i = 0; i < 4; i++) PWM[i].style.display = 'none';
+        return;
+      }
+      var key = (ME.user.code || '') + '|' + (ME.user.username || '');
+      if (key !== pwmKey) {
+        pwmKey = key;
+        pwmTile = pwmTileFor((ME.user.code || '') + '  \u00b7  @' +
+          (ME.user.username || ME.user.name || ''));
+      }
+      var W = window.innerWidth, H = window.innerHeight;
+      var p = $('player'), r = null;
+      if (p && p.offsetParent) {
+        r = p.getBoundingClientRect();
+        if (r.bottom <= 0 || r.top >= H || r.width < 2) r = null;
+      }
+      if (!r) {
+        pwmSet(PWM[0], 0, 0, W, H);
+        for (var j = 1; j < 4; j++) PWM[j].style.display = 'none';
+        return;
+      }
+      // whole pixels, rounded away from the player so nothing overlaps it
+      var t = Math.max(0, Math.floor(r.top)), b = Math.min(H, Math.ceil(r.bottom));
+      var l = Math.max(0, Math.floor(r.left)), rr = Math.min(W, Math.ceil(r.right));
+      pwmSet(PWM[0], 0, 0, W, t);                 // above
+      pwmSet(PWM[1], 0, b, W, H - b);             // below
+      pwmSet(PWM[2], 0, t, l, b - t);             // left
+      pwmSet(PWM[3], rr, t, W - rr, b - t);       // right
+    });
+  }
+  window.addEventListener('scroll', pagemark, true);
+  window.addEventListener('resize', pagemark);
+  setInterval(pagemark, 800);
+
   // ---------- recorder extensions ----------
   // Screen-recorder extensions record the tab from inside Chrome, which DRM
   // does not always black out. Most of them add their own controls (a timer,
@@ -4041,7 +4173,9 @@ select.in { -webkit-appearance: none; appearance: none; }
   // Common extensions that are not recorders.
   var BENIGN = new RegExp('grammarly|1password|onepassword|bitwarden|' +
     'lastpass|dashlane|keeper|nordpass|protonpass|proton-pass|honey|' +
-    'darkreader|dark-reader|metamask|google-translate|goog-gt|vdocipher', 'i');
+    'darkreader|dark-reader|metamask|google-translate|goog-gt|vdocipher|' +
+    // translators: Immersive Translate, DeepL, Naver Papago
+    'immersive-translate|immersivetranslate|imt-|deepl|papago|viitor', 'i');
   var SKIP_TAGS = /^(script|style|link|meta|noscript|template|title|base)$/;
   var foreign = [];
   function describe(n) {
@@ -4095,6 +4229,7 @@ select.in { -webkit-appearance: none; appearance: none; }
     } catch (e) {}
     return false;
   }
+  var LAST_FOREIGN = '';
   function foreignOn() {
     var on = false, hits = null;
     for (var i = foreign.length - 1; i >= 0; i--) {
@@ -4102,7 +4237,9 @@ select.in { -webkit-appearance: none; appearance: none; }
         foreign.splice(i, 1); continue;
       }
       if (!hits) hits = topLayer();
-      if (shown(foreign[i], hits)) { on = true; report(foreign[i]); }
+      if (shown(foreign[i], hits)) {
+        on = true; report(foreign[i]); LAST_FOREIGN = describe(foreign[i]);
+      }
     }
     return on;
   }
@@ -4111,7 +4248,8 @@ select.in { -webkit-appearance: none; appearance: none; }
     $('w-id').textContent = ME ? ME.user.id : '';
     $('w-what').textContent = 'A browser extension added something to this' +
       ' page. Turn off screen recorder extensions, then reload to keep' +
-      ' watching.';
+      ' watching.' + (ME && ME.isAdmin && LAST_FOREIGN ? ' [Admin: it was ' +
+      LAST_FOREIGN + ']' : '');
     var now = new Date();
     $('w-when').textContent = fmtDate(now.getTime()) + ' ' +
       pad2(now.getHours()) + ':' + pad2(now.getMinutes());
@@ -4134,6 +4272,7 @@ select.in { -webkit-appearance: none; appearance: none; }
     setTimeout(checkForeign, 700);
   }
   function checkForeign() {
+    if (ME && ME.relaxed) { foreignOn(); return; }   // logged, not blocked
     if (frame && foreignOn()) { pauseVideo(); unmount(); foreignWarn(); }
   }
   // a hidden helper can turn into a visible widget later

@@ -213,6 +213,7 @@ environments), then **Deployments -> ... -> Redeploy**.
 | `LOCK_OTP_IP` | optional, `1` makes each video key work only from the member's own IPv4 address (VdoCipher `ipGeo`). Test before relying on it: networks that switch IPs mid-video will need to reload |
 | `IPINFO_TOKEN` | optional, free token from ipinfo.io (IPinfo Lite). Lets the site name each member's network and flag VPN / hosting networks in the Security log and Members list (flag only, never blocks) |
 | `REDIS_PREFIX` | optional, start of every database key (default `elevare`); only needed if two brands share one Upstash database |
+| `DAILY_VIDEO_LIMIT` | optional, different videos a member can open per day (default `30`, `0` = no limit; admins exempt) |
 | `WATERMARK_MODE` | optional, `subtle` (default: faint corner code, near-invisible mid-frame ID, brief ghost flashes) or `bold` (the old large moving marks) |
 | `WATERMARK_COLOR` | optional, hex colour of the watermark (subtle default `8A8A8A`, bold default `5A5A5A`) |
 | `WATERMARK_ACCENT` | optional, hex colour of the @handle mark and one code mark (default `3D6FB6`, blue) |

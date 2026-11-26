@@ -85,6 +85,11 @@ module.exports = async function (req, res) {
       if (!(await L.rateLimit('beat:' + s.uid, 30, 600))) return L.json(res, 429, { error: 'slow' });
       if (cur && cur !== device) return L.json(res, 409, { error: 'taken' });
       await L.kv('SET', dk, device, 'EX', DEVICE_TTL);
+      if (/^S-[A-Z0-9]{8}$/.test(String(b.s || ''))) {
+        const pb = L.K('pb:' + s.uid);
+        await L.kv('SADD', pb, String(b.s).slice(2));
+        await L.kv('EXPIRE', pb, 86400);
+      }
       if (b.id && Array.isArray(b.w)) {
         const cw = await L.loadContent();
         await L.recordWatched(s.uid, cw.items.find(x => x.id === b.id && x.kind === 'lecture'), b.w);
@@ -120,6 +125,20 @@ module.exports = async function (req, res) {
         await L.alert('locked-probe', s, 'tried to play a locked lecture', req);
         return L.json(res, 403, { error: 'locked' });
       }
+    }
+
+    // Daily cap on different videos (DAILY_VIDEO_LIMIT, default 30, 0 = off):
+    // plenty for real watching, stops bulk ripping of every breakdown.
+    const dayCap = parseInt(L.env('DAILY_VIDEO_LIMIT', '30'), 10);
+    if (dayCap > 0 && !s.admin) {
+      const dkey = L.K('dv:' + s.uid + ':' + new Date().toISOString().slice(0, 10));
+      const already = await L.kv('SISMEMBER', dkey, it.id);
+      if (!already && Number(await L.kv('SCARD', dkey)) >= dayCap) {
+        await L.alert('daily-limit', s, 'hit the limit of ' + dayCap + ' different videos today', req);
+        return L.json(res, 429, { error: 'daily_limit', limit: dayCap });
+      }
+      await L.kv('SADD', dkey, it.id);
+      await L.kv('EXPIRE', dkey, 2 * 86400);
     }
 
     // Authorised browsers: each member may use DEVICE_LIMIT browsers
@@ -162,12 +181,15 @@ module.exports = async function (req, res) {
     const domains = L.env('PLAYBACK_DOMAINS') || (L.env('SITE_HOSTS') ?
       L.env('SITE_HOSTS').split(',')[0].trim().replace(/^www\./, '') :
       String(req.headers.host || '').split(':')[0]);
+    // trusted-VPN members skip the IP lock: their VPN can make the address we
+    // see differ from the one VdoCipher's license server sees
+    const ipLock = L.env('LOCK_OTP_IP') === '1' && !(await L.vpnTrusted(s.uid));
     const otp = await L.vdo('POST', '/videos/' + encodeURIComponent(it.videoId) + '/otp', {
-      ttl: 300,
+      ttl: 90,                      // key must be used within 90 seconds
       userId: s.uid,               // VdoCipher viewer analytics / sharing detection
       whitelisthref: domains,
       // LOCK_OTP_IP=1: the key only works from the member's own IPv4 address
-      ...(L.env('LOCK_OTP_IP') === '1' && /^\d{1,3}(\.\d{1,3}){3}$/.test(L.ip(req)) ?
+      ...(ipLock && /^\d{1,3}(\.\d{1,3}){3}$/.test(L.ip(req)) ?
         { ipGeo: { allow: [L.ip(req)] } } : {}),
       annotate: JSON.stringify(L.env('WATERMARK_MODE') === 'bold' ? [
         mark(code, grey, 30, 0.55, 5000),
@@ -214,11 +236,13 @@ module.exports = async function (req, res) {
     if ((await L.kv('SADD', ik, ip)) === 1) {
       await L.kv('EXPIRE', ik, 172800);
       const n = await L.kv('SCARD', ik);
-      if (n >= 3) await L.alert('ip-anomaly', s, n + ' different networks today', req);
+      if (n >= 3 && !(await L.vpnTrusted(s.uid))) {
+        await L.alert('ip-anomaly', s, n + ' different networks today', req);
+      }
     }
     // Country hopping (VPN switching / shared account): 2+ countries in a day.
     const country = String(req.headers['x-vercel-ip-country'] || '').slice(0, 4);
-    if (country) {
+    if (country && !(await L.vpnTrusted(s.uid))) {
       const ck = L.K('cc:' + s.uid + ':' + day);
       if ((await L.kv('SADD', ck, country)) === 1) {
         await L.kv('EXPIRE', ck, 172800);
@@ -235,6 +259,26 @@ module.exports = async function (req, res) {
       const nb = await L.kv('SCARD', bk);
       if (nb === 1) await L.kv('EXPIRE', bk, 1200);
       if (nb === 8) await L.alert('binge', s, '8 different videos started within 20 minutes', req);
+    }
+    // Keys without watching: download tools take the key and never play.
+    // The page reports each session within ~15 s of playing (heartbeat).
+    // 5 of the last 10 sessions (older than 2 min) never reported = alert.
+    if (!s.admin) {
+      const pk = L.K('ps:' + s.uid);
+      const recent = (await L.kv('LRANGE', pk, 0, 9)) || [];
+      const watched = (await L.kv('SMEMBERS', L.K('pb:' + s.uid))) || [];
+      const old = recent.map(x => x.split('|')).filter(x => Date.now() - Number(x[1]) > 120000);
+      const silent = old.filter(x => watched.indexOf(x[0]) < 0).length;
+      if (old.length >= 5 && silent >= 5) {
+        const first = await L.kv('SET', L.K('nowatch:' + s.uid), '1', 'NX', 'EX', 86400);
+        if (first === 'OK') {
+          await L.alert('keys-no-watch', s, silent + ' of the last ' + old.length +
+            ' video keys were never played', req);
+        }
+      }
+      await L.kv('LPUSH', pk, psid + '|' + Date.now());
+      await L.kv('LTRIM', pk, 0, 19);
+      await L.kv('EXPIRE', pk, 86400);
     }
     L.json(res, 200, { otp: otp.otp, playbackInfo: otp.playbackInfo, session: 'S-' + psid,
       wm: '#' + hex, code: code });

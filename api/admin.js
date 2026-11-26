@@ -99,6 +99,8 @@ module.exports = async function (req, res) {
         .map(x => { try { return JSON.parse(x); } catch (e) { return null; } })
         .filter(Boolean);
       const unlocked = (await L.kv('SMEMBERS', L.K('unlocked'))) || [];
+      const vpnok = (await L.kv('SMEMBERS', L.K('vpnok'))) || [];
+      const relaxed = (await L.kv('SMEMBERS', L.K('relaxed'))) || [];
       const aflat = (await L.kv('HGETALL', L.K('agreements'))) || [];
       const agreements = {};
       for (let i = 0; i + 1 < aflat.length; i += 2) {
@@ -118,7 +120,7 @@ module.exports = async function (req, res) {
       }
       return L.json(res, 200, { content: c, alerts: alerts, blocked: blocked, users: users, notes: notes,
         live: live, deviceLimit: parseInt(L.env('DEVICE_LIMIT', '3'), 10),
-        unlocked: unlocked, agreements: agreements, rules: L.rulesOf(c),
+        unlocked: unlocked, vpnok: vpnok, relaxed: relaxed, agreements: agreements, rules: L.rulesOf(c),
         plays: plays, sessions: sessions, tiers: L.tiers().map(t => t.name) });
     }
 
@@ -289,6 +291,23 @@ module.exports = async function (req, res) {
       const rec = { pay: str(b.pay, 200), note: str(b.note, 1000), t: Date.now(), by: s.name };
       if (!rec.pay && !rec.note) await L.kv('HDEL', L.K('notes'), uid);
       else await L.kv('HSET', L.K('notes'), uid, JSON.stringify(rec));
+      return L.json(res, 200, { ok: true });
+    }
+    // Allow extensions: a member's browser extensions (e.g. a live
+    // translator) don't stop playback and switching windows doesn't show
+    // the protected screen. Extensions are still logged.
+    if (a === 'relax') {
+      const uid = str(b.uid, 32);
+      if (!/^\d{5,25}$/.test(uid)) return L.json(res, 400, { error: 'uid' });
+      await L.kv(b.on ? 'SADD' : 'SREM', L.K('relaxed'), uid);
+      await L.sessLog(b.on ? 'extensions-allowed' : 'extensions-blocked', { uid: uid, name: 'by ' + s.name }, req);
+      return L.json(res, 200, { ok: true });
+    }
+    if (a === 'vpn-trust') {
+      const uid = str(b.uid, 32);
+      if (!/^\d{5,25}$/.test(uid)) return L.json(res, 400, { error: 'uid' });
+      await L.kv(b.on ? 'SADD' : 'SREM', L.K('vpnok'), uid);
+      await L.sessLog(b.on ? 'vpn-trusted' : 'vpn-untrusted', { uid: uid, name: 'by ' + s.name }, req);
       return L.json(res, 200, { ok: true });
     }
     if (a === 'devices-reset') {

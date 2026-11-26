@@ -99,6 +99,7 @@ module.exports = async function (req, res) {
       done: done,
       unlocked: unlocked,
       agreed: agreed,
+      relaxed: !s.admin && !!(await L.kv('SISMEMBER', L.K('relaxed'), s.uid)),
       needsMfa: !s.admin && L.isAdminOf(s.uid, s.roles) && !s.mfa,
       rules: { v: rules.v, text: rules.text.split('{CODE}').join(L.memberCode(s.uid)) }
     });

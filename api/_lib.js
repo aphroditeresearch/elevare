@@ -236,7 +236,9 @@ const RIP_KINDS = {
   'recorder-extension': 'A screen recorder extension added its controls to the page while watching',
   'no-gpu': 'Turned off hardware acceleration (the usual first step to record protected video)',
   'embedded-browser': 'Used a built-in app browser posing as Chrome (how DRM downloaders sign in)',
-  'vm': 'Tried to watch inside a virtual machine (lets the real computer record it)'
+  'vm': 'Tried to watch inside a virtual machine (lets the real computer record it)',
+  'keys-no-watch': 'Took video keys again and again without playing them (how DRM downloaders work)',
+  'daily-limit': 'Hit the daily limit of different videos (bulk ripping pattern)'
 };
 const RIP_ACTIONS = /^(Save page|View page source|Developer tools shortcut|Print)/;
 function ripIntent(kind, detail) {
@@ -527,9 +529,15 @@ async function netInfo(addr) {
   } catch (e) { return null; }
 }
 // Log (never ping, never block) a VPN / hosting network, once a day per member.
+// Members the owner trusts to use a VPN (e.g. watching from a country where
+// a VPN is required): no VPN / network / country-hopping alerts for them.
+// Every other check (sharing, downloaders, recorders, limits) still applies.
+async function vpnTrusted(uid) {
+  return !!uid && !!(await kv('SISMEMBER', K('vpnok'), String(uid)));
+}
 async function noteNet(who, req, where) {
   const n = await netInfo(ip(req));
-  if (n && n.vpn && who && who.uid) {
+  if (n && n.vpn && who && who.uid && !(await vpnTrusted(who.uid))) {
     const first = await kv('SET', K('vpnseen:' + who.uid + ':' + n.asn), '1', 'NX', 'EX', 86400);
     if (first === 'OK') await alert('vpn', who, where + ' via ' + n.asn + ' ' + n.org, req);
   }
@@ -718,7 +726,7 @@ async function isUnlocked(uid) { return (await kv('SISMEMBER', K('unlocked'), ui
 module.exports = {
   posterOf, memberCode, isUnlocked, rulesOf, agreement, hist, createdAt, hostOk, adminOk,
   netInfo, noteNet, toVtt, captionList, captionUpload, captionDelete,
-  recordWatched, watchedEnough, healCompletions,
+  recordWatched, watchedEnough, healCompletions, vpnTrusted,
   lectureOrder, lectureOpen,
   env, list, SITE_NAME, ACCENT, BRAND, DISCORD_API, configured, rid, sign, safeEq, ip, query,
   cookies, setCookie, json, redirect, readBody, sameOrigin, isChrome, guard,
