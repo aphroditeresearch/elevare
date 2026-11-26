@@ -1291,27 +1291,23 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     drop-shadow(5px 6px 0 rgba(0,0,0,.85)); }
 .lp { position: absolute; inset: 0; width: 100%; height: 100%;
   user-select: none; -webkit-user-drag: none; }
-.lp-l { --tx: 7.25cqw; --ty: 1.5cqw; --sc: 1;
-  transform-origin: 26.4% 43.4%; }
-.lp-v { --tx: -2.25cqw; --ty: 0cqw; --sc: 1; transform-origin: 55.3% 50%; }
-.lp-r { --tx: -10cqw; --ty: .25cqw; --sc: 1;
-  transform-origin: 77.9% 55.9%; }
-.vl-live .lp-rest { animation: shed .9s ease-in-out 1.9s both; }
-.vl-live .lp-l { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 2.6s both; }
-.vl-live .lp-v { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 2.6s both; }
-.vl-live .lp-r { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 2.6s both; }
-@keyframes shed {
-  0% { opacity: 1; filter: none; }
-  100% { opacity: 0; filter: blur(6px) brightness(.5); }
+/* E E A E dissolve away as purple ink; L V R stay exactly where they are */
+.vl-live .lp-rest { animation: inkout 1.7s cubic-bezier(.45,0,.6,1) 1.9s both; }
+@keyframes inkout {
+  0% { opacity: 1; translate: 0 0; }
+  40% { opacity: .9; translate: 0 -.5cqw; }
+  100% { opacity: 0; translate: 0 -3.5cqw; }
 }
-@keyframes slide {
-  0% { translate: 0 0; scale: 1; }
-  100% { translate: var(--tx) var(--ty); scale: var(--sc); }
+.vl-live .lp-l, .vl-live .lp-v, .vl-live .lp-r {
+  animation: wake 2.4s ease-in-out 2.2s both; }
+@keyframes wake {                /* the purple letters wake as the ink leaves */
+  0% { filter: none; }
+  45% { filter: brightness(1.22) drop-shadow(0 0 1.4cqw rgba(169,116,255,.5)); }
+  100% { filter: none; }
 }
+.vl-fx { position: absolute; width: 0; height: 0; }
 .vl-calm .vl-bg { opacity: 0; }
 .vl-calm .lp-rest { opacity: 0; }
-.vl-calm .lp-l, .vl-calm .lp-v, .vl-calm .lp-r {
-  translate: var(--tx) var(--ty); }
 
 /* ---- sign-in backdrop: the snowy walk, blurred and dimmed ---- */
 .vl-wall { position: absolute; left: -3%; top: -3%; width: 106%; height: 106%;
@@ -1367,6 +1363,14 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 
 <!-- Sign in: logo on the left, Discord entry on the right -->
 <section id="v-login" class="view door vbg">
+  <svg class="vl-fx" aria-hidden="true" focusable="false">
+    <filter id="vl-ink" x="-15%" y="-40%" width="130%" height="180%">
+      <feTurbulence id="vl-ink-t" type="fractalNoise" baseFrequency="0.012 0.03"
+        numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap id="vl-ink-d" in="SourceGraphic" in2="n" scale="0"
+        xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
   <video class="vl-bg" muted playsinline preload="auto"
     disablepictureinpicture data-lvr="1" aria-hidden="true"
     poster="/media/intro-poster.jpg">
@@ -3973,10 +3977,31 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       done = true;
       try { sessionStorage.setItem('elevare.intro', '1'); } catch (e) {}
       setCls(sec, 'vl-live', true);
+      if (!calm) setTimeout(ink, 1900);
       if (!v.paused && !v.muted) fadeOut();
       else setTimeout(function () { v.pause(); }, 1100);
     }
     var wantSound = true;                // sound is on unless they turn it off
+    function ink() {                     // E E A E thin out like ink in water
+      var r = sec.querySelector('.lp-rest');
+      var d = document.getElementById('vl-ink-d');
+      var t = document.getElementById('vl-ink-t');
+      if (!r || !d || !t) return;
+      var t0 = 0, DUR = 1700;
+      function f(now) {
+        if (!t0) t0 = now;
+        var k = Math.min(1, (now - t0) / DUR);
+        d.setAttribute('scale', (120 * Math.pow(k, 1.25)).toFixed(1));
+        t.setAttribute('baseFrequency', (0.012 + k * 0.006).toFixed(4) + ' ' +
+          (0.03 - k * 0.012).toFixed(4));
+        r.style.filter = k < 1 ? 'url(#vl-ink) blur(' + (k * 4).toFixed(2) +
+          'px) sepia(' + k.toFixed(2) + ') hue-rotate(235deg) saturate(' +
+          (1 + 3 * k).toFixed(2) + ') brightness(' +
+          (1 - 0.55 * k).toFixed(2) + ')' : '';
+        if (k < 1) requestAnimationFrame(f);
+      }
+      requestAnimationFrame(f);
+    }
     function muted(on) {
       v.muted = on; setCls(sec, 'vl-muted', on);
       if (snd) {
