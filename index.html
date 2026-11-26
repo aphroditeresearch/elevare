@@ -1327,15 +1327,15 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 
 /* ---- a small purple light that follows the mouse and lifts the backdrop ---- */
 .vl-lit { filter: blur(3px) saturate(1.2) brightness(1.2);
-  -webkit-mask-image: radial-gradient(circle 230px at var(--mx, -999px)
+  -webkit-mask-image: radial-gradient(circle 165px at var(--mx, -999px)
     var(--my, -999px), #000 0%, rgba(0,0,0,.55) 45%, transparent 100%);
-  mask-image: radial-gradient(circle 230px at var(--mx, -999px)
+  mask-image: radial-gradient(circle 165px at var(--mx, -999px)
     var(--my, -999px), #000 0%, rgba(0,0,0,.55) 45%, transparent 100%);
   transition: opacity .6s ease; }
 .vl-live .vl-lit { opacity: 0; }
 .vl-live.vl-hover .vl-lit { opacity: .7; }
-.vl-glow { position: absolute; left: 0; top: 0; z-index: 1; width: 400px;
-  height: 400px; margin: -200px 0 0 -200px; border-radius: 50%;
+.vl-glow { position: absolute; left: 0; top: 0; z-index: 1; width: 290px;
+  height: 290px; margin: -145px 0 0 -145px; border-radius: 50%;
   pointer-events: none; opacity: 0; mix-blend-mode: screen;
   background: radial-gradient(closest-side, rgba(160,100,255,.2),
     rgba(124,44,240,.08) 55%, transparent);
