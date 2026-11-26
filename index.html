@@ -1334,21 +1334,15 @@ body:before {
     drop-shadow(5px 6px 0 rgba(0,0,0,.85)); }
 .lp { position: absolute; inset: 0; width: 100%; height: 100%;
   user-select: none; -webkit-user-drag: none; }
-.lp-l { --tx: 7.25cqw; --ty: 1.5cqw; --sc: 1.04;
+.lp-l { --tx: 7.25cqw; --ty: 1.5cqw; --sc: 1;
   transform-origin: 26.4% 43.4%; }
-.lp-v { --tx: -2.25cqw; --ty: 0cqw; --sc: .98; transform-origin: 55.3% 50%; }
-.lp-r { --tx: -10cqw; --ty: .25cqw; --sc: .96;
+.lp-v { --tx: -2.25cqw; --ty: 0cqw; --sc: 1; transform-origin: 55.3% 50%; }
+.lp-r { --tx: -10cqw; --ty: .25cqw; --sc: 1;
   transform-origin: 77.9% 55.9%; }
-.lp-lvr { inset: auto; left: 22.3%; top: .4%; width: 55.4%; height: auto;
-  opacity: 0; }
 .vl-live .lp-rest { animation: shed .9s ease-in-out 4.6s both; }
-.vl-live .lp-l { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both,
-  lpout .35s ease 6.55s forwards; }
-.vl-live .lp-v { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both,
-  lpout .35s ease 6.55s forwards; }
-.vl-live .lp-r { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both,
-  lpout .35s ease 6.55s forwards; }
-.vl-live .lp-lvr { animation: lvrin .35s ease 6.5s both; }
+.vl-live .lp-l { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both; }
+.vl-live .lp-v { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both; }
+.vl-live .lp-r { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both; }
 @keyframes shed {
   0% { opacity: 1; filter: none; }
   100% { opacity: 0; filter: blur(6px) brightness(.5); }
@@ -1357,8 +1351,6 @@ body:before {
   0% { translate: 0 0; scale: 1; }
   100% { translate: var(--tx) var(--ty); scale: var(--sc); }
 }
-@keyframes lpout { to { opacity: 0; } }
-@keyframes lvrin { 0% { opacity: 0; } 100% { opacity: 1; } }
 .vl-by { position: absolute; right: 13%; bottom: -3%; opacity: 0;
   font: italic 400 clamp(11px, 1.35cqw + 4px, 17px)/1 "Cinzel", Georgia, serif;
   letter-spacing: .22em; text-transform: lowercase; color: #cdb8f2;
@@ -1370,8 +1362,8 @@ body:before {
 }
 .vl-calm .vl-bg { opacity: 0; }
 .vl-calm .lp-rest { opacity: 0; }
-.vl-calm .lp-l, .vl-calm .lp-v, .vl-calm .lp-r { opacity: 0; }
-.vl-calm .lp-lvr { opacity: 1; }
+.vl-calm .lp-l, .vl-calm .lp-v, .vl-calm .lp-r {
+  translate: var(--tx) var(--ty); }
 .vl-calm .vl-by { opacity: .72; }
 </style>
 </head>
@@ -1425,7 +1417,6 @@ body:before {
         <img class="lp lp-l" src="/media/lg-l.webp" alt="" draggable="false">
         <img class="lp lp-v" src="/media/lg-v.webp" alt="" draggable="false">
         <img class="lp lp-r" src="/media/lg-r.webp" alt="" draggable="false">
-        <img class="lp lp-lvr" src="/media/lvr.webp" alt="" draggable="false">
         <span class="vl-by">by mulano</span>
       </span>
     </h1>
