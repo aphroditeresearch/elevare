@@ -1350,20 +1350,10 @@ body:before {
   0% { translate: 0 0; scale: 1; }
   100% { translate: var(--tx) var(--ty); scale: var(--sc); }
 }
-.vl-by { position: absolute; right: 13%; bottom: -3%; opacity: 0;
-  font: italic 400 clamp(11px, 1.35cqw + 4px, 17px)/1 "Cinzel", Georgia, serif;
-  letter-spacing: .22em; text-transform: lowercase; color: #cdb8f2;
-  rotate: -5deg; text-shadow: 0 0 10px #000, 2px 2px 0 #000; }
-.vl-live .vl-by { animation: byin .9s ease-out 6.8s both; }
-@keyframes byin {
-  0% { opacity: 0; translate: -1.5cqw 0; filter: blur(4px); }
-  100% { opacity: .72; translate: 0 0; filter: none; }
-}
 .vl-calm .vl-bg { opacity: 0; }
 .vl-calm .lp-rest { opacity: 0; }
 .vl-calm .lp-l, .vl-calm .lp-v, .vl-calm .lp-r {
   translate: var(--tx) var(--ty); }
-.vl-calm .vl-by { opacity: .72; }
 
 /* clouds: soft, dissolving edges so they read as painted into the dark */
 .cl {
@@ -1429,7 +1419,6 @@ body:before {
         <img class="lp lp-l" src="/media/lg-l.webp" alt="" draggable="false">
         <img class="lp lp-v" src="/media/lg-v.webp" alt="" draggable="false">
         <img class="lp lp-r" src="/media/lg-r.webp" alt="" draggable="false">
-        <span class="vl-by">by mulano</span>
       </span>
     </h1>
     <p class="vl-tag" id="brand-tag">Private Trading Community</p>
