@@ -1329,43 +1329,23 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   radial-gradient(42% 46% at 50% 50%, rgba(0,0,0,.55), transparent 100%),
   radial-gradient(75% 70% at 50% 45%, transparent 55%, rgba(0,0,0,.85) 100%); }
 
-/* ---- a small light that follows the mouse and lifts the backdrop ---- */
-.vl-spot { position: absolute; left: 0; top: 0; z-index: 0; width: 330px;
-  height: 330px; margin: -165px 0 0 -165px; border-radius: 50%;
-  overflow: hidden; pointer-events: none; opacity: 0;
-  -webkit-mask-image: radial-gradient(closest-side, #000 0%,
-    rgba(0,0,0,.55) 45%, transparent 100%);
-  mask-image: radial-gradient(closest-side, #000 0%, rgba(0,0,0,.55) 45%,
-    transparent 100%);
-  will-change: transform; transition: opacity .6s ease; }
-.vl-spot-img { position: absolute; left: 0; top: 0; max-width: none;
-  object-fit: cover; object-position: 32% 50%; user-select: none;
-  filter: blur(3px) saturate(1.2) brightness(1.2); will-change: transform; }
-.vl-live.vl-hover .vl-spot { opacity: .7; }
-.vl-glow { position: absolute; left: 0; top: 0; z-index: 1; width: 290px;
-  height: 290px; margin: -145px 0 0 -145px; border-radius: 50%;
-  pointer-events: none; opacity: 0; mix-blend-mode: screen;
-  background: radial-gradient(closest-side, rgba(100,190,255,.2),
-    rgba(44,158,240,.08) 55%, transparent);
-  will-change: transform; transition: opacity .6s ease; }
-.vl-live.vl-hover .vl-glow { opacity: 1; }
-
 /* ---- cinema: letterbox, slow camera push, drifting snow, film grain ---- */
 .vl-bar { position: absolute; left: 0; right: 0; z-index: 4; height: 9vh;
-  background: #000; pointer-events: none;
+  background: #000; pointer-events: none; will-change: transform;
   transition: transform 1.4s cubic-bezier(.65,0,.25,1) .3s; }
 .vl-bar-t { top: 0; } .vl-bar-b { bottom: 0; }
 .vl-live .vl-bar-t { transform: translateY(-100%); }
 .vl-live .vl-bar-b { transform: translateY(100%); }
 .vl-quick .vl-bar, .vl-calm .vl-bar { display: none; }
-.vl-live .vl-wall { animation: push 34s cubic-bezier(.3,0,.3,1) .2s both; }
+.vl-live .vl-wall { animation: push 34s cubic-bezier(.3,0,.3,1) .2s both;
+  will-change: transform; }
 @keyframes push { 0% { scale: 1.06; } 100% { scale: 1; } }
 .vl-snow { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
   pointer-events: none; opacity: 0; transition: opacity 2.4s ease .8s; }
 .vl-live .vl-snow { opacity: 1; }
 .vl-grain { position: absolute; inset: -60px; z-index: 3; pointer-events: none;
   opacity: 0; mix-blend-mode: overlay; background-size: 160px 160px;
-  transition: opacity 1.5s ease .5s; }
+  will-change: transform; transition: opacity 1.5s ease .5s; }
 .vl-live .vl-grain { opacity: .14; animation: grain .9s steps(1) infinite; }
 @keyframes grain {
   0% { transform: translate(0, 0); } 20% { transform: translate(-23px, 17px); }
@@ -1407,9 +1387,6 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   </video>
   <img class="vl-wall" src="/media/wall.webp" alt="" aria-hidden="true"
     draggable="false">
-  <span class="vl-spot" aria-hidden="true"><img class="vl-spot-img"
-    src="/media/wall.webp" alt="" draggable="false"></span>
-  <i class="vl-glow" aria-hidden="true"></i>
   <canvas class="vl-snow" aria-hidden="true"></canvas>
   <i class="vl-grain" aria-hidden="true"></i>
   <i class="vl-bar vl-bar-t" aria-hidden="true"></i>
@@ -4088,40 +4065,6 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     setInterval(tick, 300);
     document.addEventListener('visibilitychange', tick);
     tick();
-  })();
-  // ---------- front page: light under the mouse (GPU-only, no repaint) ---
-  (function () {
-    var sec = document.getElementById('v-login');
-    var spot = sec && sec.querySelector('.vl-spot');
-    var img = spot && spot.querySelector('img');
-    var wall = sec && sec.querySelector('.vl-wall');
-    var glow = sec && sec.querySelector('.vl-glow');
-    if (!spot || !img || !wall || !glow) return;
-    var px = 0, py = 0, queued = false, wl = 0, wt = 0;
-    function size() {               // the lit copy matches the backdrop exactly
-      var w = wall.getBoundingClientRect(), b = sec.getBoundingClientRect();
-      wl = w.left - b.left; wt = w.top - b.top;
-      img.style.width = w.width + 'px'; img.style.height = w.height + 'px';
-    }
-    function apply() {
-      queued = false;
-      if (!sec.classList.contains('vl-live')) return;
-      var b = sec.getBoundingClientRect();
-      var x = px - b.left, y = py - b.top;
-      spot.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
-      img.style.transform = 'translate3d(' + (wl - x + 165) + 'px,' +
-        (wt - y + 165) + 'px,0)';
-      glow.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
-      setCls(sec, 'vl-hover', true);
-    }
-    window.addEventListener('resize', size);
-    sec.addEventListener('pointermove', function (e) {
-      px = e.clientX; py = e.clientY;
-      if (!queued) { queued = true; size(); requestAnimationFrame(apply); }
-    });
-    sec.addEventListener('pointerleave', function () {
-      setCls(sec, 'vl-hover', false);
-    });
   })();
   // ---------- front page: soft snow and film grain ----------
   (function () {
