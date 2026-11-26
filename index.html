@@ -1262,6 +1262,44 @@ body:before {
   .vl-bg { inset: auto; left: 50%; top: 6vh; width: 240vw; height: auto;
     translate: -50% 0; object-fit: contain; }
 }
+
+/* ---- spiky logo + ink clouds ---- */
+.vl-logo { margin: 0; line-height: 0; }
+.vl-logo img, .door-logo { display: block; width: min(720px, 62vw); height: auto;
+  margin: 0 auto; user-select: none; -webkit-user-drag: none;
+  filter: drop-shadow(0 0 26px rgba(124,44,240,.35))
+    drop-shadow(5px 6px 0 rgba(0,0,0,.85)); }
+.door-logo { width: min(520px, 70vw); margin-bottom: 6px; }
+.vl-kick { margin-bottom: 4px; }
+.vl-sky { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  overflow: hidden; }
+.cl { position: absolute; height: auto; user-select: none; opacity: 0;
+  filter: brightness(.78) drop-shadow(0 0 18px rgba(124,44,240,.18)); }
+.cl-tl { width: 40vw; left: -7vw; top: -3vh; }
+.cl-tr { width: 40vw; right: -8vw; top: 1vh; }
+.cl-wisp { width: 15vw; right: 6vw; top: 34vh; }
+.cl-small { width: 22vw; left: 2vw; top: 40vh; }
+.cl-bank { width: 118vw; left: -9vw; bottom: -17vh; filter: brightness(.5); }
+.vl-fine { position: relative; text-shadow: 0 0 6px #000, 0 0 12px #000; }
+.vl-live .cl { animation: clin 2.2s cubic-bezier(.2,.8,.2,1) both,
+  drift 26s ease-in-out 2.2s infinite alternate; }
+.vl-live .cl-tl, .vl-live .cl-small { --dx: -60px; }
+.vl-live .cl-tr, .vl-live .cl-wisp { --dx: 60px; animation-duration: 2.2s, 31s; }
+.vl-live .cl-bank { --dx: 0px; animation-duration: 2.6s, 38s; }
+.vl-live .cl-tl { animation-delay: .5s, 2.7s; }
+.vl-live .cl-tr { animation-delay: .65s, 2.85s; }
+.vl-live .cl-small { animation-delay: .9s, 3.1s; }
+.vl-live .cl-wisp { animation-delay: 1s, 3.2s; }
+.vl-live .cl-bank { animation-delay: .2s, 2.8s; }
+@keyframes clin {
+  0% { opacity: 0; transform: translate(var(--dx), 30px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes drift {
+  0% { translate: 0 0; }
+  100% { translate: 2.2vw -6px; }
+}
+.vl-calm .cl { opacity: 1; animation: none; }
 </style>
 </head>
 <body>
@@ -1269,7 +1307,8 @@ body:before {
 <!-- Chrome-only wall -->
 <section id="v-wall" class="view door">
   <div class="stack">
-    <div class="bmk door-mark" role="img">ELEVARE</div>
+    <img class="door-logo" src="/media/logo-elevare.webp" alt="Elevare"
+      width="1600" height="488" draggable="false">
     <div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
     <p class="tag" id="wall-tag">Google Chrome required</p>
     <p class="blurb" id="wall-text">For your security, the community is only
@@ -1293,9 +1332,17 @@ body:before {
     <source src="/media/bg-loop.mp4" type="video/mp4">
   </video>
   <i class="vl-shade" aria-hidden="true"></i>
+  <div class="vl-sky" aria-hidden="true">
+    <img class="cl cl-tl" src="/media/cloud-tl.webp" alt="" draggable="false">
+    <img class="cl cl-tr" src="/media/cloud-tr.webp" alt="" draggable="false">
+    <img class="cl cl-wisp" src="/media/cloud-wisp.webp" alt="" draggable="false">
+    <img class="cl cl-small" src="/media/cloud-small.webp" alt="" draggable="false">
+    <img class="cl cl-bank" src="/media/cloud-bank.webp" alt="" draggable="false">
+  </div>
   <div class="vl">
     <p class="vl-kick">Members only</p>
-    <h1 class="bmk door-mark">ELEVARE</h1>
+    <h1 class="vl-logo"><img src="/media/logo-elevare.webp" alt="Elevare"
+      width="1600" height="488" draggable="false"></h1>
     <p class="vl-tag" id="brand-tag">Private Trading Community</p>
     <a id="go" class="btn vl-go" href="/api/login">Enter with Discord</a>
     <div id="err" class="err" role="alert"></div>
@@ -1306,7 +1353,8 @@ body:before {
 <!-- Community rules (agree before entering) -->
 <section id="v-agree" class="view door">
   <div class="stack agree">
-    <div class="bmk door-mark" role="img">ELEVARE</div>
+    <img class="door-logo" src="/media/logo-elevare.webp" alt="Elevare"
+      width="1600" height="488" draggable="false">
     <div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
     <p class="tag">Community rules</p>
     <ol class="rules" id="ag-list"></ol>
@@ -1322,7 +1370,8 @@ body:before {
 <!-- Timed out -->
 <section id="v-timeout" class="view door">
   <div class="stack">
-    <div class="bmk door-mark" role="img">ELEVARE</div>
+    <img class="door-logo" src="/media/logo-elevare.webp" alt="Elevare"
+      width="1600" height="488" draggable="false">
     <div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
     <p class="tag">Timed out</p>
     <div class="tclock display" id="to-clock">10:00</div>

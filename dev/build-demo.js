@@ -49,7 +49,7 @@ html = html
   .replace('<script src="/brand.js"></script>', '<script>' + fs.readFileSync(R('brand.js'), 'utf8') + '</script>')
   .split('src="/logo.png"').join('src="" data-logo')
   .replace(/(src="|poster=")\/media\/([\w.-]+)/g, (m, pre, f) => pre + 'data:' +
-    ({ jpg: 'image/jpeg', mp4: 'video/mp4' })[f.split('.').pop()] + ';base64,' + b64('media/' + f))
+    ({ jpg: 'image/jpeg', webp: 'image/webp', mp4: 'video/mp4' })[f.split('.').pop()] + ';base64,' + b64('media/' + f))
   .split('src="/emblem.png"').join('src="data:image/png;base64,' + b64('emblem.png') + '"')
   .replace('url(/fonts/bangers.woff2)', 'url(data:font/woff2;base64,' +
     b64('fonts/bangers.woff2') + ')');
