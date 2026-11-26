@@ -1232,12 +1232,12 @@ body:before {
 .vbg .door-mark { font-size: clamp(40px, 6.6vw, 98px); }
 .vbg .vl > * { opacity: 0; }
 .vl-live .vl > * { animation: land .7s cubic-bezier(.2,1.25,.4,1) both; }
-.vl-live .vl > :nth-child(1) { animation-delay: 1.45s; }
-.vl-live .vl > :nth-child(2) { animation-delay: 1.65s; }
-.vl-live .vl > :nth-child(3) { animation-delay: 1.95s; }
-.vl-live .vl > :nth-child(4) { animation-delay: 2.15s; }
+.vl-live .vl > :nth-child(1) { animation-delay: 3.1s; }
+.vl-live .vl > :nth-child(2) { animation-delay: 3.3s; }
+.vl-live .vl > :nth-child(3) { animation-delay: 6.4s; }
+.vl-live .vl > :nth-child(4) { animation-delay: 6.6s; }
 .vl-live .vl > :nth-child(5), .vl-live .vl > :nth-child(6) {
-  animation-delay: 2.35s; }
+  animation-delay: 6.8s; }
 @keyframes land {
   0% { opacity: 0; transform: translateY(26px) scale(1.04); filter: blur(6px); }
   100% { opacity: 1; transform: none; filter: none; }
@@ -1257,7 +1257,7 @@ body:before {
 
 /* ---- spiky logo + ink clouds ---- */
 .vl-logo { margin: 0; line-height: 0; }
-.vl-logo img, .door-logo { display: block; width: min(720px, 62vw); height: auto;
+.door-logo { display: block; width: min(720px, 62vw); height: auto;
   margin: 0 auto; user-select: none; -webkit-user-drag: none;
   filter: drop-shadow(0 0 26px rgba(124,44,240,.35))
     drop-shadow(5px 6px 0 rgba(0,0,0,.85)); }
@@ -1273,18 +1273,17 @@ body:before {
 .cl-small { width: 22vw; left: 2vw; top: 40vh; }
 .cl-bank { width: 118vw; left: -9vw; bottom: -17vh; filter: brightness(.5); }
 .vl-fine { position: relative; text-shadow: 0 0 6px #000, 0 0 12px #000; }
-.vl-live .cl { animation: clin 2.2s cubic-bezier(.2,.8,.2,1) both,
-  cldrift var(--dd, 26s) ease-in-out 2.2s infinite alternate,
-  clbreath var(--bd, 9s) ease-in-out 2.2s infinite alternate; }
+.vl-live .cl { animation: clin 2.4s cubic-bezier(.25,.8,.25,1) both,
+  cldrift var(--dd, 26s) ease-in-out infinite alternate,
+  clbreath var(--bd, 9s) ease-in-out infinite alternate; }
 .vl-live .cl-tl, .vl-live .cl-small { --dx: -60px; }
 .vl-live .cl-tr, .vl-live .cl-wisp { --dx: 60px; --dd: 31s; --bd: 11s; }
-.vl-live .cl-bank { --dx: 0px; --dd: 38s; --bd: 13s;
-  animation-duration: 2.6s, 38s, 13s; }
-.vl-live .cl-tl { animation-delay: .5s, 2.7s, 2.7s; }
-.vl-live .cl-tr { animation-delay: .65s, 2.85s, 4.5s; }
-.vl-live .cl-small { animation-delay: .9s, 3.1s, 5.5s; }
-.vl-live .cl-wisp { animation-delay: 1s, 3.2s, 3.9s; }
-.vl-live .cl-bank { animation-delay: .2s, 2.8s, 2.8s; }
+.vl-live .cl-bank { --dx: 0px; --dd: 38s; --bd: 13s; }
+.vl-live .cl-bank { animation-delay: 2.6s, 5s, 5s; }
+.vl-live .cl-tl { animation-delay: 2.8s, 5.2s, 5.2s; }
+.vl-live .cl-tr { animation-delay: 2.9s, 5.3s, 5.3s; }
+.vl-live .cl-small { animation-delay: 3.1s, 5.5s, 5.5s; }
+.vl-live .cl-wisp { animation-delay: 3.2s, 5.6s, 5.6s; }
 @keyframes clin {
   0% { opacity: 0; transform: translate(var(--dx), 30px); }
   100% { opacity: 1; transform: none; }
@@ -1319,6 +1318,66 @@ body:before {
 .vl-shade { background: linear-gradient(to bottom, transparent 45%,
     rgba(0,0,0,.55) 72%, rgba(0,0,0,.85) 100%),
   radial-gradient(80% 75% at 50% 42%, transparent 50%, rgba(0,0,0,.8) 100%); }
+
+/* ---- intro: eyes flash and die, ELEVARE breaks down to LVR ---- */
+.vl-live .vl-bg { transition: none;
+  animation: eyes 3.4s ease-in-out forwards; }
+@keyframes eyes {
+  0% { opacity: 0; filter: brightness(.7); }
+  35% { opacity: 1; filter: brightness(1.7) saturate(1.25); }
+  58% { opacity: 1; filter: brightness(1.35) saturate(1.15); }
+  100% { opacity: 0; filter: brightness(.35); }
+}
+.vl-mark { position: relative; display: block; width: min(720px, 62vw);
+  aspect-ratio: 1600 / 488; margin: 0 auto; container-type: inline-size;
+  filter: drop-shadow(0 0 26px rgba(124,44,240,.35))
+    drop-shadow(5px 6px 0 rgba(0,0,0,.85)); }
+.lp { position: absolute; inset: 0; width: 100%; height: 100%;
+  user-select: none; -webkit-user-drag: none; }
+.lp-l { --tx: 7.25cqw; --ty: 1.5cqw; --sc: 1.04;
+  transform-origin: 26.4% 43.4%; }
+.lp-v { --tx: -2.25cqw; --ty: 0cqw; --sc: .98; transform-origin: 55.3% 50%; }
+.lp-r { --tx: -10cqw; --ty: .25cqw; --sc: .96;
+  transform-origin: 77.9% 55.9%; }
+.lp-lvr { inset: auto; left: 22.3%; top: .4%; width: 55.4%; height: auto;
+  opacity: 0; }
+.vl-live .lp-rest { animation: shed 1s cubic-bezier(.5,0,.75,0) 4.6s both; }
+.vl-live .lp-l { animation: pull 1.5s cubic-bezier(.3,.9,.25,1) 4.5s both,
+  lpout .6s ease 6s forwards; }
+.vl-live .lp-v { animation: pull 1.5s cubic-bezier(.3,.9,.25,1) 4.6s both,
+  lpout .6s ease 6s forwards; }
+.vl-live .lp-r { animation: pull 1.5s cubic-bezier(.3,.9,.25,1) 4.7s both,
+  lpout .6s ease 6s forwards; }
+.vl-live .lp-lvr { animation: lvrin .7s ease 5.9s both; }
+@keyframes shed {
+  0% { opacity: 1; filter: none; translate: 0 0; }
+  100% { opacity: 0; filter: blur(10px) brightness(.4); translate: 0 4cqw; }
+}
+@keyframes pull {
+  0% { translate: 0 0; scale: 1; }
+  32% { translate: 0 -3.4cqw; scale: 1.1;
+    filter: brightness(1.35) drop-shadow(0 0 2.4cqw rgba(169,116,255,.7)); }
+  100% { translate: var(--tx) var(--ty); scale: var(--sc); filter: none; }
+}
+@keyframes lpout { to { opacity: 0; } }
+@keyframes lvrin {
+  0% { opacity: 0; filter: brightness(1.6); }
+  100% { opacity: 1; filter: none; }
+}
+.vl-by { position: absolute; right: 13%; bottom: -3%; opacity: 0;
+  font: italic 400 clamp(11px, 1.35cqw + 4px, 17px)/1 "Cinzel", Georgia, serif;
+  letter-spacing: .22em; text-transform: lowercase; color: #cdb8f2;
+  rotate: -5deg; text-shadow: 0 0 10px #000, 2px 2px 0 #000; }
+.vl-live .vl-by { animation: byin .9s ease-out 6.3s both; }
+@keyframes byin {
+  0% { opacity: 0; translate: -1.5cqw 0; filter: blur(4px); }
+  100% { opacity: .72; translate: 0 0; filter: none; }
+}
+.vl-calm .vl-bg { opacity: 0; }
+.vl-calm .lp-rest { opacity: 0; }
+.vl-calm .lp-l, .vl-calm .lp-v, .vl-calm .lp-r { opacity: 0; }
+.vl-calm .lp-lvr { opacity: 1; }
+.vl-calm .vl-by { opacity: .72; }
 </style>
 </head>
 <body>
@@ -1365,8 +1424,16 @@ body:before {
   </div>
   <div class="vl">
     <p class="vl-kick">Members only</p>
-    <h1 class="vl-logo"><img src="/media/logo-elevare.webp" alt="Elevare"
-      width="1600" height="488" draggable="false"></h1>
+    <h1 class="vl-logo" aria-label="Elevare">
+      <span class="vl-mark" aria-hidden="true">
+        <img class="lp lp-rest" src="/media/lg-rest.webp" alt="" draggable="false">
+        <img class="lp lp-l" src="/media/lg-l.webp" alt="" draggable="false">
+        <img class="lp lp-v" src="/media/lg-v.webp" alt="" draggable="false">
+        <img class="lp lp-r" src="/media/lg-r.webp" alt="" draggable="false">
+        <img class="lp lp-lvr" src="/media/lvr.webp" alt="" draggable="false">
+        <span class="vl-by">by mulano</span>
+      </span>
+    </h1>
     <p class="vl-tag" id="brand-tag">Private Trading Community</p>
     <a id="go" class="btn vl-go" href="/api/login">Enter with Discord</a>
     <div id="err" class="err" role="alert"></div>
@@ -3937,12 +4004,17 @@ body:before {
     var calm = window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var live = false;
-    function land() { if (!live) { live = true; setCls(sec, 'vl-live', true); } }
+    var gone = false;
+    function land() {
+      if (live) return;
+      live = true; setCls(sec, 'vl-live', true);
+      setTimeout(function () { gone = true; v.pause(); }, 3600);
+    }
     if (calm) { setCls(sec, 'vl-calm', true); live = true; }
     v.addEventListener('playing', land);
     function tick() {
       var on = sec.classList.contains('on') && !document.hidden;
-      if (on && !calm && v.paused) {
+      if (on && !calm && !gone && v.paused) {
         var p = v.play();
         if (p && p.catch) p.catch(function () { land(); });
         setTimeout(land, 1500);           // never wait on a slow video
