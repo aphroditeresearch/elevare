@@ -1364,6 +1364,20 @@ body:before {
 .vl-calm .lp-l, .vl-calm .lp-v, .vl-calm .lp-r {
   translate: var(--tx) var(--ty); }
 .vl-calm .vl-by { opacity: .72; }
+
+/* clouds: soft, dissolving edges so they read as painted into the dark */
+.cl {
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 38%,
+    rgba(0,0,0,.75) 58%, rgba(0,0,0,.3) 80%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 38%,
+    rgba(0,0,0,.75) 58%, rgba(0,0,0,.3) 80%, transparent 100%);
+}
+.cl-bank {
+  -webkit-mask-image: radial-gradient(ellipse 52% 62% at 50% 62%, #000 30%,
+    rgba(0,0,0,.7) 55%, rgba(0,0,0,.25) 80%, transparent 100%);
+  mask-image: radial-gradient(ellipse 52% 62% at 50% 62%, #000 30%,
+    rgba(0,0,0,.7) 55%, rgba(0,0,0,.25) 80%, transparent 100%);
+}
 </style>
 </head>
 <body>
