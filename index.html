@@ -3930,11 +3930,17 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     try { seen = sessionStorage.getItem('elevare.intro') === '1'; } catch (e) {}
     var snd = document.getElementById('vl-sound');
     var done = false, started = false, wait = 0, tried = false;
-    function fadeOut() {                 // ease the audio down with the picture
-      var t = setInterval(function () {
-        v.volume = Math.max(0, v.volume - 0.08);
-        if (v.volume <= 0) { clearInterval(t); v.pause(); }
-      }, 80);
+    var FADE = 1000;                     // same length as the picture's fade
+    function fadeOut() {                 // the sound follows the picture down
+      var t0 = 0, v0 = v.volume;
+      function step(now) {
+        if (!t0) t0 = now;
+        var k = Math.min(1, (now - t0) / FADE);
+        v.volume = v0 * (1 - k * k * (3 - 2 * k));
+        if (k < 1) requestAnimationFrame(step);
+        else v.pause();
+      }
+      requestAnimationFrame(step);
     }
     function finish() {
       if (done) return;
@@ -3960,6 +3966,11 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       started = true; setCls(sec, 'vl-play', true);
     });
     v.addEventListener('ended', finish);
+    // start the fade just before the clip ends, so picture and sound go out
+    // together instead of the music cutting off on the last frame
+    v.addEventListener('timeupdate', function () {
+      if (v.duration && v.duration - v.currentTime <= 1.5) finish();
+    });
     v.addEventListener('error', finish);
     if (skip) skip.addEventListener('click', finish);
     function tick() {
