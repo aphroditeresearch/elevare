@@ -1229,9 +1229,9 @@ body:before {
 /* nothing drawn over the video while it plays: full source quality */
 .vl-play:not(.vl-live):after { display: none; }
 body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
-.vl-ctl { position: absolute; left: 28px; bottom: 24px; z-index: 3;
+.vl-ctl { position: absolute; left: 28px; bottom: 24px; z-index: 5;
   display: flex; gap: 26px; align-items: center; }
-.vl-by { position: absolute; right: 30px; bottom: 26px; z-index: 3;
+.vl-by { position: absolute; right: 30px; bottom: 26px; z-index: 5;
   margin: 0; pointer-events: none; user-select: none; opacity: 0;
   font: italic 400 13px/1 "Cinzel", Georgia, serif; letter-spacing: .24em;
   color: #c8e8ff; text-shadow: 0 0 10px #000, 0 1px 2px #000;
@@ -1343,7 +1343,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .vl-snow { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
   pointer-events: none; opacity: 0; transition: opacity 2.4s ease .8s; }
 .vl-live .vl-snow { opacity: 1; }
-.vl-grain { position: absolute; inset: -60px; z-index: 3; pointer-events: none;
+.vl-grain { position: absolute; inset: -60px; z-index: 1; pointer-events: none;
   opacity: 0; mix-blend-mode: overlay; background-size: 160px 160px;
   will-change: transform; transition: opacity 1.5s ease .5s; }
 .vl-live .vl-grain { opacity: .14; animation: grain .9s steps(1) infinite; }
