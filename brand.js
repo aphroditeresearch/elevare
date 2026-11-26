@@ -26,8 +26,8 @@
 
   // Accent colour (buttons, dots, highlights) and a brighter version of it
   // (numbers, labels, the timeout clock). Hex colours.
-  accent: '#7c2cf0',
-  accentBright: '#a974ff',
+  accent: '#2c9ef0',
+  accentBright: '#74c5ff',
 
   // Top-bar wordmark: the name in white with these letter positions
   // (0 = first letter) in the accent colour. [] = all white.

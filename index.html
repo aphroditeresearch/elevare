@@ -1072,18 +1072,18 @@ select.in { -webkit-appearance: none; appearance: none; }
    slanted blade-cut buttons. Overrides everything above.
    ====================================================================== */
 :root {
-  --bg: #060409; --panel: #0d0914; --ink: #f1ecf8; --soft: #cbc1db;
-  --muted: #998cb0; --dim: #5f5375; --line: #1e1529; --line2: #2f2240;
-  --red: #7c2cf0; --red2: #a974ff;
+  --bg: #040709; --panel: #090f14; --ink: #ecf3f8; --soft: #c1d0db;
+  --muted: #8ca1b0; --dim: #536775; --line: #152129; --line2: #223340;
+  --red: #2c9ef0; --red2: #74c5ff;
   --red-rgb: 124, 44, 240; --red2-rgb: 169, 116, 255;
-  --shadow: rgba(124, 44, 240, .38);
+  --shadow: rgba(44, 158, 240, .38);
 }
-::selection { background: rgba(124, 44, 240, .55); color: #fff; }
-html { scrollbar-color: #3a2856 #060409; }
+::selection { background: rgba(44, 158, 240, .55); color: #fff; }
+html { scrollbar-color: #284356 #040709; }
 /* screentone: fine halftone dots over everything, strongest at the edges */
 body:before {
   content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background: radial-gradient(circle, rgba(169,116,255,.22) 0 .8px,
+  background: radial-gradient(circle, rgba(116,197,255,.22) 0 .8px,
     transparent 1.2px) 0 0 / 6px 6px;
   -webkit-mask: radial-gradient(80% 75% at 50% 45%, transparent 40%,
     #000 100%);
@@ -1094,7 +1094,7 @@ body:before {
 
 /* ---- entry screens ---- */
 .door {
-  background: radial-gradient(60% 50% at 50% 30%, #12081f 0%, #060309 52%,
+  background: radial-gradient(60% 50% at 50% 30%, #08151f 0%, #030609 52%,
     #000 100%);
   isolation: isolate;
 }
@@ -1109,12 +1109,12 @@ body:before {
 }
 .door-mark {
   font: 700 clamp(46px, 8vw, 112px)/1 "Cinzel", Georgia, serif;
-  letter-spacing: .16em; padding-left: .16em; color: #f4efff;
-  text-shadow: 4px 4px 0 #000, 7px 7px 0 rgba(124,44,240,.55);
+  letter-spacing: .16em; padding-left: .16em; color: #eff8ff;
+  text-shadow: 4px 4px 0 #000, 7px 7px 0 rgba(44,158,240,.55);
 }
 .door-mark .a { color: var(--red2);
-  text-shadow: 4px 4px 0 #000, 7px 7px 0 rgba(124,44,240,.7),
-    0 0 26px rgba(169,116,255,.45); }
+  text-shadow: 4px 4px 0 #000, 7px 7px 0 rgba(44,158,240,.7),
+    0 0 26px rgba(116,197,255,.45); }
 .door .stack .door-mark { font-size: clamp(34px, 5vw, 64px); }
 .door .rule i { background: linear-gradient(90deg, transparent, var(--red)); }
 .door .rule i + b + i { background: linear-gradient(90deg, var(--red),
@@ -1126,9 +1126,9 @@ body:before {
   align-items: center; text-align: center; }
 .vl-kick {
   margin: 0 0 22px; padding: 6px 14px 5px; background: #000;
-  border: 1px solid rgba(169,116,255,.45); color: var(--red2);
+  border: 1px solid rgba(116,197,255,.45); color: var(--red2);
   font: 600 10px/1 var(--sans); letter-spacing: .42em; text-transform: uppercase;
-  box-shadow: 4px 4px 0 rgba(124,44,240,.45);
+  box-shadow: 4px 4px 0 rgba(44,158,240,.45);
 }
 .vl-tag {
   margin: 26px 0 0; color: var(--soft);
@@ -1143,20 +1143,20 @@ body:before {
 /* ---- buttons: slanted blade cuts, hard ink shadow ---- */
 .btn, .btn.lit, .sb, .ghost {
   border-radius: 0; color: #fff; border: 0;
-  background: linear-gradient(100deg, #5b16c8 0%, var(--red) 55%,
-    #9b5cff 100%);
+  background: linear-gradient(100deg, #167ec8 0%, var(--red) 55%,
+    #5cbbff 100%);
   clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
   box-shadow: none; filter: drop-shadow(4px 4px 0 #000);
   letter-spacing: .2em; text-transform: uppercase;
   transition: filter .15s ease, transform .15s ease;
 }
 .btn:hover, .btn.lit:hover, .sb:hover, .ghost:hover {
-  background: linear-gradient(100deg, #6a1fe0 0%, #8b3dff 55%, #b98aff 100%);
+  background: linear-gradient(100deg, #1f90e0 0%, #3daeff 55%, #8aceff 100%);
   filter: drop-shadow(5px 5px 0 #000) brightness(1.08);
   transform: translate(-1px, -1px);
 }
 .btn:disabled, .btn.lit:disabled, .btn:disabled:hover {
-  background: #2a1f3a; color: #7c6f92; transform: none;
+  background: #1f2f3a; color: #7c6f92; transform: none;
   filter: drop-shadow(4px 4px 0 #000);
 }
 .btn.lit:after { display: none; }
@@ -1164,57 +1164,57 @@ body:before {
   background: transparent; color: var(--soft);
   clip-path: none; filter: none; border: 1px solid var(--line2);
 }
-.sb.line:hover, .ghost.line:hover { background: rgba(124,44,240,.12);
+.sb.line:hover, .ghost.line:hover { background: rgba(44,158,240,.12);
   border-color: var(--red); color: #fff; transform: none; filter: none; }
 .sb.red { background: #3a0d1a; }
 
 /* ---- the members' area ---- */
 .app { background:
-  radial-gradient(70% 40% at 50% -8%, rgba(124,44,240,.22), transparent 70%),
+  radial-gradient(70% 40% at 50% -8%, rgba(44,158,240,.22), transparent 70%),
   var(--bg); background-attachment: fixed; }
-.top { background: rgba(6,4,9,.92); border-bottom: 1px solid #2a1c3d;
-  box-shadow: 0 1px 0 rgba(169,116,255,.08); }
+.top { background: rgba(4,7,9,.92); border-bottom: 1px solid #1c2f3d;
+  box-shadow: 0 1px 0 rgba(116,197,255,.08); }
 .brand.bmk { letter-spacing: .2em; }
 .bmk .a { color: var(--red2);
-  text-shadow: 0 0 12px rgba(169,116,255,.75), 0 0 28px rgba(124,44,240,.5); }
+  text-shadow: 0 0 12px rgba(116,197,255,.75), 0 0 28px rgba(44,158,240,.5); }
 .nav a { color: var(--muted); }
 .nav a:hover { color: #fff; }
 .nav a.on { color: #fff; }
 .nav a.on:after { height: 3px; background: var(--red2); transform: skewX(-30deg);
-  box-shadow: 0 0 12px rgba(169,116,255,.8); }
+  box-shadow: 0 0 12px rgba(116,197,255,.8); }
 /* manga panels: square corners, ink border, hard purple shadow */
 .rail, .player, .pcard, .ptile, .acard, .apanel, .modal-in, .codebox {
   border-radius: 0;
-  border: 1px solid #2c1f40;
-  background: linear-gradient(180deg, #120b1d 0%, #0b0711 60%);
-  box-shadow: 6px 6px 0 rgba(0,0,0,.9), 6px 6px 0 1px rgba(124,44,240,.35);
+  border: 1px solid #1f3240;
+  background: linear-gradient(180deg, #0b151d 0%, #070d11 60%);
+  box-shadow: 6px 6px 0 rgba(0,0,0,.9), 6px 6px 0 1px rgba(44,158,240,.35);
 }
 .player { background: #000; }
-.display { text-shadow: 3px 3px 0 #000, 5px 5px 0 rgba(124,44,240,.45); }
-.rhead .pc { color: var(--red2); text-shadow: 0 0 14px rgba(169,116,255,.6); }
+.display { text-shadow: 3px 3px 0 #000, 5px 5px 0 rgba(44,158,240,.45); }
+.rhead .pc { color: var(--red2); text-shadow: 0 0 14px rgba(116,197,255,.6); }
 .play {
-  background: radial-gradient(circle at 35% 30%, #d8c2ff 0%, var(--red2) 35%,
+  background: radial-gradient(circle at 35% 30%, #c2e6ff 0%, var(--red2) 35%,
     var(--red) 100%);
-  box-shadow: 0 0 0 10px rgba(124,44,240,.14), 0 0 40px rgba(124,44,240,.45);
+  box-shadow: 0 0 0 10px rgba(44,158,240,.14), 0 0 40px rgba(44,158,240,.45);
 }
 @keyframes breathe {
-  0%, 100% { box-shadow: 0 0 0 10px rgba(124,44,240,.12),
-    0 0 40px rgba(124,44,240,.35); }
-  50% { box-shadow: 0 0 0 18px rgba(124,44,240,.16),
-    0 0 60px rgba(124,44,240,.55); }
+  0%, 100% { box-shadow: 0 0 0 10px rgba(44,158,240,.12),
+    0 0 40px rgba(44,158,240,.35); }
+  50% { box-shadow: 0 0 0 18px rgba(44,158,240,.16),
+    0 0 60px rgba(44,158,240,.55); }
 }
-.poster .num { -webkit-text-stroke: 1px rgba(169,116,255,.18); }
+.poster .num { -webkit-text-stroke: 1px rgba(116,197,255,.18); }
 .search, .in, input[type="text"], input[type="search"], textarea, select {
-  border-radius: 0; background: #08050d; border-color: #2c1f40; }
+  border-radius: 0; background: #050a0d; border-color: #1f3240; }
 .search:focus, .in:focus { border-color: var(--red);
-  box-shadow: 0 0 0 3px rgba(124,44,240,.18); }
-.seg button.on { background: rgba(124,44,240,.25); color: #fff;
+  box-shadow: 0 0 0 3px rgba(44,158,240,.18); }
+.seg button.on { background: rgba(44,158,240,.25); color: #fff;
   box-shadow: inset 0 -2px 0 var(--red2); }
-.toast { border-radius: 0; background: #0b0711; color: var(--ink);
+.toast { border-radius: 0; background: #070d11; color: var(--ink);
   border: 1px solid var(--red); box-shadow: 5px 5px 0 #000,
-    0 0 30px rgba(124,44,240,.3); }
-.ann { background: linear-gradient(90deg, #1a0b2e, #0b0711);
-  border-bottom: 1px solid #2c1f40; }
+    0 0 30px rgba(44,158,240,.3); }
+.ann { background: linear-gradient(90deg, #0b1f2e, #070d11);
+  border-bottom: 1px solid #1f3240; }
 
 /* ---- front page: the eyes loop behind, everything lands on top ---- */
 .vbg { justify-content: center; padding: 0 24px;
@@ -1234,7 +1234,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .vl-by { position: absolute; right: 30px; bottom: 26px; z-index: 3;
   margin: 0; pointer-events: none; user-select: none; opacity: 0;
   font: italic 400 13px/1 "Cinzel", Georgia, serif; letter-spacing: .24em;
-  color: #d9c8ff; text-shadow: 0 0 10px #000, 0 1px 2px #000;
+  color: #c8e8ff; text-shadow: 0 0 10px #000, 0 1px 2px #000;
   transition: opacity 1.2s ease; }
 .vl-live .vl-by { opacity: .62; transition-delay: 4.6s; }
 .vl-quick .vl-by, .vl-calm .vl-by { transition-delay: 0s; }
@@ -1242,7 +1242,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   padding: 10px 4px; background: none; border: 0; cursor: pointer;
   font-family: inherit; font-size: 11px; font-weight: 600; line-height: 1;
   letter-spacing: .3em; text-transform: uppercase;
-  color: #e9e1ff; opacity: .6; text-shadow: 0 0 8px #000, 0 1px 2px #000;
+  color: #e1f2ff; opacity: .6; text-shadow: 0 0 8px #000, 0 1px 2px #000;
   transition: opacity .3s ease; }
 .vl-skip:hover, .vl-skip:focus-visible { opacity: 1; }
 .vl-live .vl-skip, .vl-calm .vl-skip { opacity: 0; visibility: hidden;
@@ -1264,14 +1264,14 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 @media (max-width: 700px) {
   .vbg { padding-bottom: 0; }
   .door-mark, .door-mark .a { text-shadow: 3px 3px 0 #000,
-    4px 4px 0 rgba(124,44,240,.45); }
+    4px 4px 0 rgba(44,158,240,.45); }
 }
 
 /* ---- spiky logo ---- */
 .vl-logo { margin: 0; line-height: 0; }
 .door-logo { display: block; width: min(720px, 62vw); height: auto;
   margin: 0 auto; user-select: none; -webkit-user-drag: none;
-  filter: drop-shadow(0 0 26px rgba(124,44,240,.35))
+  filter: drop-shadow(0 0 26px rgba(44,158,240,.35))
     drop-shadow(5px 6px 0 rgba(0,0,0,.85)); }
 .door-logo { width: min(520px, 70vw); margin-bottom: 6px; }
 .vl-kick { margin-bottom: 4px; }
@@ -1287,7 +1287,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 /* ---- after the video: ELEVARE breaks down to LVR ---- */
 .vl-mark { position: relative; display: block; width: min(720px, 62vw);
   aspect-ratio: 1600 / 488; margin: 0 auto; container-type: inline-size;
-  filter: drop-shadow(0 0 26px rgba(124,44,240,.35))
+  filter: drop-shadow(0 0 26px rgba(44,158,240,.35))
     drop-shadow(5px 6px 0 rgba(0,0,0,.85)); }
 .lp { position: absolute; inset: 0; width: 100%; height: 100%;
   user-select: none; -webkit-user-drag: none; }
@@ -1302,7 +1302,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   animation: wake 2.4s ease-in-out 2.2s both; }
 @keyframes wake {                /* the purple letters wake as the ink leaves */
   0% { filter: none; }
-  45% { filter: brightness(1.22) drop-shadow(0 0 1.4cqw rgba(169,116,255,.5)); }
+  45% { filter: brightness(1.22) drop-shadow(0 0 1.4cqw rgba(116,197,255,.5)); }
   100% { filter: none; }
 }
 .vl-fx { position: absolute; width: 0; height: 0; }
@@ -1333,8 +1333,8 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .vl-glow { position: absolute; left: 0; top: 0; z-index: 1; width: 290px;
   height: 290px; margin: -145px 0 0 -145px; border-radius: 50%;
   pointer-events: none; opacity: 0; mix-blend-mode: screen;
-  background: radial-gradient(closest-side, rgba(160,100,255,.2),
-    rgba(124,44,240,.08) 55%, transparent);
+  background: radial-gradient(closest-side, rgba(100,190,255,.2),
+    rgba(44,158,240,.08) 55%, transparent);
   will-change: transform; transition: opacity .6s ease; }
 .vl-live.vl-hover .vl-glow { opacity: 1; }
 </style>
@@ -3995,7 +3995,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
         t.setAttribute('baseFrequency', (0.012 + k * 0.006).toFixed(4) + ' ' +
           (0.03 - k * 0.012).toFixed(4));
         r.style.filter = k < 1 ? 'url(#vl-ink) blur(' + (k * 4).toFixed(2) +
-          'px) sepia(' + k.toFixed(2) + ') hue-rotate(235deg) saturate(' +
+          'px) sepia(' + k.toFixed(2) + ') hue-rotate(167deg) saturate(' +
           (1 + 3 * k).toFixed(2) + ') brightness(' +
           (1 - 0.55 * k).toFixed(2) + ')' : '';
         if (k < 1) requestAnimationFrame(f);
