@@ -1094,26 +1094,18 @@ body:before {
 
 /* ---- entry screens ---- */
 .door {
-  background: radial-gradient(70% 60% at 50% 42%, #140a24 0%, #08050d 55%,
-    #030205 100%);
+  background: radial-gradient(60% 50% at 50% 30%, #12081f 0%, #060309 52%,
+    #000 100%);
   isolation: isolate;
 }
 .door:before {          /* ink speed lines converging on the centre */
   content: ""; position: absolute; left: 50%; top: 44%; z-index: -1;
   width: 180vmax; height: 180vmax; translate: -50% -50%;
-  pointer-events: none; opacity: .5;
+  pointer-events: none; opacity: .35;
   background: repeating-conic-gradient(from 0deg, rgba(0,0,0,.9) 0deg .5deg,
     transparent .5deg 2.6deg);
   -webkit-mask: radial-gradient(closest-side, transparent 18%, #000 60%);
   mask: radial-gradient(closest-side, transparent 18%, #000 60%);
-}
-.door:after {           /* a single purple blade slash behind the title */
-  content: ""; position: absolute; left: -10%; right: -10%; top: 41%;
-  z-index: -1; height: 2px; pointer-events: none; rotate: -9deg;
-  background: linear-gradient(90deg, transparent, var(--red) 25%, #e4d4ff 50%,
-    var(--red) 75%, transparent);
-  box-shadow: 0 0 18px 2px rgba(124,44,240,.55);
-  opacity: .8;
 }
 .door-mark {
   font: 700 clamp(46px, 8vw, 112px)/1 "Cinzel", Georgia, serif;
@@ -1227,7 +1219,7 @@ body:before {
 /* ---- front page: the eyes loop behind, everything lands on top ---- */
 .vbg { justify-content: flex-end; padding-bottom: clamp(44px, 11vh, 130px);
   background: #000; }
-.vbg:before, .vbg:after { display: none; }
+.vbg:before { display: none; }
 .vl-bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0;
   object-fit: cover; object-position: 50% 50%; pointer-events: none;
   opacity: 0; transition: opacity 1.4s ease; }
@@ -1282,30 +1274,62 @@ body:before {
 .cl-bank { width: 118vw; left: -9vw; bottom: -17vh; filter: brightness(.5); }
 .vl-fine { position: relative; text-shadow: 0 0 6px #000, 0 0 12px #000; }
 .vl-live .cl { animation: clin 2.2s cubic-bezier(.2,.8,.2,1) both,
-  drift 26s ease-in-out 2.2s infinite alternate; }
+  cldrift var(--dd, 26s) ease-in-out 2.2s infinite alternate,
+  clbreath var(--bd, 9s) ease-in-out 2.2s infinite alternate; }
 .vl-live .cl-tl, .vl-live .cl-small { --dx: -60px; }
-.vl-live .cl-tr, .vl-live .cl-wisp { --dx: 60px; animation-duration: 2.2s, 31s; }
-.vl-live .cl-bank { --dx: 0px; animation-duration: 2.6s, 38s; }
-.vl-live .cl-tl { animation-delay: .5s, 2.7s; }
-.vl-live .cl-tr { animation-delay: .65s, 2.85s; }
-.vl-live .cl-small { animation-delay: .9s, 3.1s; }
-.vl-live .cl-wisp { animation-delay: 1s, 3.2s; }
-.vl-live .cl-bank { animation-delay: .2s, 2.8s; }
+.vl-live .cl-tr, .vl-live .cl-wisp { --dx: 60px; --dd: 31s; --bd: 11s; }
+.vl-live .cl-bank { --dx: 0px; --dd: 38s; --bd: 13s;
+  animation-duration: 2.6s, 38s, 13s; }
+.vl-live .cl-tl { animation-delay: .5s, 2.7s, 2.7s; }
+.vl-live .cl-tr { animation-delay: .65s, 2.85s, 4.5s; }
+.vl-live .cl-small { animation-delay: .9s, 3.1s, 5.5s; }
+.vl-live .cl-wisp { animation-delay: 1s, 3.2s, 3.9s; }
+.vl-live .cl-bank { animation-delay: .2s, 2.8s, 2.8s; }
 @keyframes clin {
   0% { opacity: 0; transform: translate(var(--dx), 30px); }
   100% { opacity: 1; transform: none; }
 }
-@keyframes drift {
+@keyframes clbreath {
+  0% { scale: 1; opacity: 1; }
+  100% { scale: 1.045; opacity: .78; }
+}
+@keyframes cldrift {
   0% { translate: 0 0; }
   100% { translate: 2.2vw -6px; }
 }
 .vl-calm .cl { opacity: 1; animation: none; }
+
+/* ---- darker, meaner entry screens ---- */
+.door:after { content: ""; position: absolute; inset: 0; z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(75% 70% at 50% 45%, transparent 55%,
+    rgba(0,0,0,.85) 100%); }
+.door .stack, .vbg .vl { position: relative; z-index: 2; }
+.dsky { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  overflow: hidden; }
+.dsky .cl { opacity: 1; filter: brightness(.42);
+  animation: cldrift 30s ease-in-out infinite alternate,
+    clbreath 10s ease-in-out infinite alternate; }
+.dsky .cl-tr { animation-duration: 34s, 12s; animation-delay: -9s, -4s; }
+.dsky .cl-bank { animation-duration: 40s, 14s; animation-delay: -15s, -7s; }
+.dsky .cl-tl { width: 34vw; left: -9vw; top: -6vh; }
+.dsky .cl-tr { width: 34vw; right: -10vw; top: -3vh; }
+.dsky .cl-bank { width: 110vw; left: -5vw; bottom: -22vh; filter: brightness(.3); }
+@media (prefers-reduced-motion: reduce) { .dsky .cl { animation: none; } }
+.vl-shade { background: linear-gradient(to bottom, transparent 45%,
+    rgba(0,0,0,.55) 72%, rgba(0,0,0,.85) 100%),
+  radial-gradient(80% 75% at 50% 42%, transparent 50%, rgba(0,0,0,.8) 100%); }
 </style>
 </head>
 <body>
 
 <!-- Chrome-only wall -->
 <section id="v-wall" class="view door">
+  <div class="dsky" aria-hidden="true">
+    <img class="cl cl-tl" src="/media/cloud-tl.webp" alt="" draggable="false">
+    <img class="cl cl-tr" src="/media/cloud-tr.webp" alt="" draggable="false">
+    <img class="cl cl-bank" src="/media/cloud-bank.webp" alt="" draggable="false">
+  </div>
   <div class="stack">
     <img class="door-logo" src="/media/logo-elevare.webp" alt="Elevare"
       width="1600" height="488" draggable="false">
@@ -1352,6 +1376,11 @@ body:before {
 
 <!-- Community rules (agree before entering) -->
 <section id="v-agree" class="view door">
+  <div class="dsky" aria-hidden="true">
+    <img class="cl cl-tl" src="/media/cloud-tl.webp" alt="" draggable="false">
+    <img class="cl cl-tr" src="/media/cloud-tr.webp" alt="" draggable="false">
+    <img class="cl cl-bank" src="/media/cloud-bank.webp" alt="" draggable="false">
+  </div>
   <div class="stack agree">
     <img class="door-logo" src="/media/logo-elevare.webp" alt="Elevare"
       width="1600" height="488" draggable="false">
@@ -1369,6 +1398,11 @@ body:before {
 
 <!-- Timed out -->
 <section id="v-timeout" class="view door">
+  <div class="dsky" aria-hidden="true">
+    <img class="cl cl-tl" src="/media/cloud-tl.webp" alt="" draggable="false">
+    <img class="cl cl-tr" src="/media/cloud-tr.webp" alt="" draggable="false">
+    <img class="cl cl-bank" src="/media/cloud-bank.webp" alt="" draggable="false">
+  </div>
   <div class="stack">
     <img class="door-logo" src="/media/logo-elevare.webp" alt="Elevare"
       width="1600" height="488" draggable="false">
