@@ -1236,7 +1236,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   font: italic 400 13px/1 "Cinzel", Georgia, serif; letter-spacing: .24em;
   color: #d9c8ff; text-shadow: 0 0 10px #000, 0 1px 2px #000;
   transition: opacity 1.2s ease; }
-.vl-live .vl-by { opacity: .62; transition-delay: 5s; }
+.vl-live .vl-by { opacity: .62; transition-delay: 4.6s; }
 .vl-quick .vl-by, .vl-calm .vl-by { transition-delay: 0s; }
 .vl-skip { position: relative;
   padding: 10px 4px; background: none; border: 0; cursor: pointer;
@@ -1251,11 +1251,11 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .vbg .door-mark { font-size: clamp(40px, 6.6vw, 98px); }
 .vbg .vl > * { opacity: 0; }
 .vl-live .vl > * { animation: land .7s cubic-bezier(.2,1.25,.4,1) both; }
-.vl-live .vl > :nth-child(1) { animation-delay: .9s; }
-.vl-live .vl > :nth-child(2) { animation-delay: 4.6s; }
-.vl-live .vl > :nth-child(3) { animation-delay: 4.8s; }
+.vl-live .vl > :nth-child(1) { animation-delay: .7s; }
+.vl-live .vl > :nth-child(2) { animation-delay: 4.2s; }
+.vl-live .vl > :nth-child(3) { animation-delay: 4.4s; }
 .vl-live .vl > :nth-child(4), .vl-live .vl > :nth-child(5) {
-  animation-delay: 5s; }
+  animation-delay: 4.6s; }
 @keyframes land {
   0% { opacity: 0; transform: translateY(26px) scale(1.04); filter: blur(6px); }
   100% { opacity: 1; transform: none; filter: none; }
@@ -1296,10 +1296,10 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .lp-v { --tx: -2.25cqw; --ty: 0cqw; --sc: 1; transform-origin: 55.3% 50%; }
 .lp-r { --tx: -10cqw; --ty: .25cqw; --sc: 1;
   transform-origin: 77.9% 55.9%; }
-.vl-live .lp-rest { animation: shed .9s ease-in-out 2.3s both; }
-.vl-live .lp-l { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 3s both; }
-.vl-live .lp-v { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 3s both; }
-.vl-live .lp-r { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 3s both; }
+.vl-live .lp-rest { animation: shed .9s ease-in-out 1.9s both; }
+.vl-live .lp-l { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 2.6s both; }
+.vl-live .lp-v { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 2.6s both; }
+.vl-live .lp-r { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 2.6s both; }
 @keyframes shed {
   0% { opacity: 1; filter: none; }
   100% { opacity: 0; filter: blur(6px) brightness(.5); }
@@ -1317,13 +1317,30 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .vl-wall { position: absolute; left: -3%; top: -3%; width: 106%; height: 106%;
   z-index: 0; object-fit: cover; object-position: 32% 50%;
   pointer-events: none; user-select: none; opacity: 0;
-  filter: blur(6px) saturate(1.05); transition: opacity 1.8s ease .5s; }
+  filter: blur(6px) saturate(1.05); transition: opacity 1.8s ease .2s; }
 .vl-live .vl-wall { opacity: .34; }
 .vl-calm .vl-wall { transition: none; }
 /* a soft pool of shadow behind the type so it always reads cleanly */
 .vl-live:after { background:
   radial-gradient(42% 46% at 50% 50%, rgba(0,0,0,.55), transparent 100%),
   radial-gradient(75% 70% at 50% 45%, transparent 55%, rgba(0,0,0,.85) 100%); }
+
+/* ---- a small purple light that follows the mouse and lifts the backdrop ---- */
+.vl-lit { filter: blur(3px) saturate(1.2) brightness(1.2);
+  -webkit-mask-image: radial-gradient(circle 230px at var(--mx, -999px)
+    var(--my, -999px), #000 0%, rgba(0,0,0,.55) 45%, transparent 100%);
+  mask-image: radial-gradient(circle 230px at var(--mx, -999px)
+    var(--my, -999px), #000 0%, rgba(0,0,0,.55) 45%, transparent 100%);
+  transition: opacity .6s ease; }
+.vl-live .vl-lit { opacity: 0; }
+.vl-live.vl-hover .vl-lit { opacity: .7; }
+.vl-glow { position: absolute; left: 0; top: 0; z-index: 1; width: 400px;
+  height: 400px; margin: -200px 0 0 -200px; border-radius: 50%;
+  pointer-events: none; opacity: 0; mix-blend-mode: screen;
+  background: radial-gradient(closest-side, rgba(160,100,255,.2),
+    rgba(124,44,240,.08) 55%, transparent);
+  will-change: transform; transition: opacity .6s ease; }
+.vl-live.vl-hover .vl-glow { opacity: 1; }
 </style>
 </head>
 <body>
@@ -1357,6 +1374,9 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   </video>
   <img class="vl-wall" src="/media/wall.webp" alt="" aria-hidden="true"
     draggable="false">
+  <img class="vl-wall vl-lit" src="/media/wall.webp" alt="" aria-hidden="true"
+    draggable="false">
+  <i class="vl-glow" aria-hidden="true"></i>
   <div class="vl-ctl">
     <button class="vl-skip" id="vl-skip" type="button">Skip intro</button>
     <button class="vl-skip vl-sound" id="vl-sound" type="button"
@@ -3988,11 +4008,15 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       started = true; setCls(sec, 'vl-play', true);
     });
     v.addEventListener('ended', finish);
-    // start the fade just before the clip ends, so picture and sound go out
-    // together instead of the music cutting off on the last frame
-    v.addEventListener('timeupdate', function () {
-      if (v.duration && v.duration - v.currentTime <= 1.5) finish();
-    });
+    // the intro is cut at 14s: picture and sound fade out together over the
+    // last second, and the sign-in starts as the screen reaches black
+    var CUT = 14;
+    function watchCut() {
+      if (done) return;
+      if (v.currentTime >= CUT - FADE / 1000) { finish(); return; }
+      requestAnimationFrame(watchCut);
+    }
+    v.addEventListener('playing', function () { requestAnimationFrame(watchCut); });
     v.addEventListener('error', finish);
     if (skip) skip.addEventListener('click', finish);
     function tick() {
@@ -4022,6 +4046,31 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     setInterval(tick, 300);
     document.addEventListener('visibilitychange', tick);
     tick();
+  })();
+  // ---------- front page: purple light under the mouse ----------
+  (function () {
+    var sec = document.getElementById('v-login');
+    var lit = sec && sec.querySelector('.vl-lit');
+    var glow = sec && sec.querySelector('.vl-glow');
+    if (!lit || !glow) return;
+    var px = 0, py = 0, queued = false;
+    function apply() {
+      queued = false;
+      if (!sec.classList.contains('vl-live')) return;
+      var r = lit.getBoundingClientRect(), b = sec.getBoundingClientRect();
+      lit.style.setProperty('--mx', (px - r.left) + 'px');
+      lit.style.setProperty('--my', (py - r.top) + 'px');
+      glow.style.transform = 'translate3d(' + (px - b.left) + 'px,' +
+        (py - b.top) + 'px,0)';
+      setCls(sec, 'vl-hover', true);
+    }
+    sec.addEventListener('pointermove', function (e) {
+      px = e.clientX; py = e.clientY;
+      if (!queued) { queued = true; requestAnimationFrame(apply); }
+    });
+    sec.addEventListener('pointerleave', function () {
+      setCls(sec, 'vl-hover', false);
+    });
   })();
   // Sign-in lasts for this tab only: closing the tab/site or Chrome means
   // signing in again (the login cookie also ends when Chrome closes).
