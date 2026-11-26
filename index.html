@@ -1217,7 +1217,7 @@ body:before {
   border-bottom: 1px solid #2c1f40; }
 
 /* ---- front page: the eyes loop behind, everything lands on top ---- */
-.vbg { justify-content: flex-end; padding-bottom: clamp(44px, 11vh, 130px);
+.vbg { justify-content: center; padding: 0 24px;
   background: #000; }
 .vbg:before { display: none; }
 .vl-bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0;
@@ -1232,11 +1232,10 @@ body:before {
 .vbg .door-mark { font-size: clamp(40px, 6.6vw, 98px); }
 .vbg .vl > * { opacity: 0; }
 .vl-live .vl > * { animation: land .7s cubic-bezier(.2,1.25,.4,1) both; }
-.vl-live .vl > :nth-child(1) { animation-delay: 3.1s; }
-.vl-live .vl > :nth-child(2) { animation-delay: 3.3s; }
-.vl-live .vl > :nth-child(3) { animation-delay: 6.9s; }
-.vl-live .vl > :nth-child(4) { animation-delay: 7.1s; }
-.vl-live .vl > :nth-child(5), .vl-live .vl > :nth-child(6) {
+.vl-live .vl > :nth-child(1) { animation-delay: 3.2s; }
+.vl-live .vl > :nth-child(2) { animation-delay: 6.9s; }
+.vl-live .vl > :nth-child(3) { animation-delay: 7.1s; }
+.vl-live .vl > :nth-child(4), .vl-live .vl > :nth-child(5) {
   animation-delay: 7.3s; }
 @keyframes land {
   0% { opacity: 0; transform: translateY(26px) scale(1.04); filter: blur(6px); }
@@ -1245,7 +1244,7 @@ body:before {
 .vl-calm .vl-bg { opacity: 1; transition: none; }
 .vl-calm .vl > * { opacity: 1; animation: none; }
 @media (max-width: 700px) {
-  .vbg { padding-bottom: 64px; }
+  .vbg { padding-bottom: 0; }
   .door-mark, .door-mark .a { text-shadow: 3px 3px 0 #000,
     4px 4px 0 rgba(124,44,240,.45); }
 }
@@ -1410,7 +1409,6 @@ body:before {
     <img class="cl cl-bank" src="/media/cloud-bank.webp" alt="" draggable="false">
   </div>
   <div class="vl">
-    <p class="vl-kick">Members only</p>
     <h1 class="vl-logo" aria-label="Elevare">
       <span class="vl-mark" aria-hidden="true">
         <img class="lp lp-rest" src="/media/lg-rest.webp" alt="" draggable="false">
