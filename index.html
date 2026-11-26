@@ -395,80 +395,6 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
   .half { display: none; }
 }
 
-/* ---------- sign-in: supplied video intro + looping domain ----------
-   /media/intro.mp4 plays once per browser session, then hands off to
-   /media/domain-loop.mp4, which keeps running behind the sign-in screen.
-   No effects are added to the video; the logo is the supplied PNG. */
-.uv { background: #000; }
-.uv .glow, .uv .sparks, .uv .bigv, .uv .floor, .uv .frame { display: none; }
-.uv-stage { position: absolute; inset: 0; overflow: hidden; background: #000; }
-.uv-stage video {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; object-position: 50% 50%; display: block;
-  pointer-events: none;
-}
-.uv-loop { z-index: 0; }
-.uv-intro { z-index: 1; }
-.uv-intro.gone { visibility: hidden; }
-/* the logo sits at the measured centre of the domain (placed by script) */
-.uv-logo {
-  position: absolute; left: 50%; top: 50%; z-index: 2; height: auto;
-  width: 240px; translate: -50% -50%; user-select: none; pointer-events: none;
-  opacity: 0; transition: opacity .9s ease;
-}
-.uv-logo-in .uv-logo { opacity: 1; }
-.uv .page {
-  position: absolute; left: 0; right: 0; bottom: clamp(28px, 9vh, 110px);
-  z-index: 3; display: flex; flex-direction: column; align-items: center;
-  text-align: center; padding: 0 20px;
-}
-/* navigation and interface fade in once the domain has established */
-.uv-in { opacity: 0; visibility: hidden;
-  transition: opacity 1.2s ease, visibility 0s 1.2s; }
-.uv-done .uv-in { opacity: 1; visibility: visible;
-  transition: opacity 1.2s ease .15s, visibility 0s; }
-.uv-instant .uv-in, .uv-instant .uv-logo { transition: none; }
-.uv-nav {
-  position: absolute; left: 0; right: 0; top: 0; z-index: 3;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 26px clamp(20px, 4vw, 56px);
-  font: 700 11px/1 "Cinzel", Georgia, serif; letter-spacing: .42em;
-  text-transform: uppercase; color: #cfd9ee;
-}
-.uv-brand { color: #fff; letter-spacing: .5em; }
-.uv-navr { color: #8f9bb8; }
-.uv-enter {
-  display: inline-flex; align-items: baseline; gap: 12px;
-  padding: 15px 34px 14px; color: #f2f6ff; text-decoration: none;
-  border: 1px solid rgba(220,232,255,.42); background: rgba(0,0,0,.45);
-  font: 700 13px/1 "Cinzel", Georgia, serif; letter-spacing: .42em;
-  text-transform: uppercase;
-  transition: border-color .25s ease, background .25s ease,
-    opacity 1.2s ease .15s, visibility 0s;
-}
-.uv-enter small { font: 500 10px/1 Inter, system-ui, sans-serif;
-  letter-spacing: .28em; color: #a8b8dc; }
-.uv-enter:hover, .uv-enter:focus-visible {
-  border-color: rgba(255,255,255,.85); background: rgba(0,0,0,.65);
-  outline: none;
-}
-#v-login #go[hidden] { display: none; }
-.uv .err { margin-top: 14px; color: #ff6b73; font-weight: 600; }
-.uv .fine { margin: 18px 0 0; font-size: 10px; letter-spacing: .3em;
-  text-transform: uppercase; color: #8a93ad; }
-.uv-skip {
-  position: absolute; left: clamp(16px, 3vw, 40px); bottom: 24px; z-index: 4;
-  padding: 8px 2px; background: none; border: 0; cursor: pointer;
-  font: 600 10px/1 Inter, system-ui, sans-serif; letter-spacing: .3em;
-  text-transform: uppercase; color: rgba(230,236,250,.55);
-}
-.uv-skip:hover, .uv-skip:focus-visible { color: #fff; outline: none; }
-@media (max-width: 700px) {
-  .uv-nav { padding: 20px; letter-spacing: .3em; }
-  .uv-navr { display: none; }
-  .uv-skip { left: auto; right: 16px; top: 18px; bottom: auto; }
-}
-
 /* ---------- app shell ---------- */
 .app { flex-direction: column; }
 .top {
@@ -1139,21 +1065,172 @@ select.in { -webkit-appearance: none; appearance: none; }
   .info h1 { font-size: 30px; }
   .pwho h1 { font-size: 28px; }
 }
+
+/* ======================================================================
+   ELEVARE: dark manga villain theme (deep purple + ink black).
+   Ink-black pages, halftone screentone, hard purple panel shadows,
+   slanted blade-cut buttons. Overrides everything above.
+   ====================================================================== */
+:root {
+  --bg: #060409; --panel: #0d0914; --ink: #f1ecf8; --soft: #cbc1db;
+  --muted: #998cb0; --dim: #5f5375; --line: #1e1529; --line2: #2f2240;
+  --red: #7c2cf0; --red2: #a974ff;
+  --red-rgb: 124, 44, 240; --red2-rgb: 169, 116, 255;
+  --shadow: rgba(124, 44, 240, .38);
+}
+::selection { background: rgba(124, 44, 240, .55); color: #fff; }
+html { scrollbar-color: #3a2856 #060409; }
+/* screentone: fine halftone dots over everything, strongest at the edges */
+body:before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(circle, rgba(169,116,255,.22) 0 .8px,
+    transparent 1.2px) 0 0 / 6px 6px;
+  -webkit-mask: radial-gradient(80% 75% at 50% 45%, transparent 40%,
+    #000 100%);
+  mask: radial-gradient(80% 75% at 50% 45%, transparent 40%, #000 100%);
+  opacity: .5;
+}
+.view { position: relative; z-index: 1; }
+
+/* ---- entry screens ---- */
+.door {
+  background: radial-gradient(70% 60% at 50% 42%, #140a24 0%, #08050d 55%,
+    #030205 100%);
+  isolation: isolate;
+}
+.door:before {          /* ink speed lines converging on the centre */
+  content: ""; position: absolute; left: 50%; top: 44%; z-index: -1;
+  width: 180vmax; height: 180vmax; translate: -50% -50%;
+  pointer-events: none; opacity: .5;
+  background: repeating-conic-gradient(from 0deg, rgba(0,0,0,.9) 0deg .5deg,
+    transparent .5deg 2.6deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 18%, #000 60%);
+  mask: radial-gradient(closest-side, transparent 18%, #000 60%);
+}
+.door:after {           /* a single purple blade slash behind the title */
+  content: ""; position: absolute; left: -10%; right: -10%; top: 41%;
+  z-index: -1; height: 2px; pointer-events: none; rotate: -9deg;
+  background: linear-gradient(90deg, transparent, var(--red) 25%, #e4d4ff 50%,
+    var(--red) 75%, transparent);
+  box-shadow: 0 0 18px 2px rgba(124,44,240,.55);
+  opacity: .8;
+}
+.door-mark {
+  font: 700 clamp(46px, 8vw, 112px)/1 "Cinzel", Georgia, serif;
+  letter-spacing: .16em; padding-left: .16em; color: #f4efff;
+  text-shadow: 4px 4px 0 #000, 7px 7px 0 rgba(124,44,240,.55);
+}
+.door-mark .a { color: var(--red2);
+  text-shadow: 4px 4px 0 #000, 7px 7px 0 rgba(124,44,240,.7),
+    0 0 26px rgba(169,116,255,.45); }
+.door .stack .door-mark { font-size: clamp(34px, 5vw, 64px); }
+.door .rule i { background: linear-gradient(90deg, transparent, var(--red)); }
+.door .rule i + b + i { background: linear-gradient(90deg, var(--red),
+  transparent); }
+.door .rule b { background: var(--red2); transform: rotate(45deg); }
+.door .tag { color: var(--red2); letter-spacing: .38em; }
+.door .blurb { color: var(--soft); }
+.vl { position: relative; z-index: 2; display: flex; flex-direction: column;
+  align-items: center; text-align: center; }
+.vl-kick {
+  margin: 0 0 22px; padding: 6px 14px 5px; background: #000;
+  border: 1px solid rgba(169,116,255,.45); color: var(--red2);
+  font: 600 10px/1 var(--sans); letter-spacing: .42em; text-transform: uppercase;
+  box-shadow: 4px 4px 0 rgba(124,44,240,.45);
+}
+.vl-tag {
+  margin: 26px 0 0; color: var(--soft);
+  font: 700 clamp(12px, 1.2vw, 15px)/1 "Cinzel", Georgia, serif;
+  letter-spacing: .5em; padding-left: .5em; text-transform: uppercase;
+}
+.vl-go { margin-top: 40px; }
+.vl .err { margin-top: 16px; color: #ff6b8b; font-weight: 600; }
+.vl-fine { margin: 22px 0 0; font-size: 10px; letter-spacing: .32em;
+  text-transform: uppercase; color: var(--dim); }
+
+/* ---- buttons: slanted blade cuts, hard ink shadow ---- */
+.btn, .btn.lit, .sb, .ghost {
+  border-radius: 0; color: #fff; border: 0;
+  background: linear-gradient(100deg, #5b16c8 0%, var(--red) 55%,
+    #9b5cff 100%);
+  clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+  box-shadow: none; filter: drop-shadow(4px 4px 0 #000);
+  letter-spacing: .2em; text-transform: uppercase;
+  transition: filter .15s ease, transform .15s ease;
+}
+.btn:hover, .btn.lit:hover, .sb:hover, .ghost:hover {
+  background: linear-gradient(100deg, #6a1fe0 0%, #8b3dff 55%, #b98aff 100%);
+  filter: drop-shadow(5px 5px 0 #000) brightness(1.08);
+  transform: translate(-1px, -1px);
+}
+.btn:disabled, .btn.lit:disabled, .btn:disabled:hover {
+  background: #2a1f3a; color: #7c6f92; transform: none;
+  filter: drop-shadow(4px 4px 0 #000);
+}
+.btn.lit:after { display: none; }
+.sb.line, .ghost.line {
+  background: transparent; color: var(--soft);
+  clip-path: none; filter: none; border: 1px solid var(--line2);
+}
+.sb.line:hover, .ghost.line:hover { background: rgba(124,44,240,.12);
+  border-color: var(--red); color: #fff; transform: none; filter: none; }
+.sb.red { background: #3a0d1a; }
+
+/* ---- the members' area ---- */
+.app { background:
+  radial-gradient(70% 40% at 50% -8%, rgba(124,44,240,.22), transparent 70%),
+  var(--bg); background-attachment: fixed; }
+.top { background: rgba(6,4,9,.92); border-bottom: 1px solid #2a1c3d;
+  box-shadow: 0 1px 0 rgba(169,116,255,.08); }
+.brand.bmk { letter-spacing: .2em; }
+.bmk .a { color: var(--red2);
+  text-shadow: 0 0 12px rgba(169,116,255,.75), 0 0 28px rgba(124,44,240,.5); }
+.nav a { color: var(--muted); }
+.nav a:hover { color: #fff; }
+.nav a.on { color: #fff; }
+.nav a.on:after { height: 3px; background: var(--red2); transform: skewX(-30deg);
+  box-shadow: 0 0 12px rgba(169,116,255,.8); }
+/* manga panels: square corners, ink border, hard purple shadow */
+.rail, .player, .pcard, .ptile, .acard, .apanel, .modal-in, .codebox {
+  border-radius: 0;
+  border: 1px solid #2c1f40;
+  background: linear-gradient(180deg, #120b1d 0%, #0b0711 60%);
+  box-shadow: 6px 6px 0 rgba(0,0,0,.9), 6px 6px 0 1px rgba(124,44,240,.35);
+}
+.player { background: #000; }
+.display { text-shadow: 3px 3px 0 #000, 5px 5px 0 rgba(124,44,240,.45); }
+.rhead .pc { color: var(--red2); text-shadow: 0 0 14px rgba(169,116,255,.6); }
+.play {
+  background: radial-gradient(circle at 35% 30%, #d8c2ff 0%, var(--red2) 35%,
+    var(--red) 100%);
+  box-shadow: 0 0 0 10px rgba(124,44,240,.14), 0 0 40px rgba(124,44,240,.45);
+}
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 10px rgba(124,44,240,.12),
+    0 0 40px rgba(124,44,240,.35); }
+  50% { box-shadow: 0 0 0 18px rgba(124,44,240,.16),
+    0 0 60px rgba(124,44,240,.55); }
+}
+.poster .num { -webkit-text-stroke: 1px rgba(169,116,255,.18); }
+.search, .in, input[type="text"], input[type="search"], textarea, select {
+  border-radius: 0; background: #08050d; border-color: #2c1f40; }
+.search:focus, .in:focus { border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(124,44,240,.18); }
+.seg button.on { background: rgba(124,44,240,.25); color: #fff;
+  box-shadow: inset 0 -2px 0 var(--red2); }
+.toast { border-radius: 0; background: #0b0711; color: var(--ink);
+  border: 1px solid var(--red); box-shadow: 5px 5px 0 #000,
+    0 0 30px rgba(124,44,240,.3); }
+.ann { background: linear-gradient(90deg, #1a0b2e, #0b0711);
+  border-bottom: 1px solid #2c1f40; }
 </style>
 </head>
 <body>
 
 <!-- Chrome-only wall -->
 <section id="v-wall" class="view door">
-  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
-  <i class="glow" aria-hidden="true"></i>
-  <div class="floor" aria-hidden="true"></div>
-  <div class="frame" aria-hidden="true">
-    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
-  </div>
-  <span class="bigv" aria-hidden="true">V2</span>
   <div class="stack">
-    <img class="logo" src="/logo.png" alt="Elevare">
+    <div class="bmk door-mark" role="img">ELEVARE</div>
     <div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
     <p class="tag" id="wall-tag">Google Chrome required</p>
     <p class="blurb" id="wall-text">For your security, the community is only
@@ -1170,42 +1247,21 @@ select.in { -webkit-appearance: none; appearance: none; }
 </section>
 
 <!-- Sign in: logo on the left, Discord entry on the right -->
-<section id="v-login" class="view door uv" data-domain="0.4992 0.4986 0.1719"
-  data-vw="640" data-vh="360">
-  <div class="uv-stage">
-    <video class="uv-loop" muted loop playsinline preload="auto"
-      disablepictureinpicture data-lvr="1" aria-hidden="true"
-      poster="/media/loop-poster.jpg" data-src="/media/domain-loop.mp4"></video>
-    <video class="uv-intro" muted playsinline preload="none"
-      disablepictureinpicture data-lvr="1" aria-hidden="true"
-      poster="/media/intro-poster.jpg" data-src="/media/intro.mp4"></video>
-    <img class="uv-logo" src="/media/logo.png" alt="Elevare">
-  </div>
-  <header class="uv-nav uv-in">
-    <span class="uv-brand">Elevare</span>
-    <span class="uv-navr" id="brand-tag">Private Trading Community</span>
-  </header>
-  <div class="page">
-    <a id="go" class="uv-enter uv-in" href="/api/login">
-      <span>Enter</span><small>with Discord</small>
-    </a>
+<section id="v-login" class="view door">
+  <div class="vl">
+    <p class="vl-kick">Members only</p>
+    <h1 class="bmk door-mark">ELEVARE</h1>
+    <p class="vl-tag" id="brand-tag">Private Trading Community</p>
+    <a id="go" class="btn vl-go" href="/api/login">Enter with Discord</a>
     <div id="err" class="err" role="alert"></div>
-    <p class="fine uv-in">Protected. Every visit is logged.</p>
+    <p class="vl-fine">Protected. Every visit is logged.</p>
   </div>
-  <button class="uv-skip" type="button" hidden>Skip intro</button>
 </section>
 
 <!-- Community rules (agree before entering) -->
 <section id="v-agree" class="view door">
-  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
-  <i class="glow" aria-hidden="true"></i>
-  <div class="floor" aria-hidden="true"></div>
-  <div class="frame" aria-hidden="true">
-    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
-  </div>
-  <span class="bigv" aria-hidden="true">V2</span>
   <div class="stack agree">
-    <img class="logo" src="/logo.png" alt="Elevare">
+    <div class="bmk door-mark" role="img">ELEVARE</div>
     <div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
     <p class="tag">Community rules</p>
     <ol class="rules" id="ag-list"></ol>
@@ -1220,15 +1276,8 @@ select.in { -webkit-appearance: none; appearance: none; }
 
 <!-- Timed out -->
 <section id="v-timeout" class="view door">
-  <canvas class="sparks" data-lvr="1" aria-hidden="true"></canvas>
-  <i class="glow" aria-hidden="true"></i>
-  <div class="floor" aria-hidden="true"></div>
-  <div class="frame" aria-hidden="true">
-    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
-  </div>
-  <span class="bigv" aria-hidden="true">V2</span>
   <div class="stack">
-    <img class="logo" src="/logo.png" alt="Elevare">
+    <div class="bmk door-mark" role="img">ELEVARE</div>
     <div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
     <p class="tag">Timed out</p>
     <div class="tclock display" id="to-clock">10:00</div>
@@ -1476,70 +1525,6 @@ select.in { -webkit-appearance: none; appearance: none; }
       }
       x[i].setAttribute('aria-label', BN);
     }
-  })();
-  // ---------- front door sparks + logo parallax ----------
-  (function () {
-    var calm = window.matchMedia &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (calm) return;
-    var cv = null, cx = null, parts = [], W = 0, H = 0, R = 1, last = 0;
-    var rgb = (getComputedStyle(document.documentElement)
-      .getPropertyValue('--red2-rgb') || '79, 163, 255').replace(/\s/g, '');
-    // one soft dot drawn once per colour, then stamped (fast)
-    function sprite(core) {
-      var c = document.createElement('canvas'); c.width = c.height = 64;
-      var x = c.getContext('2d');
-      var g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
-      g.addColorStop(0, 'rgba(' + core + ',1)');
-      g.addColorStop(0.35, 'rgba(' + rgb + ',.35)');
-      g.addColorStop(1, 'rgba(' + rgb + ',0)');
-      x.fillStyle = g; x.fillRect(0, 0, 64, 64);
-      return c;
-    }
-    var SPR = { blue: sprite(rgb), hot: sprite('255,255,255') };
-    function spark(fresh) {
-      return {
-        x: Math.random() * W,
-        y: fresh ? Math.random() * H : H + 10 * Math.random(),
-        r: 0.6 + Math.random() * 1.9,
-        vy: 0.25 + Math.random() * 0.9,
-        vx: (Math.random() - 0.5) * 0.25,
-        w: Math.random() * 6.28, hot: Math.random() < 0.18,
-        life: 0.4 + Math.random() * 0.6
-      };
-    }
-    function fit(c) {
-      R = 1; // soft dots: full resolution not needed, much cheaper
-      W = c.clientWidth; H = c.clientHeight;
-      c.width = Math.round(W * R); c.height = Math.round(H * R);
-      cx = c.getContext('2d'); cx.setTransform(R, 0, 0, R, 0, 0);
-      parts = [];
-      var n = Math.min(70, Math.round(W * H / 18000));
-      for (var k = 0; k < n; k++) parts.push(spark(true));
-    }
-    function frame(t) {
-      window.requestAnimationFrame(frame);
-      if (t - last < 30) return;
-      last = t;
-      var on = document.querySelector('.view.door.on .sparks');
-      if (!on) { cv = null; return; }
-      if (on !== cv || on.clientWidth !== W || on.clientHeight !== H) {
-        cv = on; fit(on);
-      }
-      cx.clearRect(0, 0, W, H);
-      cx.globalCompositeOperation = 'lighter';
-      for (var k = 0; k < parts.length; k++) {
-        var p = parts[k];
-        p.y -= p.vy; p.w += 0.03; p.x += p.vx + Math.sin(p.w) * 0.3;
-        if (p.y < -20) { parts[k] = spark(false); continue; }
-        var fade = Math.min(1, p.y / H * 1.6) * p.life;
-        cx.globalAlpha = fade * (0.6 + 0.4 * Math.sin(p.w * 3));
-        var d = p.r * 10;
-        cx.drawImage(p.hot ? SPR.hot : SPR.blue, p.x - d / 2, p.y - d / 2, d, d);
-      }
-      cx.globalAlpha = 1;
-    }
-    window.requestAnimationFrame(frame);
   })();
   var DEV = DEMO || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   var SEP = DEMO ? '-' : '/';
@@ -3816,174 +3801,6 @@ select.in { -webkit-appearance: none; appearance: none; }
     var first = (d.user.name || '').split(' ')[0];
     setTimeout(function () { toast(greeting() + ', ' + first + '.'); }, 500);
   }
-  // ---------- sign-in video: intro once per session, then the loop ----------
-  (function () {
-    var sec = document.getElementById('v-login');
-    if (!sec || !sec.classList.contains('uv')) return;
-    var intro = sec.querySelector('.uv-intro');
-    var loop = sec.querySelector('.uv-loop');
-    var logo = sec.querySelector('.uv-logo');
-    var skipBtn = sec.querySelector('.uv-skip');
-    var KEY = 'elevare.introSeen';
-    var calm = window.matchMedia &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var seen = false;
-    try { seen = sessionStorage.getItem(KEY) === '1'; } catch (e) {}
-    var d = (sec.getAttribute('data-domain') || '0.5 0.5 0.17').split(' ');
-    var VW = +sec.getAttribute('data-vw') || 1920;
-    var VH = +sec.getAttribute('data-vh') || 1080;
-    var state = 'idle';           // idle -> intro -> loop
-    var uiTimer = 0;
-
-    // Put the logo on the domain's centre for the current screen. Videos
-    // are cover-fitted, so map the measured point through the same scale.
-    function place() {
-      var W = sec.clientWidth, H = sec.clientHeight;
-      if (!W || !H) return;
-      var s = Math.max(W / VW, H / VH);
-      var x = W / 2 + (+d[0] - 0.5) * VW * s;
-      var y = H / 2 + (+d[1] - 0.5) * VH * s;
-      var core = +d[2] * VW * s;            // dark core diameter, px
-      var w = Math.min(core * 0.92, W * 0.86);
-      logo.style.left = x + 'px'; logo.style.top = y + 'px';
-      logo.style.width = Math.round(w) + 'px';
-    }
-    window.addEventListener('resize', place);
-
-    function play(v) {
-      try {
-        var p = v.play();
-        if (p && p.catch) p.catch(function () { autoplayBlocked(); });
-      } catch (e) { autoplayBlocked(); }
-    }
-    function showUI(instant) {
-      try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
-      if (instant) setCls(sec, 'uv-instant', true);
-      setCls(sec, 'uv-logo-in', true);
-      setCls(sec, 'uv-done', true);
-      if (skipBtn) skipBtn.hidden = true;
-    }
-    // hand off to the loop. Its first frame is the intro's last frame and
-    // is also its poster, so nothing visible changes at the cut
-    function toLoop(fromSkip) {
-      if (state === 'loop') return;
-      state = 'loop';
-      if (skipBtn) skipBtn.hidden = true;
-      try { loop.currentTime = 0; } catch (e) {}
-      if (!calm) play(loop);
-      var hide = function () {
-        intro.pause(); setCls(intro, 'gone', true);
-      };
-      if (fromSkip || !loop.requestVideoFrameCallback) hide();
-      else loop.requestVideoFrameCallback(hide);   // first loop frame is up
-      // the domain establishes, then the logo and the interface arrive
-      setCls(sec, 'uv-logo-in', true);
-      clearTimeout(uiTimer);
-      uiTimer = setTimeout(function () { showUI(false); }, fromSkip ? 150 : 900);
-    }
-    function autoplayBlocked() {
-      // muted autoplay refused (rare): show the domain still and the site,
-      // then start the loop on the first touch or click
-      setCls(intro, 'gone', true); state = 'loop'; showUI(true);
-      var go = function () {
-        document.removeEventListener('pointerdown', go, true);
-        if (!calm) { var p = loop.play(); if (p && p.catch) p.catch(function () {}); }
-      };
-      document.addEventListener('pointerdown', go, true);
-    }
-    if (skipBtn) skipBtn.addEventListener('click', function () { toLoop(true); });
-
-    function startIntro() {
-      state = 'intro';
-      intro.src = intro.getAttribute('data-src');
-      intro.preload = 'auto';
-      intro.load();
-      var begun = false;
-      var begin = function () {
-        if (begun || state !== 'intro') return;
-        begun = true;
-        if (skipBtn) skipBtn.hidden = false;
-        play(intro);
-      };
-      // start once enough is buffered to play through without stalling
-      // (the intro poster, its first frame, shows meanwhile: no black)
-      intro.addEventListener('canplaythrough', begin);
-      setTimeout(begin, 4000);
-      // start the loop a hair early so its first frame is decoded and
-      // waiting underneath when the intro reaches its last frame
-      var armed = false;
-      var watch = function (now, meta) {
-        var left = intro.duration - (meta ? meta.mediaTime : intro.currentTime);
-        if (!armed && left < 0.25) {
-          armed = true;
-          try { loop.currentTime = 0; } catch (e) {}
-        }
-        if (state === 'intro' && intro.requestVideoFrameCallback) {
-          intro.requestVideoFrameCallback(watch);
-        }
-      };
-      if (intro.requestVideoFrameCallback) intro.requestVideoFrameCallback(watch);
-      intro.addEventListener('ended', function () { toLoop(false); });
-      intro.addEventListener('error', function () { toLoop(true); });
-    }
-
-    function start() {
-      loop.src = loop.getAttribute('data-src');
-      loop.load();
-      place();
-      if (calm) {               // reduced motion: the domain as a still
-        setCls(intro, 'gone', true); state = 'loop'; showUI(true); return;
-      }
-      if (seen) {               // already seen this session: straight to loop
-        setCls(intro, 'gone', true); state = 'loop'; play(loop);
-        showUI(true); return;
-      }
-      startIntro();
-    }
-
-    // run only while the sign-in screen is showing; pause the loop behind
-    // the members' area so it costs nothing there
-    var started = false;
-    function tick() {
-      var on = sec.classList.contains('on') && !document.hidden;
-      if (on && !started) { started = true; start(); }
-      if (!started) return;
-      if (on) {
-        place();
-        if (state === 'loop' && !calm && loop.paused &&
-          sec.classList.contains('uv-done')) {
-          var p = loop.play(); if (p && p.catch) p.catch(function () {});
-        }
-        if (state === 'intro' && intro.paused && intro.currentTime > 0 &&
-          !intro.ended) play(intro);
-      } else {
-        if (!loop.paused) loop.pause();
-        if (state === 'intro' && !intro.paused) intro.pause();
-      }
-    }
-    setInterval(tick, 300);
-    document.addEventListener('visibilitychange', tick);
-    tick();
-  })();
-  // soft light following the cursor on the door screens: one transform per
-  // frame, composited on the GPU, so it tracks the mouse with no lag
-  (function () {
-    var gx = 0, gy = 0, queued = false;
-    function place() {
-      queued = false;
-      var g = document.querySelector('.view.door.on .glow');
-      if (!g) return;
-      var b = g.parentNode.getBoundingClientRect();
-      g.style.transform = 'translate3d(' + (gx - b.left) + 'px,' +
-        (gy - b.top) + 'px,0)';
-    }
-    document.addEventListener('mousemove', function (e) {
-      if (ME) return;
-      gx = e.clientX; gy = e.clientY;
-      if (!queued) { queued = true; window.requestAnimationFrame(place); }
-    });
-  })();
-
   // Sign-in lasts for this tab only: closing the tab/site or Chrome means
   // signing in again (the login cookie also ends when Chrome closes).
   function tabMark(on) {
