@@ -1229,7 +1229,11 @@ body:before {
 /* nothing drawn over the video while it plays: full source quality */
 .vl-play:not(.vl-live):after { display: none; }
 body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
-.vl-skip { position: absolute; left: 28px; bottom: 24px; z-index: 3;
+.vl-ctl { position: absolute; left: 28px; bottom: 24px; z-index: 3;
+  display: flex; gap: 26px; align-items: center; }
+.vl-sound { display: none; }
+.vl-muted .vl-sound { display: block; }
+.vl-skip { position: relative;
   padding: 10px 4px; background: none; border: 0; cursor: pointer;
   font-family: inherit; font-size: 11px; font-weight: 600; line-height: 1;
   letter-spacing: .3em; text-transform: uppercase;
@@ -1303,6 +1307,18 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .vl-calm .lp-rest { opacity: 0; }
 .vl-calm .lp-l, .vl-calm .lp-v, .vl-calm .lp-r {
   translate: var(--tx) var(--ty); }
+
+/* ---- sign-in backdrop: the snowy walk, blurred and dimmed ---- */
+.vl-wall { position: absolute; left: -3%; top: -3%; width: 106%; height: 106%;
+  z-index: 0; object-fit: cover; object-position: 32% 50%;
+  pointer-events: none; user-select: none; opacity: 0;
+  filter: blur(6px) saturate(1.05); transition: opacity 1.8s ease .5s; }
+.vl-live .vl-wall { opacity: .34; }
+.vl-calm .vl-wall { transition: none; }
+/* a soft pool of shadow behind the type so it always reads cleanly */
+.vl-live:after { background:
+  radial-gradient(42% 46% at 50% 50%, rgba(0,0,0,.55), transparent 100%),
+  radial-gradient(75% 70% at 50% 45%, transparent 55%, rgba(0,0,0,.85) 100%); }
 </style>
 </head>
 <body>
@@ -1334,7 +1350,13 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     poster="/media/intro-poster.jpg">
     <source src="/media/intro.mp4" type="video/mp4">
   </video>
-  <button class="vl-skip" id="vl-skip" type="button">Skip intro</button>
+  <img class="vl-wall" src="/media/wall.webp" alt="" aria-hidden="true"
+    draggable="false">
+  <div class="vl-ctl">
+    <button class="vl-skip" id="vl-skip" type="button">Skip intro</button>
+    <button class="vl-skip vl-sound" id="vl-sound" type="button"
+      aria-pressed="false">Sound on</button>
+  </div>
   <div class="vl">
     <h1 class="vl-logo" aria-label="Elevare">
       <span class="vl-mark" aria-hidden="true">
@@ -3906,13 +3928,31 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var seen = false;
     try { seen = sessionStorage.getItem('elevare.intro') === '1'; } catch (e) {}
-    var done = false, started = false, wait = 0;
+    var snd = document.getElementById('vl-sound');
+    var done = false, started = false, wait = 0, tried = false;
+    function fadeOut() {                 // ease the audio down with the picture
+      var t = setInterval(function () {
+        v.volume = Math.max(0, v.volume - 0.08);
+        if (v.volume <= 0) { clearInterval(t); v.pause(); }
+      }, 80);
+    }
     function finish() {
       if (done) return;
       done = true;
       try { sessionStorage.setItem('elevare.intro', '1'); } catch (e) {}
       setCls(sec, 'vl-live', true);
-      setTimeout(function () { v.pause(); }, 1100);
+      if (!v.paused && !v.muted) fadeOut();
+      else setTimeout(function () { v.pause(); }, 1100);
+    }
+    function muted(on) {
+      v.muted = on; setCls(sec, 'vl-muted', on);
+      if (snd) snd.setAttribute('aria-pressed', on ? 'false' : 'true');
+    }
+    if (snd) {
+      snd.addEventListener('click', function () {
+        muted(false); v.volume = 1;
+        if (v.paused && !done) v.play();
+      });
     }
     if (calm) { setCls(sec, 'vl-calm', true); finish(); }
     else if (seen) { setCls(sec, 'vl-quick', true); finish(); }
@@ -3926,8 +3966,21 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       if (done) return;
       var on = sec.classList.contains('on') && !document.hidden;
       if (on && v.paused) {
-        var p = v.play();
-        if (p && p.catch) p.catch(function () { finish(); });
+        var p;
+        if (!tried) {                     // first try with sound...
+          tried = true; muted(false);
+          p = v.play();
+          if (p && p.catch) {
+            p.catch(function () {         // ...Chrome said no: play muted
+              muted(true);
+              var q = v.play();
+              if (q && q.catch) q.catch(function () { finish(); });
+            });
+          }
+        } else {
+          p = v.play();
+          if (p && p.catch) p.catch(function () { finish(); });
+        }
         if (!wait) {
           wait = setTimeout(function () { if (!started) finish(); }, 4000);
         }
