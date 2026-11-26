@@ -1234,10 +1234,10 @@ body:before {
 .vl-live .vl > * { animation: land .7s cubic-bezier(.2,1.25,.4,1) both; }
 .vl-live .vl > :nth-child(1) { animation-delay: 3.1s; }
 .vl-live .vl > :nth-child(2) { animation-delay: 3.3s; }
-.vl-live .vl > :nth-child(3) { animation-delay: 6.4s; }
-.vl-live .vl > :nth-child(4) { animation-delay: 6.6s; }
+.vl-live .vl > :nth-child(3) { animation-delay: 6.9s; }
+.vl-live .vl > :nth-child(4) { animation-delay: 7.1s; }
 .vl-live .vl > :nth-child(5), .vl-live .vl > :nth-child(6) {
-  animation-delay: 6.8s; }
+  animation-delay: 7.3s; }
 @keyframes land {
   0% { opacity: 0; transform: translateY(26px) scale(1.04); filter: blur(6px); }
   100% { opacity: 1; transform: none; filter: none; }
@@ -1341,34 +1341,29 @@ body:before {
   transform-origin: 77.9% 55.9%; }
 .lp-lvr { inset: auto; left: 22.3%; top: .4%; width: 55.4%; height: auto;
   opacity: 0; }
-.vl-live .lp-rest { animation: shed 1s cubic-bezier(.5,0,.75,0) 4.6s both; }
-.vl-live .lp-l { animation: pull 1.5s cubic-bezier(.3,.9,.25,1) 4.5s both,
-  lpout .6s ease 6s forwards; }
-.vl-live .lp-v { animation: pull 1.5s cubic-bezier(.3,.9,.25,1) 4.6s both,
-  lpout .6s ease 6s forwards; }
-.vl-live .lp-r { animation: pull 1.5s cubic-bezier(.3,.9,.25,1) 4.7s both,
-  lpout .6s ease 6s forwards; }
-.vl-live .lp-lvr { animation: lvrin .7s ease 5.9s both; }
+.vl-live .lp-rest { animation: shed .9s ease-in-out 4.6s both; }
+.vl-live .lp-l { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both,
+  lpout .35s ease 6.55s forwards; }
+.vl-live .lp-v { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both,
+  lpout .35s ease 6.55s forwards; }
+.vl-live .lp-r { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both,
+  lpout .35s ease 6.55s forwards; }
+.vl-live .lp-lvr { animation: lvrin .35s ease 6.5s both; }
 @keyframes shed {
-  0% { opacity: 1; filter: none; translate: 0 0; }
-  100% { opacity: 0; filter: blur(10px) brightness(.4); translate: 0 4cqw; }
+  0% { opacity: 1; filter: none; }
+  100% { opacity: 0; filter: blur(6px) brightness(.5); }
 }
-@keyframes pull {
+@keyframes slide {
   0% { translate: 0 0; scale: 1; }
-  32% { translate: 0 -3.4cqw; scale: 1.1;
-    filter: brightness(1.35) drop-shadow(0 0 2.4cqw rgba(169,116,255,.7)); }
-  100% { translate: var(--tx) var(--ty); scale: var(--sc); filter: none; }
+  100% { translate: var(--tx) var(--ty); scale: var(--sc); }
 }
 @keyframes lpout { to { opacity: 0; } }
-@keyframes lvrin {
-  0% { opacity: 0; filter: brightness(1.6); }
-  100% { opacity: 1; filter: none; }
-}
+@keyframes lvrin { 0% { opacity: 0; } 100% { opacity: 1; } }
 .vl-by { position: absolute; right: 13%; bottom: -3%; opacity: 0;
   font: italic 400 clamp(11px, 1.35cqw + 4px, 17px)/1 "Cinzel", Georgia, serif;
   letter-spacing: .22em; text-transform: lowercase; color: #cdb8f2;
   rotate: -5deg; text-shadow: 0 0 10px #000, 2px 2px 0 #000; }
-.vl-live .vl-by { animation: byin .9s ease-out 6.3s both; }
+.vl-live .vl-by { animation: byin .9s ease-out 6.8s both; }
 @keyframes byin {
   0% { opacity: 0; translate: -1.5cqw 0; filter: blur(4px); }
   100% { opacity: .72; translate: 0 0; filter: none; }
