@@ -1222,39 +1222,43 @@ body:before {
 .vbg:before { display: none; }
 .vl-bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0;
   object-fit: cover; object-position: 50% 50%; pointer-events: none;
-  opacity: 0; transition: opacity 1.4s ease; }
-.vl-live .vl-bg { opacity: 1; }
-/* keep the lower half quiet so the type reads cleanly */
-.vl-shade { position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: linear-gradient(to bottom, transparent 45%, rgba(0,0,0,.55) 72%,
-    rgba(0,0,0,.85) 100%); }
+  opacity: 0; transition: opacity .6s ease; }
+.vl-play .vl-bg { opacity: 1; }
+.vl-live .vl-bg { opacity: 0; transition: opacity 1s ease; }
+.vl-quick .vl-bg { display: none; }
+/* nothing drawn over the video while it plays: full source quality */
+.vl-play:not(.vl-live):after { display: none; }
+body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
+.vl-skip { position: absolute; left: 28px; bottom: 24px; z-index: 3;
+  padding: 10px 4px; background: none; border: 0; cursor: pointer;
+  font-family: inherit; font-size: 11px; font-weight: 600; line-height: 1;
+  letter-spacing: .3em; text-transform: uppercase;
+  color: #e9e1ff; opacity: .6; text-shadow: 0 0 8px #000, 0 1px 2px #000;
+  transition: opacity .3s ease; }
+.vl-skip:hover, .vl-skip:focus-visible { opacity: 1; }
+.vl-live .vl-skip, .vl-calm .vl-skip { opacity: 0; visibility: hidden;
+  pointer-events: none; transition: opacity .3s ease, visibility 0s .3s; }
 .vbg .vl { z-index: 2; }
 .vbg .door-mark { font-size: clamp(40px, 6.6vw, 98px); }
 .vbg .vl > * { opacity: 0; }
 .vl-live .vl > * { animation: land .7s cubic-bezier(.2,1.25,.4,1) both; }
-.vl-live .vl > :nth-child(1) { animation-delay: 3.2s; }
-.vl-live .vl > :nth-child(2) { animation-delay: 6.9s; }
-.vl-live .vl > :nth-child(3) { animation-delay: 7.1s; }
+.vl-live .vl > :nth-child(1) { animation-delay: .9s; }
+.vl-live .vl > :nth-child(2) { animation-delay: 4.6s; }
+.vl-live .vl > :nth-child(3) { animation-delay: 4.8s; }
 .vl-live .vl > :nth-child(4), .vl-live .vl > :nth-child(5) {
-  animation-delay: 7.3s; }
+  animation-delay: 5s; }
 @keyframes land {
   0% { opacity: 0; transform: translateY(26px) scale(1.04); filter: blur(6px); }
   100% { opacity: 1; transform: none; filter: none; }
 }
-.vl-calm .vl-bg { opacity: 1; transition: none; }
 .vl-calm .vl > * { opacity: 1; animation: none; }
 @media (max-width: 700px) {
   .vbg { padding-bottom: 0; }
   .door-mark, .door-mark .a { text-shadow: 3px 3px 0 #000,
     4px 4px 0 rgba(124,44,240,.45); }
 }
-/* tall/portrait screens: keep both eyes in frame instead of cropping */
-@media (max-aspect-ratio: 1/1) {
-  .vl-bg { inset: auto; left: 50%; top: 6vh; width: 240vw; height: auto;
-    translate: -50% 0; object-fit: contain; }
-}
 
-/* ---- spiky logo + ink clouds ---- */
+/* ---- spiky logo ---- */
 .vl-logo { margin: 0; line-height: 0; }
 .door-logo { display: block; width: min(720px, 62vw); height: auto;
   margin: 0 auto; user-select: none; -webkit-user-drag: none;
@@ -1262,40 +1266,7 @@ body:before {
     drop-shadow(5px 6px 0 rgba(0,0,0,.85)); }
 .door-logo { width: min(520px, 70vw); margin-bottom: 6px; }
 .vl-kick { margin-bottom: 4px; }
-.vl-sky { position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  overflow: hidden; }
-.cl { position: absolute; height: auto; user-select: none; opacity: 0;
-  filter: brightness(.78) drop-shadow(0 0 18px rgba(124,44,240,.18)); }
-.cl-tl { width: 40vw; left: -7vw; top: -3vh; }
-.cl-tr { width: 40vw; right: -8vw; top: 1vh; }
-.cl-wisp { width: 15vw; right: 6vw; top: 34vh; }
-.cl-small { width: 22vw; left: 2vw; top: 40vh; }
-.cl-bank { width: 118vw; left: -9vw; bottom: -17vh; filter: brightness(.5); }
 .vl-fine { position: relative; text-shadow: 0 0 6px #000, 0 0 12px #000; }
-.vl-live .cl { animation: clin 2.4s cubic-bezier(.25,.8,.25,1) both,
-  cldrift var(--dd, 26s) ease-in-out infinite alternate,
-  clbreath var(--bd, 9s) ease-in-out infinite alternate; }
-.vl-live .cl-tl, .vl-live .cl-small { --dx: -60px; }
-.vl-live .cl-tr, .vl-live .cl-wisp { --dx: 60px; --dd: 31s; --bd: 11s; }
-.vl-live .cl-bank { --dx: 0px; --dd: 38s; --bd: 13s; }
-.vl-live .cl-bank { animation-delay: 2.6s, 5s, 5s; }
-.vl-live .cl-tl { animation-delay: 2.8s, 5.2s, 5.2s; }
-.vl-live .cl-tr { animation-delay: 2.9s, 5.3s, 5.3s; }
-.vl-live .cl-small { animation-delay: 3.1s, 5.5s, 5.5s; }
-.vl-live .cl-wisp { animation-delay: 3.2s, 5.6s, 5.6s; }
-@keyframes clin {
-  0% { opacity: 0; transform: translate(var(--dx), 30px); }
-  100% { opacity: 1; transform: none; }
-}
-@keyframes clbreath {
-  0% { scale: 1; opacity: 1; }
-  100% { scale: 1.045; opacity: .78; }
-}
-@keyframes cldrift {
-  0% { translate: 0 0; }
-  100% { translate: 2.2vw -6px; }
-}
-.vl-calm .cl { opacity: 1; animation: none; }
 
 /* ---- darker, meaner entry screens ---- */
 .door:after { content: ""; position: absolute; inset: 0; z-index: 1;
@@ -1303,30 +1274,8 @@ body:before {
   background: radial-gradient(75% 70% at 50% 45%, transparent 55%,
     rgba(0,0,0,.85) 100%); }
 .door .stack, .vbg .vl { position: relative; z-index: 2; }
-.dsky { position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  overflow: hidden; }
-.dsky .cl { opacity: 1; filter: brightness(.42);
-  animation: cldrift 30s ease-in-out infinite alternate,
-    clbreath 10s ease-in-out infinite alternate; }
-.dsky .cl-tr { animation-duration: 34s, 12s; animation-delay: -9s, -4s; }
-.dsky .cl-bank { animation-duration: 40s, 14s; animation-delay: -15s, -7s; }
-.dsky .cl-tl { width: 34vw; left: -9vw; top: -6vh; }
-.dsky .cl-tr { width: 34vw; right: -10vw; top: -3vh; }
-.dsky .cl-bank { width: 110vw; left: -5vw; bottom: -22vh; filter: brightness(.3); }
-@media (prefers-reduced-motion: reduce) { .dsky .cl { animation: none; } }
-.vl-shade { background: linear-gradient(to bottom, transparent 45%,
-    rgba(0,0,0,.55) 72%, rgba(0,0,0,.85) 100%),
-  radial-gradient(80% 75% at 50% 42%, transparent 50%, rgba(0,0,0,.8) 100%); }
 
-/* ---- intro: eyes flash and die, ELEVARE breaks down to LVR ---- */
-.vl-live .vl-bg { transition: none;
-  animation: eyes 3.4s ease-in-out forwards; }
-@keyframes eyes {
-  0% { opacity: 0; filter: brightness(.7); }
-  35% { opacity: 1; filter: brightness(1.7) saturate(1.25); }
-  58% { opacity: 1; filter: brightness(1.35) saturate(1.15); }
-  100% { opacity: 0; filter: brightness(.35); }
-}
+/* ---- after the video: ELEVARE breaks down to LVR ---- */
 .vl-mark { position: relative; display: block; width: min(720px, 62vw);
   aspect-ratio: 1600 / 488; margin: 0 auto; container-type: inline-size;
   filter: drop-shadow(0 0 26px rgba(124,44,240,.35))
@@ -1338,10 +1287,10 @@ body:before {
 .lp-v { --tx: -2.25cqw; --ty: 0cqw; --sc: 1; transform-origin: 55.3% 50%; }
 .lp-r { --tx: -10cqw; --ty: .25cqw; --sc: 1;
   transform-origin: 77.9% 55.9%; }
-.vl-live .lp-rest { animation: shed .9s ease-in-out 4.6s both; }
-.vl-live .lp-l { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both; }
-.vl-live .lp-v { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both; }
-.vl-live .lp-r { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 5.3s both; }
+.vl-live .lp-rest { animation: shed .9s ease-in-out 2.3s both; }
+.vl-live .lp-l { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 3s both; }
+.vl-live .lp-v { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 3s both; }
+.vl-live .lp-r { animation: slide 1.2s cubic-bezier(.65,0,.3,1) 3s both; }
 @keyframes shed {
   0% { opacity: 1; filter: none; }
   100% { opacity: 0; filter: blur(6px) brightness(.5); }
@@ -1354,31 +1303,12 @@ body:before {
 .vl-calm .lp-rest { opacity: 0; }
 .vl-calm .lp-l, .vl-calm .lp-v, .vl-calm .lp-r {
   translate: var(--tx) var(--ty); }
-
-/* clouds: soft, dissolving edges so they read as painted into the dark */
-.cl {
-  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 38%,
-    rgba(0,0,0,.75) 58%, rgba(0,0,0,.3) 80%, transparent 100%);
-  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 38%,
-    rgba(0,0,0,.75) 58%, rgba(0,0,0,.3) 80%, transparent 100%);
-}
-.cl-bank {
-  -webkit-mask-image: radial-gradient(ellipse 52% 62% at 50% 62%, #000 30%,
-    rgba(0,0,0,.7) 55%, rgba(0,0,0,.25) 80%, transparent 100%);
-  mask-image: radial-gradient(ellipse 52% 62% at 50% 62%, #000 30%,
-    rgba(0,0,0,.7) 55%, rgba(0,0,0,.25) 80%, transparent 100%);
-}
 </style>
 </head>
 <body>
 
 <!-- Chrome-only wall -->
 <section id="v-wall" class="view door">
-  <div class="dsky" aria-hidden="true">
-    <img class="cl cl-tl" src="/media/cloud-tl.webp" alt="" draggable="false">
-    <img class="cl cl-tr" src="/media/cloud-tr.webp" alt="" draggable="false">
-    <img class="cl cl-bank" src="/media/cloud-bank.webp" alt="" draggable="false">
-  </div>
   <div class="stack">
     <img class="door-logo" src="/media/logo-elevare.webp" alt="Elevare"
       width="1600" height="488" draggable="false">
@@ -1399,19 +1329,12 @@ body:before {
 
 <!-- Sign in: logo on the left, Discord entry on the right -->
 <section id="v-login" class="view door vbg">
-  <video class="vl-bg" muted loop playsinline preload="auto"
+  <video class="vl-bg" muted playsinline preload="auto"
     disablepictureinpicture data-lvr="1" aria-hidden="true"
-    poster="/media/bg-poster.jpg">
-    <source src="/media/bg-loop.mp4" type="video/mp4">
+    poster="/media/intro-poster.jpg">
+    <source src="/media/intro.mp4" type="video/mp4">
   </video>
-  <i class="vl-shade" aria-hidden="true"></i>
-  <div class="vl-sky" aria-hidden="true">
-    <img class="cl cl-tl" src="/media/cloud-tl.webp" alt="" draggable="false">
-    <img class="cl cl-tr" src="/media/cloud-tr.webp" alt="" draggable="false">
-    <img class="cl cl-wisp" src="/media/cloud-wisp.webp" alt="" draggable="false">
-    <img class="cl cl-small" src="/media/cloud-small.webp" alt="" draggable="false">
-    <img class="cl cl-bank" src="/media/cloud-bank.webp" alt="" draggable="false">
-  </div>
+  <button class="vl-skip" id="vl-skip" type="button">Skip intro</button>
   <div class="vl">
     <h1 class="vl-logo" aria-label="Elevare">
       <span class="vl-mark" aria-hidden="true">
@@ -1430,11 +1353,6 @@ body:before {
 
 <!-- Community rules (agree before entering) -->
 <section id="v-agree" class="view door">
-  <div class="dsky" aria-hidden="true">
-    <img class="cl cl-tl" src="/media/cloud-tl.webp" alt="" draggable="false">
-    <img class="cl cl-tr" src="/media/cloud-tr.webp" alt="" draggable="false">
-    <img class="cl cl-bank" src="/media/cloud-bank.webp" alt="" draggable="false">
-  </div>
   <div class="stack agree">
     <img class="door-logo" src="/media/logo-elevare.webp" alt="Elevare"
       width="1600" height="488" draggable="false">
@@ -1452,11 +1370,6 @@ body:before {
 
 <!-- Timed out -->
 <section id="v-timeout" class="view door">
-  <div class="dsky" aria-hidden="true">
-    <img class="cl cl-tl" src="/media/cloud-tl.webp" alt="" draggable="false">
-    <img class="cl cl-tr" src="/media/cloud-tr.webp" alt="" draggable="false">
-    <img class="cl cl-bank" src="/media/cloud-bank.webp" alt="" draggable="false">
-  </div>
   <div class="stack">
     <img class="door-logo" src="/media/logo-elevare.webp" alt="Elevare"
       width="1600" height="488" draggable="false">
@@ -3983,28 +3896,41 @@ body:before {
     var first = (d.user.name || '').split(' ')[0];
     setTimeout(function () { toast(greeting() + ', ' + first + '.'); }, 500);
   }
-  // ---------- front page background: the eyes loop behind the sign-in ----
+  // ---------- front page intro: plays once per tab, then the sign-in ----
   (function () {
     var sec = document.getElementById('v-login');
     var v = sec && sec.querySelector('.vl-bg');
+    var skip = document.getElementById('vl-skip');
     if (!v) return;
     var calm = window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var live = false;
-    var gone = false;
-    function land() {
-      if (live) return;
-      live = true; setCls(sec, 'vl-live', true);
-      setTimeout(function () { gone = true; v.pause(); }, 3600);
+    var seen = false;
+    try { seen = sessionStorage.getItem('elevare.intro') === '1'; } catch (e) {}
+    var done = false, started = false, wait = 0;
+    function finish() {
+      if (done) return;
+      done = true;
+      try { sessionStorage.setItem('elevare.intro', '1'); } catch (e) {}
+      setCls(sec, 'vl-live', true);
+      setTimeout(function () { v.pause(); }, 1100);
     }
-    if (calm) { setCls(sec, 'vl-calm', true); live = true; }
-    v.addEventListener('playing', land);
+    if (calm) { setCls(sec, 'vl-calm', true); finish(); }
+    else if (seen) { setCls(sec, 'vl-quick', true); finish(); }
+    v.addEventListener('playing', function () {
+      started = true; setCls(sec, 'vl-play', true);
+    });
+    v.addEventListener('ended', finish);
+    v.addEventListener('error', finish);
+    if (skip) skip.addEventListener('click', finish);
     function tick() {
+      if (done) return;
       var on = sec.classList.contains('on') && !document.hidden;
-      if (on && !calm && !gone && v.paused) {
+      if (on && v.paused) {
         var p = v.play();
-        if (p && p.catch) p.catch(function () { land(); });
-        setTimeout(land, 1500);           // never wait on a slow video
+        if (p && p.catch) p.catch(function () { finish(); });
+        if (!wait) {
+          wait = setTimeout(function () { if (!started) finish(); }, 4000);
+        }
       } else if (!on && !v.paused) v.pause();
     }
     setInterval(tick, 300);
