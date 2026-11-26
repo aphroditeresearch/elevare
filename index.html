@@ -1231,8 +1231,13 @@ body:before {
 body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .vl-ctl { position: absolute; left: 28px; bottom: 24px; z-index: 3;
   display: flex; gap: 26px; align-items: center; }
-.vl-sound { display: none; }
-.vl-muted .vl-sound { display: block; }
+.vl-by { position: absolute; right: 30px; bottom: 26px; z-index: 3;
+  margin: 0; pointer-events: none; user-select: none; opacity: 0;
+  font: italic 400 13px/1 "Cinzel", Georgia, serif; letter-spacing: .24em;
+  color: #d9c8ff; text-shadow: 0 0 10px #000, 0 1px 2px #000;
+  transition: opacity 1.2s ease; }
+.vl-live .vl-by { opacity: .62; transition-delay: 5s; }
+.vl-quick .vl-by, .vl-calm .vl-by { transition-delay: 0s; }
 .vl-skip { position: relative;
   padding: 10px 4px; background: none; border: 0; cursor: pointer;
   font-family: inherit; font-size: 11px; font-weight: 600; line-height: 1;
@@ -1355,8 +1360,9 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   <div class="vl-ctl">
     <button class="vl-skip" id="vl-skip" type="button">Skip intro</button>
     <button class="vl-skip vl-sound" id="vl-sound" type="button"
-      aria-pressed="false">Sound on</button>
+      aria-pressed="true">Sound off</button>
   </div>
+  <p class="vl-by">by mulano</p>
   <div class="vl">
     <h1 class="vl-logo" aria-label="Elevare">
       <span class="vl-mark" aria-hidden="true">
@@ -3950,16 +3956,32 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       if (!v.paused && !v.muted) fadeOut();
       else setTimeout(function () { v.pause(); }, 1100);
     }
+    var wantSound = true;                // sound is on unless they turn it off
     function muted(on) {
       v.muted = on; setCls(sec, 'vl-muted', on);
-      if (snd) snd.setAttribute('aria-pressed', on ? 'false' : 'true');
+      if (snd) {
+        snd.textContent = on ? 'Sound on' : 'Sound off';
+        snd.setAttribute('aria-pressed', on ? 'false' : 'true');
+      }
     }
     if (snd) {
       snd.addEventListener('click', function () {
-        muted(false); v.volume = 1;
-        if (v.paused && !done) v.play();
+        if (v.muted) {
+          wantSound = true; muted(false); v.volume = 1;
+          if (v.paused && !done) v.play();
+        } else { wantSound = false; muted(true); }
       });
     }
+    // Chrome may hold sound back until the visitor's first click or key press;
+    // turn it on at that moment (clicks on the intro buttons handle themselves)
+    function unlock(e) {
+      if (done || !wantSound || !v.muted) return;
+      var t = e && e.target;
+      if (t && t.closest && t.closest('.vl-ctl')) return;
+      muted(false); v.volume = 1;
+    }
+    document.addEventListener('pointerdown', unlock, true);
+    document.addEventListener('keydown', unlock, true);
     if (calm) { setCls(sec, 'vl-calm', true); finish(); }
     else if (seen) { setCls(sec, 'vl-quick', true); finish(); }
     v.addEventListener('playing', function () {
