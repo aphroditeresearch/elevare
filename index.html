@@ -1349,6 +1349,31 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     rgba(44,158,240,.08) 55%, transparent);
   will-change: transform; transition: opacity .6s ease; }
 .vl-live.vl-hover .vl-glow { opacity: 1; }
+
+/* ---- cinema: letterbox, slow camera push, drifting snow, film grain ---- */
+.vl-bar { position: absolute; left: 0; right: 0; z-index: 4; height: 9vh;
+  background: #000; pointer-events: none;
+  transition: transform 1.4s cubic-bezier(.65,0,.25,1) .3s; }
+.vl-bar-t { top: 0; } .vl-bar-b { bottom: 0; }
+.vl-live .vl-bar-t { transform: translateY(-100%); }
+.vl-live .vl-bar-b { transform: translateY(100%); }
+.vl-quick .vl-bar, .vl-calm .vl-bar { display: none; }
+.vl-live .vl-wall { animation: push 34s cubic-bezier(.3,0,.3,1) .2s both; }
+@keyframes push { 0% { scale: 1.06; } 100% { scale: 1; } }
+.vl-snow { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+  pointer-events: none; opacity: 0; transition: opacity 2.4s ease .8s; }
+.vl-live .vl-snow { opacity: 1; }
+.vl-grain { position: absolute; inset: -60px; z-index: 3; pointer-events: none;
+  opacity: 0; mix-blend-mode: overlay; background-size: 160px 160px;
+  transition: opacity 1.5s ease .5s; }
+.vl-live .vl-grain { opacity: .14; animation: grain .9s steps(1) infinite; }
+@keyframes grain {
+  0% { transform: translate(0, 0); } 20% { transform: translate(-23px, 17px); }
+  40% { transform: translate(31px, -9px); } 60% { transform: translate(-12px, -28px); }
+  80% { transform: translate(19px, 26px); }
+}
+.vl-calm .vl-wall, .vl-calm .vl-grain { animation: none; }
+.vl-calm .vl-snow { display: none; }
 </style>
 </head>
 <body>
@@ -1385,6 +1410,10 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   <span class="vl-spot" aria-hidden="true"><img class="vl-spot-img"
     src="/media/wall.webp" alt="" draggable="false"></span>
   <i class="vl-glow" aria-hidden="true"></i>
+  <canvas class="vl-snow" aria-hidden="true"></canvas>
+  <i class="vl-grain" aria-hidden="true"></i>
+  <i class="vl-bar vl-bar-t" aria-hidden="true"></i>
+  <i class="vl-bar vl-bar-b" aria-hidden="true"></i>
   <div class="vl-ctl">
     <button class="vl-skip" id="vl-skip" type="button">Skip intro</button>
     <button class="vl-skip vl-sound" id="vl-sound" type="button"
@@ -4093,6 +4122,62 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     sec.addEventListener('pointerleave', function () {
       setCls(sec, 'vl-hover', false);
     });
+  })();
+  // ---------- front page: soft snow and film grain ----------
+  (function () {
+    var sec = document.getElementById('v-login');
+    var cv = sec && sec.querySelector('.vl-snow');
+    var gr = sec && sec.querySelector('.vl-grain');
+    if (!cv || !gr) return;
+    var calm = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // grain: one small noise tile made here, so there is no extra download
+    var g = document.createElement('canvas'); g.width = g.height = 160;
+    var gx = g.getContext('2d'), id = gx.createImageData(160, 160), i, n;
+    for (i = 0; i < id.data.length; i += 4) {
+      n = 128 + (Math.random() - 0.5) * 190;
+      id.data[i] = id.data[i + 1] = id.data[i + 2] = n; id.data[i + 3] = 255;
+    }
+    gx.putImageData(id, 0, 0);
+    gr.style.backgroundImage = 'url(' + g.toDataURL('image/png') + ')';
+    if (calm) return;
+    // snow: a few soft, out-of-focus flakes drifting down
+    var cx = cv.getContext('2d'), W = 0, H = 0, dpr = 1, flakes = [], last = 0;
+    var sprite = document.createElement('canvas'); sprite.width = sprite.height = 64;
+    var sx = sprite.getContext('2d');
+    var rg = sx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    rg.addColorStop(0, 'rgba(235,245,255,.9)');
+    rg.addColorStop(.4, 'rgba(210,232,255,.35)');
+    rg.addColorStop(1, 'rgba(210,232,255,0)');
+    sx.fillStyle = rg; sx.fillRect(0, 0, 64, 64);
+    function size() {
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = cv.clientWidth; H = cv.clientHeight;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    }
+    function flake(top) {
+      var z = Math.random();                      // depth: 0 far, 1 near
+      return { x: Math.random() * W, y: top ? -20 : Math.random() * H,
+        r: 1.2 + z * z * 7, v: 10 + z * 38, a: .18 + z * .45,
+        w: Math.random() * 6.28, s: .3 + Math.random() * .6 };
+    }
+    function frame(now) {
+      requestAnimationFrame(frame);
+      if (!sec.classList.contains('on') || !sec.classList.contains('vl-live') ||
+          document.hidden) { last = 0; return; }
+      if (!W) { size(); flakes = []; for (i = 0; i < 70; i++) flakes.push(flake()); }
+      var dt = last ? Math.min(.05, (now - last) / 1000) : 0; last = now;
+      cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, W, H);
+      for (i = 0; i < flakes.length; i++) {
+        var f = flakes[i];
+        f.y += f.v * dt; f.w += f.s * dt; f.x += Math.sin(f.w) * f.v * .25 * dt;
+        if (f.y > H + 20) flakes[i] = f = flake(true);
+        cx.globalAlpha = f.a;
+        cx.drawImage(sprite, f.x - f.r * 2, f.y - f.r * 2, f.r * 4, f.r * 4);
+      }
+    }
+    window.addEventListener('resize', function () { W = 0; });
+    requestAnimationFrame(frame);
   })();
   // Sign-in lasts for this tab only: closing the tab/site or Chrome means
   // signing in again (the login cookie also ends when Chrome closes).
