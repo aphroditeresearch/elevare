@@ -1223,6 +1223,45 @@ body:before {
     0 0 30px rgba(124,44,240,.3); }
 .ann { background: linear-gradient(90deg, #1a0b2e, #0b0711);
   border-bottom: 1px solid #2c1f40; }
+
+/* ---- front page: the eyes loop behind, everything lands on top ---- */
+.vbg { justify-content: flex-end; padding-bottom: clamp(44px, 11vh, 130px);
+  background: #000; }
+.vbg:before, .vbg:after { display: none; }
+.vl-bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0;
+  object-fit: cover; object-position: 50% 50%; pointer-events: none;
+  opacity: 0; transition: opacity 1.4s ease; }
+.vl-live .vl-bg { opacity: 1; }
+/* keep the lower half quiet so the type reads cleanly */
+.vl-shade { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(to bottom, transparent 45%, rgba(0,0,0,.55) 72%,
+    rgba(0,0,0,.85) 100%); }
+.vbg .vl { z-index: 2; }
+.vbg .door-mark { font-size: clamp(40px, 6.6vw, 98px); }
+.vbg .vl > * { opacity: 0; }
+.vl-live .vl > * { animation: land .7s cubic-bezier(.2,1.25,.4,1) both; }
+.vl-live .vl > :nth-child(1) { animation-delay: 1.45s; }
+.vl-live .vl > :nth-child(2) { animation-delay: 1.65s; }
+.vl-live .vl > :nth-child(3) { animation-delay: 1.95s; }
+.vl-live .vl > :nth-child(4) { animation-delay: 2.15s; }
+.vl-live .vl > :nth-child(5), .vl-live .vl > :nth-child(6) {
+  animation-delay: 2.35s; }
+@keyframes land {
+  0% { opacity: 0; transform: translateY(26px) scale(1.04); filter: blur(6px); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+.vl-calm .vl-bg { opacity: 1; transition: none; }
+.vl-calm .vl > * { opacity: 1; animation: none; }
+@media (max-width: 700px) {
+  .vbg { padding-bottom: 64px; }
+  .door-mark, .door-mark .a { text-shadow: 3px 3px 0 #000,
+    4px 4px 0 rgba(124,44,240,.45); }
+}
+/* tall/portrait screens: keep both eyes in frame instead of cropping */
+@media (max-aspect-ratio: 1/1) {
+  .vl-bg { inset: auto; left: 50%; top: 6vh; width: 240vw; height: auto;
+    translate: -50% 0; object-fit: contain; }
+}
 </style>
 </head>
 <body>
@@ -1247,7 +1286,13 @@ body:before {
 </section>
 
 <!-- Sign in: logo on the left, Discord entry on the right -->
-<section id="v-login" class="view door">
+<section id="v-login" class="view door vbg">
+  <video class="vl-bg" muted loop playsinline preload="auto"
+    disablepictureinpicture data-lvr="1" aria-hidden="true"
+    poster="/media/bg-poster.jpg">
+    <source src="/media/bg-loop.mp4" type="video/mp4">
+  </video>
+  <i class="vl-shade" aria-hidden="true"></i>
   <div class="vl">
     <p class="vl-kick">Members only</p>
     <h1 class="bmk door-mark">ELEVARE</h1>
@@ -3801,6 +3846,29 @@ body:before {
     var first = (d.user.name || '').split(' ')[0];
     setTimeout(function () { toast(greeting() + ', ' + first + '.'); }, 500);
   }
+  // ---------- front page background: the eyes loop behind the sign-in ----
+  (function () {
+    var sec = document.getElementById('v-login');
+    var v = sec && sec.querySelector('.vl-bg');
+    if (!v) return;
+    var calm = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var live = false;
+    function land() { if (!live) { live = true; setCls(sec, 'vl-live', true); } }
+    if (calm) { setCls(sec, 'vl-calm', true); live = true; }
+    v.addEventListener('playing', land);
+    function tick() {
+      var on = sec.classList.contains('on') && !document.hidden;
+      if (on && !calm && v.paused) {
+        var p = v.play();
+        if (p && p.catch) p.catch(function () { land(); });
+        setTimeout(land, 1500);           // never wait on a slow video
+      } else if (!on && !v.paused) v.pause();
+    }
+    setInterval(tick, 300);
+    document.addEventListener('visibilitychange', tick);
+    tick();
+  })();
   // Sign-in lasts for this tab only: closing the tab/site or Chrome means
   // signing in again (the login cookie also ends when Chrome closes).
   function tabMark(on) {
