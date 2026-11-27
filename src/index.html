@@ -1364,9 +1364,9 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 @keyframes sysgate { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
 .rdy-snd { position: absolute; left: 28px; bottom: 22px; z-index: 6; }
 
-/* No: red, grey, blurred, a slow push in, then black and "wasted" */
-.rdy.dead .rdy-scene { filter: grayscale(1) blur(5px) brightness(.8) contrast(1.15);
-  transition: filter 1.1s ease; animation: dpush 7s cubic-bezier(.15, .6, .3, 1) forwards; }
+/* No: a red flash, the screen blurs out, "wasted", then black behind it */
+.rdy.dead .rdy-scene { filter: grayscale(1) blur(9px) brightness(.85) contrast(1.1);
+  transition: filter .45s ease-out; animation: dpush 6s cubic-bezier(.15, .6, .3, 1) forwards; }
 @keyframes dpush { to { transform: scale(1.14) rotate(-1.5deg); } }
 .rdy.dead .sys-btn { pointer-events: none; }
 .rdy.dead .rdy-snd { opacity: 0; pointer-events: none; }
@@ -1374,11 +1374,14 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   justify-content: center; pointer-events: none; }
 .wst:before { content: ""; position: absolute; inset: 0; background: #b0201c;
   mix-blend-mode: color; opacity: 0; transition: opacity .7s ease; }
-.wst-v, .wst-k { position: absolute; inset: 0; opacity: 0; }
-.wst-v { background: radial-gradient(60% 55% at 50% 50%, rgba(60, 0, 0, .1) 0%,
-  rgba(25, 0, 0, .75) 60%, #000 100%); transition: opacity 1.4s ease; }
-.wst-k { background: #000; transition: opacity 1.1s ease; }
-.rdy.dead .wst:before { opacity: .9; }
+.wst-f, .wst-v, .wst-k { position: absolute; inset: 0; opacity: 0; }
+.wst-f { background: #e0241c; mix-blend-mode: screen; }
+.rdy.dead .wst-f { animation: wflash .55s ease-out forwards; }
+@keyframes wflash { 0% { opacity: 0; } 12% { opacity: .85; } 100% { opacity: 0; } }
+.wst-v { background: radial-gradient(70% 65% at 50% 50%, transparent 40%,
+  rgba(30, 0, 0, .8) 100%); transition: opacity .5s ease; }
+.wst-k { background: #000; transition: opacity 1.8s ease; }
+.rdy.dead .wst:before { opacity: .9; transition-duration: .2s; }
 .rdy.dead .wst-v { opacity: 1; }
 .rdy.black .wst-k { opacity: 1; }
 .wst-t { position: relative; z-index: 2; color: #c2443d; opacity: 0;
@@ -2081,7 +2084,7 @@ button.jm-box:hover { border-color: var(--red); }
     </div>
   </div>
   <div class="wst" aria-hidden="true">
-    <i class="wst-v"></i><i class="wst-k"></i>
+    <i class="wst-f"></i><i class="wst-v"></i><i class="wst-k"></i>
     <b class="wst-t">wasted</b>
   </div>
   <button class="vl-skip rdy-snd" id="rdy-snd" type="button"
@@ -6414,8 +6417,8 @@ button.jm-box:hover { border-color: var(--red); }
       } catch (e) {}
     }
     setCls(sec, 'dead', true);
-    setTimeout(function () { setCls(sec, 'black', true); }, 1500);
-    setTimeout(function () { setCls(sec, 'wasted', true); }, 2600);  // on the hit
+    setTimeout(function () { setCls(sec, 'wasted', true); }, 1700);  // on the hit
+    setTimeout(function () { setCls(sec, 'black', true); }, 1950);   // then black behind
     // that's it: only a refresh asks again
   }
   $('sys-yes').addEventListener('click', rdyYes);
