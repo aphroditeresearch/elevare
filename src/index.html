@@ -1904,7 +1904,6 @@ button.jm-box:hover { border-color: var(--red); }
 .po-pick { background: none; border: 1px solid var(--line2); color: var(--soft);
   padding: 11px 16px; cursor: pointer; font: 13px var(--sans); }
 .po-pick:hover { border-color: var(--red); color: var(--ink); }
-#po-prev { max-height: 90px; max-width: 220px; object-fit: contain; }
 .po-form .po-chk { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 10px;
   letter-spacing: .06em; text-transform: none; font-size: 13px; color: var(--soft); }
 .po-chk input { accent-color: var(--red); width: 16px; height: 16px; }
@@ -2128,6 +2127,36 @@ button.jm-box:hover { border-color: var(--red); }
 .ghead .gt { color: var(--soft); }
 .lb-title { font-size: 12px; color: #a9d8ff; }
 .eyebrow b { background: #a9d8ff; }
+/* payouts: several screenshots, each with an amount */
+.po-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.po-drop { flex-direction: column; align-items: stretch; gap: 14px; padding: 16px;
+  transition: border-color .2s, background .2s; }
+.po-drop.over { border-color: #a9d8ff; background: rgba(169, 216, 255, .05); }
+.po-parts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px; }
+.po-parts:empty { display: none; }
+.po-part { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 8px;
+  border: 1px solid var(--line2); background: #06090d; }
+.po-part img { width: 100%; height: 120px; object-fit: cover; cursor: zoom-in;
+  background: #030507; }
+.po-form .po-pamt { flex-direction: row; align-items: center; gap: 10px; }
+.po-form .po-pamt input { box-sizing: border-box; width: 100%; padding: 9px 10px; }
+.po-form .po-pamt span { font: 600 11px "Chakra Petch", var(--sans); letter-spacing: .2em;
+  text-transform: uppercase; color: var(--muted); }
+.po-pamt input { flex: 1; min-width: 0; }
+.po-rm { position: absolute; top: -9px; right: -9px; width: 24px; height: 24px; padding: 0;
+  border-radius: 50%; border: 1px solid var(--line2); background: #0b1016; cursor: pointer;
+  color: var(--soft); font: 14px/1 var(--sans); }
+.po-rm:hover { color: #ff9aa2; border-color: rgba(255, 120, 130, .5); }
+.po-add { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.po-hint { color: var(--dim); font-size: 13px; }
+.po-sum { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; margin: 0;
+  color: var(--muted); font-size: 14px; }
+.po-sum b { color: var(--ink); font: 600 24px "Chakra Petch", var(--sans); }
+.apo-gal { display: flex; flex-wrap: wrap; gap: 10px; max-width: 560px; }
+.apo-fig { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.apo-gal .apo-img { width: 170px; height: 120px; cursor: zoom-in; }
+.apo-fig figcaption { color: var(--ink); font: 600 14px "Chakra Petch", var(--sans); }
 /* the entrance: L V R lingers, then dissolves into the site */
 .rdy.leaving { display: flex !important; position: fixed; inset: 0; z-index: 300;
   transition: opacity 1.5s cubic-bezier(.4, 0, .2, 1); }
@@ -2509,8 +2538,6 @@ button.jm-box:hover { border-color: var(--red); }
           <span class="po-total" id="po-total"></span>
         </div>
         <form class="po-form" id="po-form" novalidate>
-          <label>Amount (USD)<input id="po-amt" type="number" min="1" step="0.01"
-            inputmode="decimal" placeholder="2,500"></label>
           <label>Prop firm<input id="po-firm" type="text" maxlength="40"
             list="po-firms" placeholder="Apex, Topstep, Lucid..."></label>
           <datalist id="po-firms"><option value="Apex Trader Funding">
@@ -2521,11 +2548,17 @@ button.jm-box:hover { border-color: var(--red); }
           <label>Payout date<input id="po-date" type="date"></label>
           <div class="po-drop" id="po-drop">
             <input id="po-file" type="file" accept="image/png,image/jpeg,image/webp"
-              hidden>
-            <button class="po-pick" id="po-pick" type="button">Choose payout
-              screenshot or certificate</button>
-            <img id="po-prev" alt="Selected proof" hidden>
+              multiple hidden>
+            <div class="po-parts" id="po-parts"></div>
+            <div class="po-add">
+              <button class="po-pick" id="po-pick" type="button">Add payout
+                screenshots</button>
+              <span class="po-hint">Or drop or paste them here. Add as many as you
+                have; each gets its own amount and they&#x2019;re added up into one
+                payout.</span>
+            </div>
           </div>
+          <p class="po-sum" id="po-sum" hidden></p>
           <label class="po-chk"><input id="po-show" type="checkbox" checked>
             Show me on the leaderboard</label>
           <button class="po-send" id="po-send" type="submit">Submit for review
@@ -4546,7 +4579,7 @@ button.jm-box:hover { border-color: var(--red); }
   // ======================================================================
   // payouts: members submit proof, admins approve, the leaderboard shows it
   // ======================================================================
-  var PO = { list: null, img: null, busy: false };
+  var PO = { list: null, parts: [], busy: false };
   function money(n, cents) {
     return '$' + Number(n || 0).toLocaleString('en-US', {
       minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 });
@@ -4616,7 +4649,8 @@ button.jm-box:hover { border-color: var(--red); }
     PO.list.forEach(function (p) {
       var r = el('div', 'po-row');
       r.appendChild(el('span', 'po-amt', money(p.amount, p.amount % 1 !== 0)));
-      r.appendChild(el('span', 'po-firm', p.firm));
+      r.appendChild(el('span', 'po-firm', p.firm + (p.n > 1 ? '  \u00b7  ' + p.n +
+        ' screenshots' : '')));
       r.appendChild(el('span', 'po-date', p.date));
       r.appendChild(el('span', 'po-st ' + p.status, STATUS[p.status] || p.status));
       if (p.status === 'pending') {
@@ -4641,54 +4675,156 @@ button.jm-box:hover { border-color: var(--red); }
     });
   }
   var poWired = false;
+  // the screenshots for the next submission, each with its own amount
+  function poTotal() {
+    return Math.round(PO.parts.reduce(function (t, x) {
+      return t + (Number(x.amt) > 0 ? Number(x.amt) : 0); }, 0) * 100) / 100;
+  }
+  function poSum() {
+    var n = PO.parts.length, sum = $('po-sum');
+    sum.hidden = !n;
+    if (!n) return;
+    var tot = poTotal();
+    clear(sum);
+    sum.appendChild(el('span', null, n + (n === 1 ? ' screenshot' : ' screenshots') +
+      ', submitted as one payout'));
+    sum.appendChild(el('b', null, money(tot, tot % 1 !== 0)));
+  }
+  function poParts() {
+    var host = $('po-parts'); clear(host);
+    PO.parts.forEach(function (x, i) {
+      var row = el('div', 'po-part');
+      var im = el('img'); im.src = x.data; im.alt = 'Payout screenshot ' + (i + 1);
+      im.draggable = false; im.title = 'View full size';
+      im.addEventListener('click', function () { jLight(x.data); });
+      var lab = el('label', 'po-pamt');
+      lab.appendChild(el('span', null, 'Amount'));
+      var inp = el('input'); inp.type = 'number'; inp.min = '0.01'; inp.step = '0.01';
+      inp.inputMode = 'decimal'; inp.placeholder = '2,500'; inp.value = x.amt || '';
+      inp.setAttribute('aria-label', 'Amount for screenshot ' + (i + 1));
+      inp.addEventListener('input', function () { x.amt = inp.value; poSum(); });
+      lab.appendChild(inp);
+      var rm = el('button', 'po-rm', '\u00d7'); rm.type = 'button';
+      rm.setAttribute('aria-label', 'Remove screenshot ' + (i + 1));
+      rm.addEventListener('click', function () { PO.parts.splice(i, 1); poParts(); });
+      row.appendChild(im); row.appendChild(lab); row.appendChild(rm);
+      host.appendChild(row);
+    });
+    $('po-pick').textContent = PO.parts.length ? 'Add more screenshots' :
+      'Add payout screenshots';
+    poSum();
+  }
+  function poAdd(files) {
+    var list = Array.prototype.filter.call(files || [], function (f) {
+      return /^image\/(png|jpeg|webp)$/.test(f.type);
+    });
+    if (!list.length) {
+      if (files && files.length) $('po-msg').textContent = 'Use PNG, JPG or WebP images.';
+      return;
+    }
+    $('po-msg').textContent = 'Preparing ' + list.length +
+      (list.length === 1 ? ' image\u2026' : ' images\u2026');
+    var left = list.length, bad = 0;
+    list.forEach(function (f) {
+      shrinkImage(f, function (data) {
+        if (data) {
+          var dup = PO.parts.some(function (x) { return x.data === data; });
+          if (!dup) PO.parts.push({ data: data, amt: '', id: null });
+        } else bad++;
+        if (--left) return;
+        poParts();
+        $('po-msg').textContent = bad ? bad + (bad === 1 ? ' file' : ' files') +
+          ' couldn\u2019t be read.' : '';
+        var ins = $('po-parts').querySelectorAll('input');
+        for (var i = 0; i < ins.length; i++) if (!ins[i].value) { ins[i].focus(); break; }
+      });
+    });
+  }
   function poWire() {
     if (poWired) return;
     poWired = true;
+    PO.parts = [];
     $('po-date').value = new Date().toISOString().slice(0, 10);
     $('po-pick').addEventListener('click', function () {
-      pickerOpen = true; $('po-file').click();
+      pickerOpen = true; $('po-file').value = ''; $('po-file').click();
     });
-    $('po-file').addEventListener('change', function () {
-      var f = $('po-file').files && $('po-file').files[0];
-      $('po-msg').textContent = f ? 'Preparing image\u2026' : '';
-      shrinkImage(f, function (data) {
-        PO.img = data;
-        $('po-prev').hidden = !data;
-        if (data) $('po-prev').src = data;
-        $('po-pick').textContent = data ? 'Change image' :
-          'Choose payout screenshot or certificate';
-        $('po-msg').textContent = f && !data ? 'That file couldn\u2019t be read.' +
-          ' Use a PNG, JPG or WebP image.' : '';
-      });
+    $('po-file').addEventListener('change', function () { poAdd($('po-file').files); });
+    var drop = $('po-drop');
+    drop.addEventListener('dragover', function (e) {
+      var ty = e.dataTransfer ? e.dataTransfer.types || [] : [];
+      if (Array.prototype.indexOf.call(ty, 'Files') >= 0) {
+        e.preventDefault(); setCls(drop, 'over', true);
+      }
+    });
+    drop.addEventListener('dragleave', function () { setCls(drop, 'over', false); });
+    drop.addEventListener('drop', function (e) {
+      setCls(drop, 'over', false);
+      if (e.dataTransfer && e.dataTransfer.files.length) {
+        e.preventDefault(); poAdd(e.dataTransfer.files);
+      }
+    });
+    // screenshots pasted anywhere on the profile page land here
+    document.addEventListener('paste', function (e) {
+      if (route.tab !== 'profile' || !e.clipboardData) return;
+      var files = [];
+      for (var i = 0; i < (e.clipboardData.items || []).length; i++) {
+        var it = e.clipboardData.items[i];
+        if (it.kind === 'file' && /^image\//.test(it.type)) files.push(it.getAsFile());
+      }
+      if (files.length) { e.preventDefault(); poAdd(files); }
     });
     $('po-form').addEventListener('submit', function (e) {
       e.preventDefault();
       if (PO.busy) return;
-      var amt = Number($('po-amt').value), firm = $('po-firm').value.trim();
-      var msg = !(amt > 0) ? 'Enter the payout amount.' : !firm ? 'Enter the prop firm.' :
-        !$('po-date').value ? 'Pick the payout date.' :
-        !PO.img ? 'Add a screenshot or certificate as proof.' : '';
+      var firm = $('po-firm').value.trim();
+      var noAmt = PO.parts.filter(function (x) { return !(Number(x.amt) > 0); }).length;
+      var msg = !PO.parts.length ? 'Add at least one payout screenshot.' :
+        noAmt ? 'Enter an amount for every screenshot.' : !firm ? 'Enter the prop firm.' :
+        !$('po-date').value ? 'Pick the payout date.' : '';
       if (msg) { $('po-msg').textContent = msg; return; }
       PO.busy = true; $('po-send').disabled = true;
-      $('po-msg').textContent = 'Sending\u2026';
-      api('POST', '/api/payouts', { action: 'submit', amount: amt, firm: firm,
-        date: $('po-date').value, image: PO.img, show: $('po-show').checked },
-        function (st, d) {
-          PO.busy = false; $('po-send').disabled = false;
-          if (st !== 200) {
-            $('po-msg').textContent = {
-              duplicate: 'That image was already submitted.',
-              image: 'That image is too large or not supported.',
-              date: 'Check the payout date.', slow: 'Too many uploads. Try again later.'
-            }[d.error] || 'Couldn\u2019t submit. Try again.';
+      var parts = PO.parts.slice();
+      // upload one at a time (finished uploads are kept if a later one fails)
+      function up(i) {
+        if (i >= parts.length) { send(); return; }
+        if (parts[i].id) { up(i + 1); return; }
+        $('po-msg').textContent = 'Uploading ' + (i + 1) + ' of ' + parts.length + '\u2026';
+        api('POST', '/api/payouts', { action: 'upimg', image: parts[i].data }, function (st, d) {
+          if (st !== 200 || !d.id) {
+            fail(d && d.error === 'image' ? 'Screenshot ' + (i + 1) +
+              ' is too large or not supported.' : d && d.error === 'slow' ?
+              'Too many uploads. Try again later.' : 'Upload failed. Try again.');
             return;
           }
-          $('po-amt').value = ''; $('po-firm').value = ''; PO.img = null;
-          $('po-file').value = ''; $('po-prev').hidden = true;
-          $('po-pick').textContent = 'Choose payout screenshot or certificate';
-          $('po-msg').textContent = 'Submitted. An admin will review it shortly.';
-          poLoad();
+          parts[i].id = d.id; up(i + 1);
         });
+      }
+      function fail(t) {
+        PO.busy = false; $('po-send').disabled = false; $('po-msg').textContent = t;
+      }
+      function send() {
+        $('po-msg').textContent = 'Sending\u2026';
+        api('POST', '/api/payouts', { action: 'submit', firm: firm, date: $('po-date').value,
+          show: $('po-show').checked, parts: parts.map(function (x) {
+            return { id: x.id, amount: Number(x.amt) }; }) },
+          function (st, d) {
+            if (st !== 200) {
+              if (d.error === 'image_gone') parts.forEach(function (x) { x.id = null; });
+              fail({
+                duplicate: 'One of these screenshots was already submitted.',
+                image_gone: 'The upload expired. Submit again.',
+                amount: 'Check the amounts.', date: 'Check the payout date.',
+                slow: 'Too many uploads. Try again later.'
+              }[d.error] || 'Couldn\u2019t submit. Try again.');
+              return;
+            }
+            PO.busy = false; $('po-send').disabled = false;
+            PO.parts = []; poParts(); $('po-firm').value = '';
+            $('po-msg').textContent = 'Submitted. An admin will review it shortly.';
+            poLoad();
+          });
+      }
+      up(0);
     });
   }
 
@@ -4797,12 +4933,30 @@ button.jm-box:hover { border-color: var(--red); }
       if (!d.pending.length) q.appendChild(el('p', 'pmuted', 'Nothing waiting. All caught up.'));
       d.pending.forEach(function (p) {
         var c = el('div', 'apo');
-        var im = el('img', 'apo-img'); im.alt = 'Proof from ' + p.name; im.draggable = false;
-        im.title = 'Click to enlarge';
-        im.addEventListener('click', function () { setCls(im, 'big', !hasCls(im, 'big')); });
-        c.appendChild(im);
+        // every screenshot, with its own amount when there are several
+        var gal = el('div', 'apo-gal');
+        for (var gi = 0; gi < (p.n || 1); gi++) {
+          (function (n) {
+            var f = el('figure', 'apo-fig');
+            var im = el('img', 'apo-img'); im.alt = 'Proof ' + (n + 1) + ' from ' + p.name;
+            im.draggable = false; im.title = 'View full size';
+            im.addEventListener('click', function () { if (im.src) jLight(im.src); });
+            f.appendChild(im);
+            if (p.parts && p.parts[n] !== undefined) {
+              f.appendChild(el('figcaption', null, money(p.parts[n], p.parts[n] % 1 !== 0)));
+            }
+            gal.appendChild(f);
+            api('POST', '/api/payouts', { action: 'img', id: p.id, n: n }, function (s3, i) {
+              if (s3 === 200 && i.image) im.src = i.image;
+            });
+          })(gi);
+        }
+        c.appendChild(gal);
         var meta = el('div', 'apo-meta');
         meta.appendChild(el('b', 'apo-amt', money(p.amount, p.amount % 1 !== 0)));
+        if (p.n > 1) {
+          meta.appendChild(el('span', 'pmuted', 'Total of ' + p.n + ' screenshots'));
+        }
         meta.appendChild(el('span', null, p.firm + '  \u00b7  paid ' + p.date));
         meta.appendChild(el('span', 'pmuted', p.name + '  \u00b7  ' + p.uid));
         meta.appendChild(el('span', 'pmuted', 'Submitted ' +
@@ -4820,9 +4974,6 @@ button.jm-box:hover { border-color: var(--red); }
         meta.appendChild(acts);
         c.appendChild(meta);
         q.appendChild(c);
-        api('POST', '/api/payouts', { action: 'img', id: p.id }, function (s3, i) {
-          if (s3 === 200 && i.image) im.src = i.image;
-        });
       });
       if (!d.done.length) dl.appendChild(el('p', 'pmuted', 'No reviewed payouts yet.'));
       d.done.forEach(function (p) {

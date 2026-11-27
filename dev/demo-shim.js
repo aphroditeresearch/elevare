@@ -262,6 +262,7 @@
   POS.push({ id: 'poq', uid: MEMBER.id, name: MEMBER.name, amount: 2500, firm: 'Topstep',
     date: '2026-11-25', show: true, status: 'pending', t: Date.now() - 3600e3 });
   var pn = 50;
+  var PDRAFT = {};
   function payouts(uid, b) {
     var a = b.action;
     function one(id) { return POS.filter(function (p) { return p.id === id; })[0]; }
@@ -282,18 +283,26 @@
     if (a === 'mine') {
       return [200, { list: clone(POS.filter(function (p) { return p.uid === uid; })) }];
     }
+    if (a === 'upimg') { var did = 'd' + (++pn); PDRAFT[did] = b.image; return [200, { id: did }]; }
     if (a === 'submit') {
-      var np = { id: 'po' + (++pn), uid: uid, name: DB.who.name, amount: Number(b.amount),
+      var parts = b.parts || [{ id: null, amount: b.amount }];
+      var imgs = parts.map(function (x) { return x.id ? PDRAFT[x.id] : b.image; });
+      var np = { id: 'po' + (++pn), uid: uid, name: DB.who.name,
+        amount: parts.reduce(function (t, x) { return t + Number(x.amount); }, 0),
         firm: b.firm, date: b.date, show: b.show !== false, status: 'pending', t: Date.now(),
-        img: b.image };
-      POS.push(np); return [200, { ok: true }];
+        imgs: imgs, n: imgs.length,
+        parts: parts.length > 1 ? parts.map(function (x) { return Number(x.amount); }) : null };
+      POS.push(np); return [200, { ok: true, item: clone(np) }];
     }
     if (a === 'withdraw') {
       POS = POS.filter(function (p) { return !(p.id === b.id && p.status === 'pending'); });
       return [200, { ok: true }];
     }
     if (a === 'show') { var sp = one(b.id); if (sp) sp.show = !!b.show; return [200, { ok: true }]; }
-    if (a === 'img') { var ip = one(b.id); return [200, { image: ip && ip.img || PIMG }]; }
+    if (a === 'img') {
+      var ip = one(b.id);
+      return [200, { image: ip && ip.imgs && ip.imgs[b.n || 0] || ip && ip.img || PIMG }];
+    }
     if (a === 'trader') {
       return [200, { list: clone(POS.filter(function (p) {
         return p.uid === b.uid && p.status === 'approved' && p.show; })) }];

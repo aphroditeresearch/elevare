@@ -858,6 +858,41 @@ async function t(name, fn) {
     const img = await other.req('POST', '/api/payouts', { action: 'img', id: poId });
     assert.strictEqual(img.data.image, PNG);
   });
+  await t('several proofs, each with an amount, add up to one payout', async () => {
+    const shot = k => 'data:image/png;base64,' + Buffer.from('multi-proof-' + k).toString('base64');
+    const ids = [];
+    for (const k of [1, 2, 3]) {
+      const u = await member.req('POST', '/api/payouts', { action: 'upimg', image: shot(k) });
+      assert.strictEqual(u.status, 200); ids.push(u.data.id);
+    }
+    assert.strictEqual((await member.req('POST', '/api/payouts', { action: 'upimg',
+      image: 'data:text/html;base64,AAAA' })).status, 400);
+    const r = await member.req('POST', '/api/payouts', { action: 'submit', firm: 'Lucid Trading',
+      date: '2026-11-21', show: true, parts: [{ id: ids[0], amount: 1000 },
+        { id: ids[1], amount: 250.5 }, { id: ids[2], amount: 749.5 }] });
+    assert.strictEqual(r.status, 200);
+    assert.strictEqual(r.data.item.amount, 2000);
+    assert.strictEqual(r.data.item.n, 3);
+    assert.deepStrictEqual(r.data.item.parts, [1000, 250.5, 749.5]);
+    const im = await admin.req('POST', '/api/payouts', { action: 'img', id: r.data.item.id, n: 2 });
+    assert.strictEqual(im.data.image, shot(3)); assert.strictEqual(im.data.count, 3);
+    // drafts are used up, and the same screenshot can't be used twice
+    assert.strictEqual((await member.req('POST', '/api/payouts', { action: 'submit', firm: 'X',
+      date: '2026-11-21', parts: [{ id: ids[0], amount: 5 }] })).data.error, 'image_gone');
+    const again = await member.req('POST', '/api/payouts', { action: 'upimg', image: shot(2) });
+    assert.strictEqual((await member.req('POST', '/api/payouts', { action: 'submit', firm: 'X',
+      date: '2026-11-21', parts: [{ id: again.data.id, amount: 5 }] })).data.error, 'duplicate');
+    // every part needs an amount
+    const one = await member.req('POST', '/api/payouts', { action: 'upimg', image: shot(9) });
+    assert.strictEqual((await member.req('POST', '/api/payouts', { action: 'submit', firm: 'X',
+      date: '2026-11-21', parts: [{ id: one.data.id, amount: 0 }] })).data.error, 'amount');
+    // another member can't use these drafts
+    const other = client(); await other.signIn('100000000000000008');
+    assert.strictEqual((await other.req('POST', '/api/payouts', { action: 'submit', firm: 'X',
+      date: '2026-11-21', parts: [{ id: one.data.id, amount: 5 }] })).data.error, 'image_gone');
+    await admin.req('POST', '/api/payouts', { action: 'remove', id: r.data.item.id });
+    assert.strictEqual(mocks.store.has('elevare:poi:' + r.data.item.id + ':2'), false);
+  });
   await t('hiding from the leaderboard keeps the total but drops the name', async () => {
     await member.req('POST', '/api/payouts', { action: 'show', id: poId, show: false });
     const b = await member.req('POST', '/api/payouts', { action: 'board' });

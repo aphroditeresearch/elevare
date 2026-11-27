@@ -11,7 +11,15 @@ const MAX_AMOUNT = 10000000;      // dollars
 const IMG_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 
 const HK = () => L.K('po');
-const IK = id => L.K('poi:' + id);
+// a payout's images: the first at poi:<id> (as before), the rest at poi:<id>:<n>
+const IK = (id, n) => L.K('poi:' + id + (n ? ':' + n : ''));
+// images uploaded but not yet attached to a payout (kept for a day)
+const DK = (uid, id) => L.K('podraft:' + uid + ':' + id);
+const DRAFT_RE = /^[a-f0-9]{16}$/;
+const count = p => Math.max(1, p.n || 1);
+async function dropImages(p) {
+  for (let i = 0; i < count(p); i++) await L.kv('DEL', IK(p.id, i));
+}
 const UK = uid => L.K('po:u:' + uid);
 
 function parse(s) { try { return JSON.parse(s); } catch (e) { return null; } }
@@ -26,7 +34,7 @@ async function put(p) { await L.kv('HSET', HK(), p.id, JSON.stringify(p)); }
 
 function mine(p) {
   return { id: p.id, amount: p.amount, firm: p.firm, date: p.date, show: !!p.show,
-    status: p.status, note: p.note || '', t: p.t };
+    status: p.status, note: p.note || '', t: p.t, n: count(p), parts: p.parts || null };
 }
 function who(p) {
   return { uid: p.uid, name: p.name, avatar: p.avatar || null, gavatar: p.gavatar || null };
@@ -80,23 +88,61 @@ module.exports = async function (req, res) {
       return L.json(res, 200, { list });
     }
 
+    // one proof image at a time, so any number can be attached
+    if (a === 'upimg') {
+      if (!(await L.rateLimit('po-img:' + s.uid, 120, 3600))) return L.json(res, 429, { error: 'slow' });
+      const img = String(b.image || '');
+      if (img.length > MAX_IMG || !IMG_RE.test(img)) return L.json(res, 400, { error: 'image' });
+      const id = L.rid(8);
+      await L.kv('SET', DK(s.uid, id), img, 'EX', 86400);
+      return L.json(res, 200, { id });
+    }
+
     if (a === 'submit') {
       if (!(await L.rateLimit('po-up:' + s.uid, 30, 3600))) return L.json(res, 429, { error: 'slow' });
-      const amount = Math.round(Number(b.amount) * 100) / 100;
+      // several proofs, each with its own amount, add up to one payout
+      const parts = Array.isArray(b.parts) ? b.parts.slice(0, 200) : null;
+      let partAmts = null;
+      if (parts) {
+        partAmts = parts.map(x => Math.round(Number(x && x.amount) * 100) / 100);
+        if (!parts.length || partAmts.some(v => !(v > 0) || v > MAX_AMOUNT)) {
+          return L.json(res, 400, { error: 'amount' });
+        }
+      }
+      const amount = partAmts ? Math.round(partAmts.reduce((t, v) => t + v, 0) * 100) / 100
+        : Math.round(Number(b.amount) * 100) / 100;
       if (!(amount > 0) || amount > MAX_AMOUNT) return L.json(res, 400, { error: 'amount' });
       const firm = String(b.firm || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 40);
       if (!firm) return L.json(res, 400, { error: 'firm' });
       const date = cleanDate(b.date);
       if (!date) return L.json(res, 400, { error: 'date' });
-      const img = String(b.image || '');
-      if (img.length > MAX_IMG || !IMG_RE.test(img)) return L.json(res, 400, { error: 'image' });
+      // the images: uploaded drafts by id (or one image sent inline)
+      const imgs = [];
+      if (b.image !== undefined) imgs.push(String(b.image || ''));
+      const ids = (parts ? parts.map(x => x && x.id) :
+        Array.isArray(b.images) ? b.images : []).map(String);
+      if (ids.some(id => !DRAFT_RE.test(id))) return L.json(res, 400, { error: 'image' });
+      for (const id of ids) {
+        const got = await L.kv('GET', DK(s.uid, id));
+        if (!got) return L.json(res, 400, { error: 'image_gone' });
+        imgs.push(String(got));
+      }
+      if (!imgs.length) return L.json(res, 400, { error: 'image' });
+      if (imgs.some(img => img.length > MAX_IMG || !IMG_RE.test(img))) {
+        return L.json(res, 400, { error: 'image' });
+      }
+      const hashes = imgs.map(img => crypto.createHash('sha256').update(img).digest('hex'));
+      if (new Set(hashes).size !== hashes.length) return L.json(res, 409, { error: 'duplicate' });
       const list = await all();
-      const hash = crypto.createHash('sha256').update(img).digest('hex');
-      if (list.some(p => p.hash === hash)) return L.json(res, 409, { error: 'duplicate' });
+      const seen = {};
+      list.forEach(p => { (p.hashes || [p.hash]).forEach(h => { if (h) seen[h] = 1; }); });
+      if (hashes.some(h => seen[h])) return L.json(res, 409, { error: 'duplicate' });
       const p = { id: L.rid(8), uid: s.uid, name: s.name, avatar: s.avatar || null,
         gavatar: s.gavatar || null, amount, firm, date, show: b.show !== false,
-        status: 'pending', t: Date.now(), hash };
-      await L.kv('SET', IK(p.id), img);
+        status: 'pending', t: Date.now(), hash: hashes[0], hashes, n: imgs.length };
+      if (partAmts && partAmts.length > 1) p.parts = partAmts;
+      for (let i = 0; i < imgs.length; i++) await L.kv('SET', IK(p.id, i), imgs[i]);
+      for (const id of ids) await L.kv('DEL', DK(s.uid, id));
       await put(p);
       await L.kv('SADD', UK(s.uid), p.id);
       await L.sessLog('payout-submitted', s, req);
@@ -109,7 +155,7 @@ module.exports = async function (req, res) {
     if (a === 'withdraw') {
       const p = await one(b.id);
       if (!p || p.uid !== s.uid || p.status !== 'pending') return L.json(res, 404, { error: 'not_found' });
-      await L.kv('HDEL', HK(), p.id); await L.kv('DEL', IK(p.id));
+      await L.kv('HDEL', HK(), p.id); await dropImages(p);
       await L.kv('SREM', UK(s.uid), p.id);
       return L.json(res, 200, { ok: true });
     }
@@ -126,7 +172,9 @@ module.exports = async function (req, res) {
       const p = await one(b.id);
       const open = p && (p.uid === s.uid || s.admin || (p.status === 'approved' && p.show));
       if (!open) return L.json(res, 404, { error: 'not_found' });
-      return L.json(res, 200, { image: (await L.kv('GET', IK(p.id))) || null });
+      const n = Math.max(0, Math.min(count(p) - 1, Number(b.n) || 0));
+      return L.json(res, 200, { image: (await L.kv('GET', IK(p.id, n))) || null,
+        n, count: count(p) });
     }
 
     // a leaderboard member's approved payouts
@@ -134,7 +182,7 @@ module.exports = async function (req, res) {
       const uid = String(b.uid || '');
       const list = (await all()).filter(p => p.uid === uid && p.status === 'approved' && p.show)
         .sort((x, y) => (y.date > x.date ? 1 : -1))
-        .map(p => ({ id: p.id, amount: p.amount, firm: p.firm, date: p.date }));
+        .map(p => ({ id: p.id, amount: p.amount, firm: p.firm, date: p.date, n: count(p) }));
       return L.json(res, 200, { list });
     }
 
@@ -170,7 +218,7 @@ module.exports = async function (req, res) {
     if (a === 'remove') {
       const p = await one(b.id);
       if (!p) return L.json(res, 404, { error: 'not_found' });
-      await L.kv('HDEL', HK(), p.id); await L.kv('DEL', IK(p.id));
+      await L.kv('HDEL', HK(), p.id); await dropImages(p);
       await L.kv('SREM', UK(p.uid), p.id);
       return L.json(res, 200, { ok: true });
     }
