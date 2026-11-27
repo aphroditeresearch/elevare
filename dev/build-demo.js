@@ -33,7 +33,7 @@ const users = {};
     last: now - i * 7 * 60 * min };
 });
 
-let html = fs.readFileSync(R('index.html'), 'utf8');
+let html = fs.readFileSync(R('src/index.html'), 'utf8');
 const logo = 'data:image/png;base64,' + b64('logo.png');
 const font = 'data:font/woff2;base64,' + b64('fonts/anton.woff2');
 const fav = 'data:image/png;base64,' + b64('favicon.png');

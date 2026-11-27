@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.png': 'image/png',
+  '.webp': 'image/webp', '.jpg': 'image/jpeg', '.mp4': 'video/mp4',
   '.svg': 'image/svg+xml', '.js': 'text/javascript', '.woff2': 'font/woff2' };
 const STATIC = ['/index.html', '/brand.js', '/logo.png', '/favicon.png', '/apple-touch-icon.png',
   '/fonts/anton.woff2'];
@@ -59,9 +60,14 @@ function start(port) {
         console.error(e); res.statusCode = 500; res.end('error');
       });
     }
-    const f = p === '/' ? '/index.html' : p;
-    if (STATIC.indexOf(f) < 0) { res.statusCode = 404; return res.end('not found'); }
-    res.setHeader('Content-Type', TYPES[path.extname(f)]);
+    if (p === '/' || p === '/index.html') {
+      return Promise.resolve(require(path.join(ROOT, 'api', 'page.js'))(req, res))
+        .catch(e => { console.error(e); res.statusCode = 500; res.end('error'); });
+    }
+    const f = p;
+    const asset = /^\/(media|fonts)\/[\w.-]+$/.test(f) && fs.existsSync(path.join(ROOT, f));
+    if (STATIC.indexOf(f) < 0 && !asset) { res.statusCode = 404; return res.end('not found'); }
+    res.setHeader('Content-Type', TYPES[path.extname(f)] || 'application/octet-stream');
     fs.createReadStream(path.join(ROOT, f)).pipe(res);
   });
   return new Promise(r => srv.listen(port, () => r(srv)));

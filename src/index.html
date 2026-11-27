@@ -1920,6 +1920,10 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   document.addEventListener('selectstart', function (e) {
     if (!editable(e.target)) stop(e);
   }, true);
+  // no dragging images, the video or the logo out of the page
+  document.addEventListener('dragstart', function (e) {
+    if (!editable(e.target)) stop(e);
+  }, true);
   ['copy', 'cut'].forEach(function (n) {
     document.addEventListener(n, function (e) {
       if (!editable(e.target)) blocked(e, 'Copying');

@@ -4,3 +4,5 @@ dist/
 *.md
 .env*
 .gitignore
+src/
+node_modules/

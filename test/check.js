@@ -3,7 +3,7 @@
 // inline <script> parses.
 const fs = require('fs'); const path = require('path');
 const { execFileSync } = require('child_process'); const os = require('os');
-const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'src', 'index.html'), 'utf8');
 let bad = 0;
 html.split('\n').forEach((l, i) => {
   if (/[^\x09\x0a\x0d\x20-\x7e]/.test(l)) { console.log('non-ASCII on line ' + (i + 1)); bad++; }
@@ -41,5 +41,13 @@ function walk(dir) {
   });
 }
 walk(path.join(__dirname, '..'));
+// the served page is built from src/index.html: it must be up to date
+try {
+  const site = require('../api/_site.js');
+  const { hashOf } = require('../dev/build-site.js');
+  if (site.hash !== hashOf(html)) {
+    console.log('api/_site.js is out of date: run `npm run site`'); bad++;
+  }
+} catch (e) { console.log('api/_site.js is missing: run `npm run site`'); bad++; }
 console.log(bad ? bad + ' problem(s)' : 'index.html: ASCII, short lines, ' + n + ' script(s) parse; no secrets found');
 process.exitCode = bad ? 1 : 0;

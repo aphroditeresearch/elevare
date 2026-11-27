@@ -395,6 +395,19 @@ async function getSession(req) {
   if (!v) return null;
   try { return JSON.parse(v); } catch (e) { return null; }
 }
+// Read-only check for serving the members' version of the page: a valid,
+// current session that isn't blocked. Changes nothing; the APIs still run
+// the full requireMember() checks on every request.
+async function pageAccess(req) {
+  if (!configured()) return false;
+  const s = await getSession(req);
+  if (!s) return false;
+  if (await isBlocked(s.uid)) return false;
+  if (s.fp && s.fp !== fingerprint(req)) return false;
+  const idle = Math.max(5, Number(env('SESSION_IDLE_MINUTES', '30')) || 30) * 60000;
+  if (s.seen && Date.now() - s.seen > idle) return false;
+  return (await kv('GET', K('active:' + s.uid))) === s.sid;
+}
 async function saveSession(s) {
   await kv('SET', K('sess:' + s.sid), JSON.stringify(s), 'EX', SESSION_TTL);
 }
@@ -733,7 +746,7 @@ module.exports = {
   kv, K, rateLimit, loadContent, saveContent, isBlocked, alert, ripIntent, pingLine,
   isAdminOf, hasAccess, discordMember, displayName,
   discordUser, profileBits,
-  createSession, getSession, fingerprint, sessLog, authFail,
+  createSession, getSession, pageAccess, fingerprint, sessLog, authFail,
   safariAllowed, isSafari, browserOk, isMobile, embeddedBrowser, tiers, tierRole, hasTier, saveSession, destroySession, refresh, requireMember,
   vdo
 };

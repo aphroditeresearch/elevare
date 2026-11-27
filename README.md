@@ -7,7 +7,7 @@ VdoCipher, and the mentor runs everything from the admin panel.
 **Launching this for another brand?** Follow `NEW-BRAND.md`. All branding
 lives in `brand.js` plus the three images.
 
-Stack: static `index.html` + 6 Vercel serverless functions + Upstash Redis
+Stack: one page (`src/index.html`, served by `api/page.js`) + Vercel serverless functions + Upstash Redis
 (keys prefixed `elevare:`, or `REDIS_PREFIX`). No servers to run, no npm dependencies.
 
 ## Sign-in intro (video)
@@ -51,7 +51,10 @@ has **its own accounts**:
 Changes made here never reach Akon V2, and the other way round.
 
 ```
-index.html        the whole front end (ES5, pure ASCII, short lines)
+src/index.html    the whole front end, readable source (ES5, pure ASCII, short lines)
+api/_site.js      GENERATED from src/index.html by `npm run site` (minified + obfuscated)
+api/page.js       serves the page: members get the full site, everyone else only
+                  the sign-in screens
 brand.js          brand name, mark, tagline, colours (rebrand here)
 logo.png, favicon.png, apple-touch-icon.png
 fonts/            Anton (headings, OFL licensed, self-hosted)
@@ -113,9 +116,22 @@ Sign in with Discord, then open **Admin** in the top bar.
 npm run dev      # http://localhost:3000 with mocked services + placeholder content
                  #   sign in: /__dev/login?as=admin  or  /__dev/login?as=member
 npm test         # 39 end-to-end tests
-npm run check    # index.html is ASCII, short lines, scripts parse
+npm run site     # rebuild api/_site.js after ANY change to src/index.html
+npm run check    # src/index.html is ASCII, short lines, scripts parse; _site.js is current
 npm run demo     # dist/demo.html: offline showcase with a guided tour (not deployed)
 ```
+
+### Copy protection for the page itself
+
+- Only signed-in members are sent the members' area. Everyone else gets the
+  sign-in screens with the members' markup and its styles left out
+  (`api/page.js` + `pageAccess()` in `api/_lib.js`).
+- The served page is minified and its script obfuscated (`dev/build-site.js`).
+  Edit `src/index.html`, then run `npm run site` and commit `api/_site.js` too;
+  `npm run check` fails while it is out of date. `src/` is never deployed.
+- Logo, video, images and fonts carry `Cross-Origin-Resource-Policy:
+  same-origin` (vercel.json), so other sites can't embed them; dragging them
+  out of the page is blocked alongside right-click, copy and print.
 
 ---
 
