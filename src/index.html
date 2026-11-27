@@ -1378,6 +1378,21 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .rdy-v2 { z-index: 4; transition: none; }
 .rdy.roll .rdy-v2 { opacity: 0; }
 .rdy.yroll .rdy-v2 { opacity: 1; filter: none; }
+/* the cinema bars from the intro, kept the whole way through */
+.rdy .vl-bar { transition: none; }
+/* after the last blast: black, L V R fade in, then straight inside */
+.rdy-lvr { position: absolute; inset: 0; z-index: 4; display: flex; align-items: center;
+  justify-content: center; background: #000; opacity: 0; pointer-events: none; }
+.rdy.fin .rdy-lvr { opacity: 1; }
+.rdy-lvr .lp { opacity: 0; }
+.rdy.fin .rdy-lvr .lp { animation: lvrin 1.3s cubic-bezier(.2, .7, .2, 1) both,
+  wake 2.2s ease-in-out 1.25s forwards; }
+.rdy.fin .rdy-lvr .lp-v { animation-delay: .16s, 1.41s; }
+.rdy.fin .rdy-lvr .lp-r { animation-delay: .32s, 1.57s; }
+@keyframes lvrin {
+  0% { opacity: 0; scale: 1.05; filter: blur(6px); }
+  100% { opacity: 1; scale: 1; filter: none; }
+}
 
 /* No: a red flash, the screen blurs out, "wasted", then black behind it */
 .rdy.dead .rdy-scene { filter: grayscale(1) blur(9px) brightness(.85) contrast(1.1);
@@ -2101,6 +2116,15 @@ button.jm-box:hover { border-color: var(--red); }
   </div>
   <video class="rdy-v rdy-v2" id="rdy-v2" data-src="/media/arise-yes.mp4" playsinline
     preload="none" disablepictureinpicture data-lvr="1" aria-hidden="true"></video>
+  <i class="vl-bar vl-bar-t" aria-hidden="true"></i>
+  <i class="vl-bar vl-bar-b" aria-hidden="true"></i>
+  <div class="rdy-lvr" aria-hidden="true">
+    <span class="vl-mark rdy-mark">
+      <img class="lp lp-l" src="/media/lg-l.webp" alt="" draggable="false">
+      <img class="lp lp-v" src="/media/lg-v.webp" alt="" draggable="false">
+      <img class="lp lp-r" src="/media/lg-r.webp" alt="" draggable="false">
+    </span>
+  </div>
   <div class="wst" aria-hidden="true">
     <i class="wst-f"></i><i class="wst-v"></i><i class="wst-k"></i>
     <b class="wst-t">wasted</b>
@@ -6368,7 +6392,7 @@ button.jm-box:hover { border-color: var(--red); }
   function showReady(d) {
     var sec = $('v-ready'), v = $('rdy-v1'), y = $('rdy-v2');
     RDY.d = d; RDY.done = false; RDY.over = false; clearTimeout(RDY.t);
-    ['open', 'typed', 'gate', 'yes', 'dead', 'black', 'wasted', 'roll', 'held', 'yroll']
+    ['open', 'typed', 'gate', 'yes', 'dead', 'black', 'wasted', 'roll', 'held', 'yroll', 'fin']
       .forEach(function (c) { setCls(sec, c, false); });
     $('sys-t').textContent = '';
     rdySound();
@@ -6445,7 +6469,11 @@ button.jm-box:hover { border-color: var(--red); }
     var y = $('rdy-v2'), fin = false;
     function inside() {
       if (fin) return;
-      fin = true; setCls($('sys-yes'), 'hit', false); enter(RDY.d);
+      fin = true;
+      setCls($('v-ready'), 'fin', true);              // black, then L V R
+      setTimeout(function () {
+        setCls($('sys-yes'), 'hit', false); enter(RDY.d);   // a clean cut inside
+      }, 3300);
     }
     setTimeout(function () { setCls($('v-ready'), 'yes', true); }, 220);
     setTimeout(function () {
