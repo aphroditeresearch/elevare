@@ -1226,6 +1226,19 @@ body:before {
 .vl-play .vl-bg { opacity: 1; }
 .vl-live .vl-bg { opacity: 0; transition: opacity 1.8s ease; }
 .vl-quick .vl-bg { display: none; }
+/* returning in the same tab (no video): the same sequence, sooner */
+.vl-quick.vl-live .vl > :nth-child(1) { animation-delay: .15s; animation-duration: 1.2s; }
+.vl-quick.vl-live .g-e1 { animation-delay: 1.7s; }
+.vl-quick.vl-live .g-e2 { animation-delay: 1.8s; }
+.vl-quick.vl-live .g-a { animation-delay: 1.9s; }
+.vl-quick.vl-live .g-e3 { animation-delay: 2s; }
+.vl-quick.vl-live .vl > :nth-child(2) { animation-delay: 3.1s; }
+.vl-quick.vl-live .vl > :nth-child(3) { animation-delay: 3.4s; }
+.vl-quick.vl-live .vl > :nth-child(4),
+.vl-quick.vl-live .vl > :nth-child(5) { animation-delay: 3.7s; }
+.vl-quick.vl-live .vl-wall { transition-delay: 0s; transition-duration: 2s; }
+.vl-quick.vl-live .vl-snow { transition-delay: .6s; }
+.vl-quick.vl-live .vl-grain { transition-delay: .3s; }
 /* nothing drawn over the video while it plays: full source quality */
 .vl-play:not(.vl-live):after { display: none; }
 body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
@@ -1238,6 +1251,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   transition: opacity 1.2s ease; }
 .vl-live .vl-by { opacity: .62; transition-delay: 7.4s; }
 .vl-quick .vl-by, .vl-calm .vl-by { transition-delay: 0s; }
+.vl-quick.vl-live .vl-by { transition-delay: 3.7s; }
 .vl-skip { position: relative;
   padding: 10px 4px; background: none; border: 0; cursor: pointer;
   font-family: inherit; font-size: 11px; font-weight: 600; line-height: 1;
@@ -3991,11 +4005,12 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       }
       requestAnimationFrame(step);
     }
-    function finish() {
+    function finish(natural) {
       if (done) return;
       done = true;
       try { sessionStorage.setItem('elevare.intro', '1'); } catch (e) {}
       setCls(sec, 'vl-live', true);
+      if (natural === true) return;      // let the clip ring out on its own
       if (!v.paused && !v.muted) fadeOut();
       else setTimeout(function () { v.pause(); }, 1100);
     }
@@ -4031,12 +4046,13 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       started = true; setCls(sec, 'vl-play', true);
     });
     v.addEventListener('ended', finish);
-    // the intro is cut at 14s: picture and sound fade out together over the
-    // last second, and the sign-in starts as the screen reaches black
-    var CUT = 14.4;
+    // the clip fades to black by itself at about 14.5s and its music fades
+    // out to the last frame; the sign-in starts once the picture is dark,
+    // while the music plays out underneath to its own end
+    var DARK = 14.6;
     function watchCut() {
       if (done) return;
-      if (v.currentTime >= CUT - FADE / 1000) { finish(); return; }
+      if (v.currentTime >= DARK) { finish(true); return; }
       requestAnimationFrame(watchCut);
     }
     v.addEventListener('playing', function () { requestAnimationFrame(watchCut); });
