@@ -3735,6 +3735,9 @@ button.jm-box:hover { border-color: var(--red); }
       if (!me && !st.ix.chans.some(function (c) { return c.n; })) {
         nav.appendChild(el('p', 'jr-empty', 'Nothing written yet.'));
       }
+      // a name box takes the keyboard at once, so no keystroke is lost
+      var ni = nav.querySelector('.jr-new input');
+      if (ni && document.activeElement !== ni) ni.focus();
     }
     function chanRow(c) {
       var row = el('div', 'jr-ch' + (V.cur === c.id ? ' on' : ''));
@@ -4017,7 +4020,9 @@ button.jm-box:hover { border-color: var(--red); }
       JRV = jView($('jr-host'), { u: jMe(), own: true, who: meWho(),
         onRoute: function (id) {
           var h = '#journal' + (id ? SEP + id : '');
-          if (location.hash !== h && route.tab === 'journal') history.replaceState(null, '', h);
+          if (route.tab !== 'journal') return;
+          route.id = id;                  // so a later redraw keeps this channel
+          if (location.hash !== h) history.replaceState(null, '', h);
         } });
     }
     JRV.show(route.id);
