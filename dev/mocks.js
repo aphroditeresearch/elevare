@@ -26,6 +26,7 @@ function redis(c) {
   const has = alive(k);
   switch (cmd) {
     case 'GET': return has ? store.get(k) : null;
+    case 'MGET': return c.slice(1).map(x => (store.has(x) ? store.get(x) : null));
     case 'SET': {
       const opts = c.slice(3).map(x => String(x).toUpperCase());
       if (opts.indexOf('NX') >= 0 && has) return null;

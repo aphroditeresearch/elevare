@@ -669,62 +669,119 @@ async function t(name, fn) {
   });
 
   console.log('Journal');
+  const J = (who, body) => who.req('POST', '/api/journal', body);
   await t('a new journal starts with only the starter sections', async () => {
-    const r = await member.req('POST', '/api/journal', { action: 'index' });
+    const r = await J(member, { action: 'index' });
     assert.strictEqual(r.status, 200);
     assert.deepStrictEqual(r.data.cats, ['Trade Journal', 'Markups', 'Daily Thesis']);
     assert.deepStrictEqual(r.data.chans.map(c => c.cat + '/' + c.name),
       ['Trade Journal/trade-executions', 'Markups/markups', 'Daily Thesis/daily-thesis']);
-    assert.strictEqual(r.data.pages.length, 0);
+    assert.ok(r.data.chans.every(c => c.n === 0));
   });
   await t('members make, rename and delete their own categories', async () => {
-    const c = await member.req('POST', '/api/journal', { action: 'cat', name: 'Psychology' });
+    const c = await J(member, { action: 'cat', name: 'Psychology' });
     assert.ok(c.data.cats.includes('Psychology'));
-    const ch = await member.req('POST', '/api/journal', { action: 'chan', cat: 'Psychology', name: 'Tilt log' });
+    const ch = await J(member, { action: 'chan', cat: 'Psychology', name: 'Tilt log' });
     assert.strictEqual(ch.data.chan.cat, 'Psychology');
-    await member.req('POST', '/api/journal', { action: 'renamecat', from: 'Psychology', name: 'Mindset' });
-    let ix = await member.req('POST', '/api/journal', { action: 'index' });
+    await J(member, { action: 'renamecat', from: 'Psychology', name: 'Mindset' });
+    let ix = await J(member, { action: 'index' });
     assert.strictEqual(ix.data.chans.find(x => x.id === ch.data.chan.id).cat, 'Mindset');
-    await member.req('POST', '/api/journal', { action: 'delcat', name: 'Mindset' });
-    ix = await member.req('POST', '/api/journal', { action: 'index' });
+    await J(member, { action: 'delcat', name: 'Mindset' });
+    ix = await J(member, { action: 'index' });
     assert.ok(!ix.data.cats.includes('Mindset'));
     assert.ok(!ix.data.chans.some(x => x.id === ch.data.chan.id));
   });
-  await t('notes under a video save to that video\u2019s own channel', async () => {
-    const blocks = [{ t: 'h', x: 'Key idea' }, { t: 'p', x: 'Wait for the second touch.' },
-      { t: 'todo', x: 'Rewatch the open', c: 1 }];
-    const s1 = await member.req('POST', '/api/journal', { action: 'save', vid: L1, blocks });
+  let thesis;
+  await t('channels hold entries: post, edit, delete, in order', async () => {
+    const ix = await J(member, { action: 'index' });
+    thesis = ix.data.chans.find(c => c.name === 'daily-thesis').id;
+    const id = 'a1b2c3d4e5f6';
+    const p1 = await J(member, { action: 'post', ch: thesis, id, x: '# Monday\n- bias long\n\n\n' });
+    assert.strictEqual(p1.status, 200);
+    assert.strictEqual(p1.data.entry.id, id);            // the page's own id is kept
+    assert.strictEqual(p1.data.entry.x, '# Monday\n- bias long');
+    const again = await J(member, { action: 'post', ch: thesis, id, x: '# Monday\n- bias long' });
+    assert.strictEqual(again.data.entry.at, p1.data.entry.at);   // a retry is stored once
+    await J(member, { action: 'post', ch: thesis, x: 'Second <b>entry</b>' });
+    let o = await J(member, { action: 'open', ch: thesis });
+    assert.deepStrictEqual(o.data.entries.map(e => e.x), ['# Monday\n- bias long', 'Second <b>entry</b>']);
+    await J(member, { action: 'edit', ch: thesis, id, x: '# Monday\n- bias short' });
+    o = await J(member, { action: 'open', ch: thesis });
+    assert.ok(o.data.entries[0].ed && /short/.test(o.data.entries[0].x));
+    const second = o.data.entries[1].id;
+    await J(member, { action: 'del', ch: thesis, id: second });
+    o = await J(member, { action: 'open', ch: thesis });
+    assert.strictEqual(o.data.entries.length, 1);
+    const ix2 = await J(member, { action: 'index' });
+    assert.strictEqual(ix2.data.chans.find(c => c.id === thesis).n, 1);
+    assert.strictEqual((await J(member, { action: 'post', ch: thesis, x: '   ' })).status, 400);
+  });
+  await t('pasted screenshots are stored and attached to an entry', async () => {
+    const img = 'data:image/png;base64,' + Buffer.from('chart-shot').toString('base64');
+    const up = await J(member, { action: 'upimg', data: img });
+    assert.strictEqual(up.status, 200);
+    assert.strictEqual((await J(member, { action: 'upimg', data: 'data:text/html;base64,AAAA' })).status, 400);
+    const p = await J(member, { action: 'post', ch: thesis, x: '', im: [up.data.id] });
+    assert.deepStrictEqual(p.data.entry.im, [up.data.id]);
+    assert.strictEqual((await J(member, { action: 'img', id: up.data.id })).data.image, img);
+    await J(member, { action: 'del', ch: thesis, id: p.data.entry.id });
+    assert.strictEqual((await J(member, { action: 'img', id: up.data.id })).data.image, null);
+  });
+  await t('notes under a video land in that video’s own channel, with the moment', async () => {
+    const s1 = await J(member, { action: 'post', vid: L1, x: 'Wait for the second touch.', vt: 754.6 });
     assert.strictEqual(s1.status, 200);
-    const ix = await member.req('POST', '/api/journal', { action: 'index' });
-    const ch = ix.data.chans.find(c => c.vid === L1);
-    assert.ok(ch && ch.cat === 'Lectures' && ch.name === 'lock-one');
-    const v = await member.req('POST', '/api/journal', { action: 'video', vid: L1 });
-    assert.deepStrictEqual(v.data.page.blocks, blocks);
-    const again = await member.req('POST', '/api/journal', { action: 'save', vid: L1, blocks: [] });
-    assert.strictEqual(again.data.id, s1.data.id);
+    assert.strictEqual(s1.data.entry.vt, 754);
+    assert.ok(s1.data.chan.vid === L1 && s1.data.chan.cat === 'Lectures' && s1.data.chan.name === 'lock-one');
+    await J(member, { action: 'post', vid: L1, x: '[ ] Rewatch the open' });
+    const v = await J(member, { action: 'video', vid: L1 });
+    assert.strictEqual(v.data.chan.id, s1.data.chan.id);
+    assert.deepStrictEqual(v.data.entries.map(e => e.x), ['Wait for the second touch.', '[ ] Rewatch the open']);
+    const ix = await J(member, { action: 'index' });
+    assert.strictEqual(ix.data.chans.filter(c => c.vid === L1).length, 1);
   });
-  await t('journal pages: create, write, rename, delete', async () => {
-    const ix = await member.req('POST', '/api/journal', { action: 'index' });
-    const ch = ix.data.chans.find(c => c.name === 'daily-thesis');
-    const np = await member.req('POST', '/api/journal', { action: 'newpage', ch: ch.id, title: 'Monday' });
-    const id = np.data.page.id;
-    await member.req('POST', '/api/journal', { action: 'save', id, title: 'Monday open',
-      blocks: [{ t: 'p', x: 'Calm.' }, { t: 'bogus', x: '<script>x</script>' }] });
-    const pg = await member.req('POST', '/api/journal', { action: 'page', id });
-    assert.strictEqual(pg.data.page.title, 'Monday open');
-    assert.strictEqual(pg.data.page.blocks[1].t, 'p');   // unknown types become text
-    const nc = await member.req('POST', '/api/journal', { action: 'chan', cat: 'Markups', name: 'My Wins!' });
-    assert.strictEqual(nc.data.chan.name, 'my-wins');
-    assert.strictEqual((await member.req('POST', '/api/journal', { action: 'delpage', id })).status, 200);
-    assert.strictEqual((await member.req('POST', '/api/journal', { action: 'page', id })).status, 404);
+  await t('search finds words inside entries', async () => {
+    const r = await J(member, { action: 'search', q: 'SECOND touch' });
+    assert.strictEqual(r.data.hits.length, 1);
+    assert.ok(/second touch/.test(r.data.hits[0].snippet));
   });
-  await t('one member can\u2019t read another member\u2019s journal', async () => {
-    const mine = await member.req('POST', '/api/journal', { action: 'index' });
-    const pid = mine.data.pages[0].id;
+  await t('a journal from before (pages) turns into entries, nothing lost', async () => {
+    const uid = '100000000000000009';
+    const ix = { v: 2, cats: ['Daily Thesis'], chans: [{ id: 'aaaaaaaaaaaa', cat: 'Daily Thesis',
+      name: 'daily-thesis' }], pages: [{ id: 'bbbbbbbbbbbb', ch: 'aaaaaaaaaaaa', title: 'Monday',
+      up: 1000 }, { id: 'cccccccccccc', ch: 'aaaaaaaaaaaa', title: '', up: 2000 }] };
+    mocks.store.set('elevare:jr:' + uid, JSON.stringify(ix));
+    mocks.store.set('elevare:jp:' + uid + ':bbbbbbbbbbbb', JSON.stringify({ blocks: [
+      { t: 'p', x: 'Calm open.' }, { t: 'li', x: 'one' }, { t: 'todo', x: 'two', c: 1 }] }));
+    mocks.store.set('elevare:jp:' + uid + ':cccccccccccc', JSON.stringify({ blocks: [
+      { t: 'quote', x: 'Patience.' }] }));
+    const old = client(); assert.strictEqual(await old.signIn(uid), '/');
+    const r = await J(old, { action: 'index' });
+    assert.strictEqual(r.data.chans[0].n, 2);
+    const o = await J(old, { action: 'open', ch: 'aaaaaaaaaaaa' });
+    assert.deepStrictEqual(o.data.entries.map(e => e.x),
+      ['# Monday\nCalm open.\n- one\n[x] two', '> Patience.']);
+    assert.ok(!mocks.store.has('elevare:jp:' + uid + ':bbbbbbbbbbbb'));
+  });
+  await t('one member can’t read another member’s journal', async () => {
     const other = client(); assert.strictEqual(await other.signIn('100000000000000008'), '/');
-    assert.strictEqual((await other.req('POST', '/api/journal', { action: 'page', id: pid })).status, 404);
-    const v = await other.req('POST', '/api/journal', { action: 'video', vid: L1 });
-    assert.deepStrictEqual(v.data.page.blocks, []);
+    assert.strictEqual((await J(other, { action: 'open', ch: thesis, u: MEMBER })).status, 403);
+    assert.strictEqual((await J(other, { action: 'members' })).status, 403);
+    assert.strictEqual((await J(other, { action: 'open', ch: thesis })).status, 404);
+    const v = await J(other, { action: 'video', vid: L1 });
+    assert.deepStrictEqual(v.data.entries, []);
+  });
+  await t('admins read every journal for reviews, but never write to it', async () => {
+    const m = await J(admin, { action: 'members' });
+    const me = m.data.members.find(x => x.uid === MEMBER);
+    assert.ok(me && me.n >= 3 && me.name);
+    const ix = await J(admin, { action: 'index', u: MEMBER });
+    assert.ok(ix.data.chans.some(c => c.id === thesis));
+    const o = await J(admin, { action: 'open', ch: thesis, u: MEMBER });
+    assert.strictEqual(o.data.entries.length, 1);
+    const f = await J(admin, { action: 'feed', u: MEMBER, since: Date.now() - 86400000 });
+    assert.ok(f.data.items.length >= 3 && f.data.items.every(i => i.ch && i.e.at));
+    assert.strictEqual((await J(admin, { action: 'post', ch: thesis, x: 'hi', u: MEMBER })).status, 403);
+    assert.strictEqual((await J(admin, { action: 'index', u: '100000000000000077' })).status, 404);
   });
   await t('journal needs a signed-in member', async () => {
     assert.strictEqual((await client().req('POST', '/api/journal', { action: 'index' })).status, 401);

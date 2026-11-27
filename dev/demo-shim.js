@@ -74,7 +74,7 @@
   }
 
   // ---------------- journal (kept in memory, per signed-in person) ----------
-  var JRN = {};
+  var JRN = {}, JIM = {}, JWHO = {};
   function jslug(t) {
     return String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '').slice(0, 40) || 'notes';
@@ -82,20 +82,110 @@
   function jix(uid) {
     if (!JRN[uid]) {
       JRN[uid] = { cats: ['Trade Journal', 'Markups', 'Daily Thesis'], chans: [
-        { id: 'c1', cat: 'Trade Journal', name: 'trade-executions' },
-        { id: 'c2', cat: 'Markups', name: 'markups' },
-        { id: 'c3', cat: 'Daily Thesis', name: 'daily-thesis' }],
-        pages: [], body: {} };
+        { id: 'c1', cat: 'Trade Journal', name: 'trade-executions', n: 0, up: 0 },
+        { id: 'c2', cat: 'Markups', name: 'markups', n: 0, up: 0 },
+        { id: 'c3', cat: 'Daily Thesis', name: 'daily-thesis', n: 0, up: 0 }], ent: {} };
     }
     return JRN[uid];
   }
+  // a sample journal so the admin reader has something to show
+  (function () {
+    var J = jix('300000000000000001'), d = 86400000, now = Date.now();
+    function add(ch, at, x) {
+      (J.ent[ch] || (J.ent[ch] = [])).push({ id: 's' + at, at: at, x: x });
+      var c = J.chans.filter(function (y) { return y.id === ch; })[0]; c.n++; c.up = at;
+    }
+    add('c3', now - 3 * d, '# Tuesday\nBias: bullish above 21,450. Looking for a sweep of ' +
+      'Asia lows into the open.\n- Wait for the 9:50 displacement\n- No trades into CPI');
+    add('c1', now - 3 * d + 4e6, 'NQ long 21,462 → 21,540  +$1,560  (+2R)\nClean entry ' +
+      'off the FVG. Held to target.\n[x] Followed the plan\n[ ] Journal screenshot');
+    add('c1', now - 2 * d, 'ES short, stopped  -$420  (-1R)\n> Took it early, before the ' +
+      'shift. Patience.');
+    add('c3', now - 3600000, '## Thursday\nChop expected around the holiday. Size down, ' +
+      'one trade max.\n! Only A+ setups today');
+    JWHO['300000000000000001'] = { uid: '300000000000000001', name: 'Kai (sample)',
+      avatar: null, t: now - 3600000, n: 4, c: 2 };
+  })();
   var jn = 10;
-  function journal(uid, b) {
-    var J = jix(uid), a = b.action, i;
-    function pg(id) { for (i = 0; i < J.pages.length; i++) if (J.pages[i].id === id) return J.pages[i]; }
-    function byVid(v) { for (i = 0; i < J.pages.length; i++) if (J.pages[i].vid === v) return J.pages[i]; }
-    if (a === 'index') {
-      return [200, { cats: clone(J.cats), chans: clone(J.chans), pages: clone(J.pages) }];
+  function journal(uid, b, admin) {
+    var other = b.u && b.u !== uid;
+    if (other && !admin) return [403, { error: 'forbidden' }];
+    var J = jix(other ? b.u : uid), a = b.action, i;
+    function ch(id) { for (i = 0; i < J.chans.length; i++) if (J.chans[i].id === id) return J.chans[i]; }
+    function byVid(v) { for (i = 0; i < J.chans.length; i++) if (J.chans[i].vid === v) return J.chans[i]; }
+    function touch() {
+      var n = 0; J.chans.forEach(function (c) { n += c.n || 0; });
+      JWHO[uid] = { uid: uid, name: 'You (demo)', avatar: null, t: Date.now(), n: n };
+    }
+    if (a === 'members') {
+      if (!admin) return [403, { error: 'forbidden' }];
+      return [200, { members: Object.keys(JWHO).map(function (k) { return JWHO[k]; })
+        .filter(function (m) { return m.n; }).sort(function (x, y) { return y.t - x.t; }) }];
+    }
+    if (a === 'index') return [200, { cats: clone(J.cats), chans: clone(J.chans) }];
+    if (a === 'open') {
+      if (!ch(b.ch)) return [404, { error: 'not_found' }];
+      return [200, { entries: clone(J.ent[b.ch] || []) }];
+    }
+    if (a === 'img') return [200, { image: JIM[b.id] || null }];
+    if (a === 'feed') {
+      var items = [];
+      J.chans.forEach(function (c) {
+        (J.ent[c.id] || []).forEach(function (e) {
+          if (e.at >= (b.since || 0)) items.push({ ch: c.id, e: clone(e) });
+        });
+      });
+      items.sort(function (x, y) { return x.e.at - y.e.at; });
+      return [200, { items: items }];
+    }
+    if (a === 'search') {
+      var q = String(b.q || '').toLowerCase(), hits = [];
+      J.chans.forEach(function (c) {
+        (J.ent[c.id] || []).forEach(function (e) {
+          var at = e.x.toLowerCase().indexOf(q);
+          if (q.length > 1 && at >= 0) {
+            hits.push({ ch: c.id, id: e.id, at: e.at, snippet: e.x.slice(Math.max(0, at - 40), at + 80) });
+          }
+        });
+      });
+      return [200, { hits: hits }];
+    }
+    if (a === 'video') {
+      var it = find(b.vid); if (!it) return [404, { error: 'not_found' }];
+      var vc = byVid(it.id);
+      return [200, { chan: vc ? clone(vc) : null, entries: clone(vc ? J.ent[vc.id] || [] : []) }];
+    }
+    if (other) return [403, { error: 'read_only' }];
+    if (a === 'upimg') { var iid = 'i' + (++jn) + 'aaaaaaaaaa'; JIM[iid] = b.data; return [200, { id: iid }]; }
+    if (a === 'post') {
+      var c;
+      if (b.vid) {
+        var vi = find(b.vid); if (!vi) return [404, { error: 'not_found' }];
+        c = byVid(vi.id);
+        if (!c) {
+          c = { id: 'c' + (++jn), cat: vi.kind === 'breakdown' ? 'Breakdowns' : 'Lectures',
+            name: jslug(vi.title), vid: vi.id, title: vi.title, n: 0, up: 0 };
+          J.chans.push(c);
+        }
+      } else c = ch(b.ch);
+      if (!c) return [404, { error: 'not_found' }];
+      var e = { id: b.id || 'e' + (++jn), at: Date.now(), x: String(b.x || '') };
+      if (b.im && b.im.length) e.im = b.im;
+      if (c.vid && b.vt > 0) e.vt = Math.floor(b.vt);
+      (J.ent[c.id] || (J.ent[c.id] = [])).push(e);
+      c.n = J.ent[c.id].length; c.up = e.at; touch();
+      return [200, { entry: clone(e), chan: clone(c) }];
+    }
+    if (a === 'edit' || a === 'del') {
+      var ec = ch(b.ch), l = ec ? J.ent[ec.id] || [] : [];
+      for (i = 0; i < l.length; i++) {
+        if (l[i].id === b.id) {
+          if (a === 'del') l.splice(i, 1); else { l[i].x = b.x; l[i].ed = Date.now(); }
+          ec.n = l.length; touch();
+          return [200, { ok: true }];
+        }
+      }
+      return [404, { error: 'not_found' }];
     }
     if (a === 'cat') {
       var cn = String(b.name || '').trim().slice(0, 24);
@@ -106,69 +196,26 @@
       var ci = J.cats.indexOf(b.from), to = String(b.name || '').trim().slice(0, 24);
       if (ci < 0 || !to) return [404, { error: 'not_found' }];
       J.cats[ci] = to;
-      J.chans.forEach(function (c) { if (!c.vid && c.cat === b.from) c.cat = to; });
+      J.chans.forEach(function (x) { if (!x.vid && x.cat === b.from) x.cat = to; });
       return [200, { ok: true, cats: clone(J.cats) }];
     }
     if (a === 'delcat') {
-      var gone = J.chans.filter(function (c) { return !c.vid && c.cat === b.name; })
-        .map(function (c) { return c.id; });
-      J.cats = J.cats.filter(function (c) { return c !== b.name; });
-      J.chans = J.chans.filter(function (c) { return gone.indexOf(c.id) < 0; });
-      J.pages = J.pages.filter(function (p) { return gone.indexOf(p.ch) < 0; });
+      J.cats = J.cats.filter(function (x) { return x !== b.name; });
+      J.chans = J.chans.filter(function (x) { return x.vid || x.cat !== b.name; });
       return [200, { ok: true }];
     }
     if (a === 'rename') {
-      for (i = 0; i < J.chans.length; i++) {
-        if (J.chans[i].id === b.id) { J.chans[i].name = jslug(b.name);
-          return [200, { ok: true, chan: clone(J.chans[i]) }]; }
-      }
-      return [404, { error: 'not_found' }];
-    }
-    if (a === 'page') {
-      var p = pg(b.id); if (!p) return [404, { error: 'not_found' }];
-      var o = clone(p); o.blocks = clone(J.body[p.id] || []); return [200, { page: o }];
-    }
-    if (a === 'video') {
-      var it = find(b.vid); if (!it) return [404, { error: 'not_found' }];
-      var vp = byVid(it.id);
-      return [200, { page: { id: vp ? vp.id : null, vid: it.id, title: it.title,
-        up: vp ? vp.up : 0, blocks: clone(vp ? J.body[vp.id] || [] : []) } }];
-    }
-    if (a === 'save') {
-      var sp;
-      if (b.vid) {
-        var vi = find(b.vid); if (!vi) return [404, { error: 'not_found' }];
-        sp = byVid(vi.id);
-        if (!sp) {
-          var ch = { id: 'c' + (++jn), cat: vi.kind === 'breakdown' ? 'Breakdowns' : 'Lectures',
-            name: jslug(vi.title), vid: vi.id };
-          J.chans.push(ch);
-          sp = { id: 'p' + (++jn), ch: ch.id, title: vi.title, vid: vi.id };
-          J.pages.push(sp);
-        }
-      } else {
-        sp = pg(b.id); if (!sp) return [404, { error: 'not_found' }];
-        if (b.title !== undefined) sp.title = String(b.title).slice(0, 140);
-      }
-      sp.up = Date.now(); J.body[sp.id] = clone(b.blocks || []);
-      return [200, { ok: true, id: sp.id, ch: sp.ch, up: sp.up }];
-    }
-    if (a === 'newpage') {
-      var np = { id: 'p' + (++jn), ch: b.ch, title: b.title || '', up: Date.now() };
-      J.pages.push(np); J.body[np.id] = []; return [200, { ok: true, page: clone(np) }];
+      var rc = ch(b.id); if (!rc) return [404, { error: 'not_found' }];
+      rc.name = jslug(b.name); return [200, { ok: true, chan: clone(rc) }];
     }
     if (a === 'chan') {
-      var nc = { id: 'c' + (++jn), cat: J.cats.indexOf(b.cat) >= 0 ? b.cat : '',
-        name: jslug(b.name) };
+      var nc = { id: b.id || 'c' + (++jn), cat: J.cats.indexOf(b.cat) >= 0 ? b.cat : '',
+        name: jslug(b.name), n: 0, up: 0 };
       J.chans.push(nc); return [200, { ok: true, chan: clone(nc) }];
-    }
-    if (a === 'delpage') {
-      J.pages = J.pages.filter(function (x) { return x.id !== b.id; }); return [200, { ok: true }];
     }
     if (a === 'delchan') {
       J.chans = J.chans.filter(function (x) { return x.id !== b.id; });
-      J.pages = J.pages.filter(function (x) { return x.ch !== b.id; });
-      return [200, { ok: true }];
+      delete J.ent[b.id]; return [200, { ok: true }];
     }
     return [400, { error: 'action' }];
   }
@@ -320,7 +367,7 @@
       (DB.seen[uid] = DB.seen[uid] || {})[it.id] = 1;
       return [200, { otp: 'demo', playbackInfo: 'demo', session: sid }];
     }
-    if (path === '/api/journal') return journal(uid, b);
+    if (path === '/api/journal') return journal(uid, b, isAdmin());
     if (path === '/api/payouts') return payouts(uid, b);
     if (path === '/api/notify') {
       if (b.action === 'read') { NTR[uid] = Date.now(); return [200, { ok: true }]; }
