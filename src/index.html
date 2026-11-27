@@ -1224,7 +1224,7 @@ body:before {
   object-fit: cover; object-position: 50% 50%; pointer-events: none;
   opacity: 0; transition: opacity .6s ease; }
 .vl-play .vl-bg { opacity: 1; }
-.vl-live .vl-bg { opacity: 0; transition: opacity 1s ease; }
+.vl-live .vl-bg { opacity: 0; transition: opacity 1.8s ease; }
 .vl-quick .vl-bg { display: none; }
 /* nothing drawn over the video while it plays: full source quality */
 .vl-play:not(.vl-live):after { display: none; }
@@ -1236,7 +1236,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   font: italic 400 13px/1 "Cinzel", Georgia, serif; letter-spacing: .24em;
   color: #c8e8ff; text-shadow: 0 0 10px #000, 0 1px 2px #000;
   transition: opacity 1.2s ease; }
-.vl-live .vl-by { opacity: .62; transition-delay: 3.5s; }
+.vl-live .vl-by { opacity: .62; transition-delay: 7.4s; }
 .vl-quick .vl-by, .vl-calm .vl-by { transition-delay: 0s; }
 .vl-skip { position: relative;
   padding: 10px 4px; background: none; border: 0; cursor: pointer;
@@ -1250,12 +1250,12 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .vbg .vl { z-index: 2; }
 .vbg .door-mark { font-size: clamp(40px, 6.6vw, 98px); }
 .vbg .vl > * { opacity: 0; }
-.vl-live .vl > * { animation: vfade 1.1s ease both; }
-.vl-live .vl > :nth-child(1) { animation: land .9s cubic-bezier(.2,.7,.2,1) .7s both; }
-.vl-live .vl > :nth-child(2) { animation-delay: 3s; }
-.vl-live .vl > :nth-child(3) { animation-delay: 3.25s; }
+.vl-live .vl > * { animation: vfade 1.5s ease both; }
+.vl-live .vl > :nth-child(1) { animation: land 1.5s cubic-bezier(.2,.7,.2,1) 1.6s both; }
+.vl-live .vl > :nth-child(2) { animation-delay: 6.4s; }
+.vl-live .vl > :nth-child(3) { animation-delay: 6.9s; }
 .vl-live .vl > :nth-child(4), .vl-live .vl > :nth-child(5) {
-  animation-delay: 3.5s; }
+  animation-delay: 7.4s; }
 @keyframes vfade { 0% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes land {
   0% { opacity: 0; transform: translateY(14px) scale(1.02); }
@@ -1298,11 +1298,11 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .g-e2 { transform-origin: 38.7% 53%; }
 .g-a { transform-origin: 59.7% 49%; }
 .g-e3 { transform-origin: 88% 45%; }
-.vl-live .g { animation: fwd .9s cubic-bezier(.25,.6,.3,1) both; }
-.vl-live .g-e1 { animation-delay: 1.8s; }
-.vl-live .g-e2 { animation-delay: 1.85s; }
-.vl-live .g-a { animation-delay: 1.9s; }
-.vl-live .g-e3 { animation-delay: 1.95s; }
+.vl-live .g { animation: fwd 1.4s cubic-bezier(.3,.4,.3,1) both; }
+.vl-live .g-e1 { animation-delay: 4.6s; }
+.vl-live .g-e2 { animation-delay: 4.72s; }
+.vl-live .g-a { animation-delay: 4.84s; }
+.vl-live .g-e3 { animation-delay: 4.96s; }
 @keyframes fwd {                 /* drift toward the viewer and fade */
   0% { opacity: 1; scale: 1; filter: none; }
   100% { opacity: 0; scale: 1.07; filter: blur(4px); }
@@ -1321,7 +1321,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .vl-wall { position: absolute; left: -3%; top: -3%; width: 106%; height: 106%;
   z-index: 0; object-fit: cover; object-position: 32% 50%;
   pointer-events: none; user-select: none; opacity: 0;
-  filter: blur(6px) saturate(1.05); transition: opacity 1.8s ease .2s; }
+  filter: blur(6px) saturate(1.05); transition: opacity 3.2s ease 1.2s; }
 .vl-live .vl-wall { opacity: .34; }
 .vl-calm .vl-wall { transition: none; }
 /* a soft pool of shadow behind the type so it always reads cleanly */
@@ -1332,7 +1332,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 /* ---- cinema: letterbox, slow camera push, drifting snow, film grain ---- */
 .vl-bar { position: absolute; left: 0; right: 0; z-index: 4; height: 9vh;
   background: #000; pointer-events: none; will-change: transform;
-  transition: transform 1.4s cubic-bezier(.65,0,.25,1) .3s; }
+  transition: transform 2.4s cubic-bezier(.65,0,.25,1) 1s; }
 .vl-bar-t { top: 0; } .vl-bar-b { bottom: 0; }
 .vl-live .vl-bar-t { transform: translateY(-100%); }
 .vl-live .vl-bar-b { transform: translateY(100%); }
@@ -1341,11 +1341,11 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   will-change: transform; }
 @keyframes push { 0% { scale: 1.06; } 100% { scale: 1; } }
 .vl-snow { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
-  pointer-events: none; opacity: 0; transition: opacity 2.4s ease .8s; }
+  pointer-events: none; opacity: 0; transition: opacity 3.5s ease 2.5s; }
 .vl-live .vl-snow { opacity: 1; }
 .vl-grain { position: absolute; inset: -60px; z-index: 1; pointer-events: none;
   opacity: 0; mix-blend-mode: overlay; background-size: 160px 160px;
-  will-change: transform; transition: opacity 1.5s ease .5s; }
+  will-change: transform; transition: opacity 2.5s ease 1.5s; }
 .vl-live .vl-grain { opacity: .14; animation: grain .9s steps(1) infinite; }
 @keyframes grain {
   0% { transform: translate(0, 0); } 20% { transform: translate(-23px, 17px); }
@@ -3979,7 +3979,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     try { seen = sessionStorage.getItem('elevare.intro') === '1'; } catch (e) {}
     var snd = document.getElementById('vl-sound');
     var done = false, started = false, wait = 0, tried = false;
-    var FADE = 1000;                     // same length as the picture's fade
+    var FADE = 1800;                     // same length as the picture's fade
     function fadeOut() {                 // the sound follows the picture down
       var t0 = 0, v0 = v.volume;
       function step(now) {
@@ -4033,7 +4033,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     v.addEventListener('ended', finish);
     // the intro is cut at 14s: picture and sound fade out together over the
     // last second, and the sign-in starts as the screen reaches black
-    var CUT = 14;
+    var CUT = 14.4;
     function watchCut() {
       if (done) return;
       if (v.currentTime >= CUT - FADE / 1000) { finish(); return; }
