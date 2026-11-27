@@ -1368,6 +1368,133 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 }
 .vl-calm .vl-wall, .vl-calm .vl-grain { animation: none; }
 .vl-calm .vl-snow { display: none; }
+
+/* ---- journal: Discord-style channels, Notion-style pages ---- */
+.jr { display: flex; min-height: calc(100vh - 160px); border: 1px solid var(--line);
+  background: var(--bg); }
+.jr-side { flex: 0 0 260px; display: flex; flex-direction: column; gap: 12px;
+  padding: 18px 12px; background: #070b0f; border-right: 1px solid var(--line); }
+.jr-brand { display: flex; align-items: center; gap: 12px; padding: 0 6px 14px;
+  border-bottom: 1px solid var(--line); font: 600 14px/1 "Cinzel", Georgia, serif;
+  letter-spacing: .16em; color: var(--ink); }
+.jr-ic, .jr-pic { display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line2); background: var(--bg); color: var(--red2);
+  font-family: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif; }
+.jr-ic { width: 32px; height: 32px; font-size: 17px; }
+.jr-q { width: 100%; box-sizing: border-box; padding: 9px 10px; background: var(--bg);
+  border: 1px solid var(--line); color: var(--ink); font: 13px var(--sans); }
+.jr-nav { flex: 1; overflow-y: auto; }
+.jr-cat { display: flex; align-items: center; margin: 14px 0 4px; }
+.jr-cat-t { flex: 1; text-align: left; background: none; border: 0; cursor: pointer;
+  padding: 4px 6px; color: var(--muted); font: 600 11px var(--sans);
+  letter-spacing: .22em; text-transform: uppercase; }
+.jr-cat-t:before { content: ""; display: inline-block; width: 0; height: 0;
+  margin-right: 7px; border: 4px solid transparent; border-top-color: currentColor;
+  transform: translateY(2px); transition: transform .2s; }
+.jr-cat-t.shut:before { transform: rotate(-90deg) translateX(-2px); }
+.jr-plus { background: none; border: 0; cursor: pointer; color: var(--muted);
+  font: 400 17px/1 var(--sans); padding: 2px 6px; }
+.jr-plus:hover, .jr-cat-t:hover { color: var(--ink); }
+.jr-ch { display: flex; align-items: center; }
+.jr-ch-b { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; background: none; border: 0; cursor: pointer; text-align: left;
+  color: var(--muted); font: 14px var(--sans); }
+.jr-ch-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jr-hash { color: var(--dim); font-size: 16px; width: 12px; }
+.jr-ch:hover .jr-ch-b, .jr-ch.on .jr-ch-b { color: var(--ink); }
+.jr-ch.on { background: rgba(44, 158, 240, .13); box-shadow: inset 2px 0 0 var(--red); }
+.jr-x { background: none; border: 0; cursor: pointer; color: var(--dim);
+  font: 12px var(--sans); padding: 4px 6px; opacity: 0; }
+.jr-ch:hover .jr-x, .jr-x.on, .jr-x:focus-visible { opacity: 1; }
+.jr-x.on { color: var(--err); }
+.jr-pg { display: block; width: 100%; text-align: left; background: none; border: 0;
+  cursor: pointer; padding: 5px 8px 5px 30px; color: var(--muted); font: 13px var(--sans);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jr-pg.on, .jr-pg:hover { color: var(--ink); }
+.jr-np { color: var(--red2); }
+.jr-new { display: flex; align-items: center; gap: 6px; padding: 4px 8px; }
+.jr-new input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--red);
+  color: var(--ink); padding: 6px 8px; font: 13px var(--sans); }
+.jr-main { flex: 999 1 520px; min-width: 0; position: relative; }
+.jr-cover { height: 180px; overflow: hidden; position: relative; }
+.jr-cover img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%;
+  opacity: .5; filter: blur(2px); transform: scale(1.04); }
+.jr-cover:after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 25%, var(--bg)); }
+.jr-doc, .jr-none { position: relative; max-width: 740px; margin: -44px auto 0;
+  padding: 0 48px 80px; }
+.jr-pic { width: 68px; height: 68px; font-size: 34px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .6); }
+.jr-chan { display: block; margin-top: 20px; color: var(--red2); text-decoration: none;
+  font: 12px var(--sans); letter-spacing: .3em; text-transform: uppercase; }
+.jr-title, .jr-h { display: block; width: 100%; margin: 8px 0 4px; padding: 0;
+  background: none; border: 0; outline: none; color: var(--ink);
+  font: 600 40px/1.15 "Cinzel", Georgia, serif; letter-spacing: .03em; }
+.jr-title[readonly] { cursor: default; }
+.jr-meta { display: flex; align-items: center; gap: 16px; margin: 0 0 26px;
+  color: var(--muted); font: 13px var(--sans); }
+.jr-del { background: none; border: 0; cursor: pointer; color: var(--dim);
+  font: 12px var(--sans); padding: 0; }
+.jr-del:hover { color: var(--err); }
+.jr-hint { margin: 18px 0 0; color: var(--dim); font: 14px var(--sans); }
+.jr-none p { color: var(--muted); }
+.jr-rail { flex: 0 1 220px; padding: 214px 22px 30px 4px; }
+.jr-k { margin: 0 0 10px; color: var(--muted); font: 11px var(--sans);
+  letter-spacing: .26em; text-transform: uppercase; }
+#jr-toc { margin-bottom: 28px; }
+.jr-tl { display: block; width: 100%; text-align: left; background: none; border: 0;
+  border-left: 1px solid var(--line2); cursor: pointer; padding: 6px 0 6px 12px;
+  color: var(--muted); font: 13px var(--sans); }
+.jr-tl:hover { color: var(--ink); border-left-color: var(--red); }
+.jr-dim { margin: 0; color: var(--dim); font: 12px var(--sans); }
+.jr-add { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.jr-add button { background: none; border: 1px solid var(--line2); color: var(--soft);
+  padding: 10px 6px; cursor: pointer; font: 12px var(--sans); }
+.jr-add button:hover { border-color: var(--red); color: var(--ink); }
+@media (max-width: 1100px) { .jr-rail { display: none; } }
+
+/* blocks (journal pages and the notes under videos) */
+.jb-host { display: flex; flex-direction: column; gap: 4px; }
+.jb { position: relative; display: flex; align-items: flex-start; gap: 10px; }
+.jb-t { flex: 1; min-width: 0; resize: none; overflow: hidden; field-sizing: content;
+  min-height: 1.75em; padding: 2px 0; background: none; border: 0; outline: none;
+  color: var(--soft); font: 16px/1.75 var(--sans); }
+.jb-t::placeholder { color: transparent; }
+.jb-t:focus::placeholder { color: var(--dim); }
+.jb-c { display: none; }
+.jb-h .jb-t { margin-top: 14px; color: var(--ink);
+  font: 600 22px/1.4 "Cinzel", Georgia, serif; letter-spacing: .05em; }
+.jb-li:before { content: ""; flex: 0 0 5px; height: 5px; margin: 12px 4px 0 8px;
+  border-radius: 50%; background: var(--red2); }
+.jb-todo .jb-c { display: block; flex: 0 0 16px; height: 16px; margin: 7px 0 0;
+  accent-color: var(--red); }
+.jb-todo.done .jb-t { color: var(--dim); text-decoration: line-through; }
+.jb-quote .jb-t { padding-left: 4px; color: var(--ink);
+  font: 400 19px/1.6 "Cinzel", Georgia, serif; }
+.jb-call { padding: 12px 14px; background: rgba(44, 158, 240, .08);
+  border: 1px solid var(--line2); }
+.jb-call:before { content: "\9759"; color: var(--red2); font: 18px/1.5 "Noto Serif JP",
+  "Hiragino Mincho ProN", serif; }
+.jb-call .jb-t { color: var(--ink); }
+.jb-menu { position: absolute; left: 0; top: 100%; z-index: 5; display: flex;
+  flex-direction: column; min-width: 190px; padding: 6px; background: #0b121a;
+  border: 1px solid var(--line2); box-shadow: 0 18px 40px rgba(0, 0, 0, .6); }
+.jb-menu button { text-align: left; background: none; border: 0; cursor: pointer;
+  padding: 8px 10px; color: var(--soft); font: 13px var(--sans); }
+.jb-menu button.on, .jb-menu button:hover { background: rgba(44, 158, 240, .16);
+  color: var(--ink); }
+
+/* notes under each video */
+.vnotes { margin-top: 26px; padding: 18px 20px 14px; border: 1px solid var(--line);
+  background: rgba(9, 15, 20, .7); }
+.vn-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; }
+.vn-k { color: var(--ink); font: 600 13px "Cinzel", Georgia, serif; letter-spacing: .26em;
+  text-transform: uppercase; }
+.vn-ch { color: var(--red2); text-decoration: none; font: 12px var(--sans);
+  letter-spacing: .14em; }
+.vn-ch:hover { color: var(--ink); }
+.vn-st { margin-left: auto; color: var(--muted); font: 12px var(--sans); }
+.vnotes .jb-t { font-size: 15px; }
 </style>
 </head>
 <body>
@@ -1479,6 +1606,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     <nav class="nav" id="nav">
       <a href="#lectures" data-tab="lectures">Lectures</a>
       <a href="#breakdowns" data-tab="breakdowns">Breakdowns</a>
+      <a href="#journal" data-tab="journal">Journal</a>
       <a href="#profile" data-tab="profile">Profile</a>
       <a href="#admin" data-tab="admin" id="nav-admin" hidden>Admin</a>
     </nav>
@@ -1541,6 +1669,14 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               Watermarked to <b id="w-me"></b>
             </div>
+            <section class="vnotes" id="vnotes" hidden aria-label="Your notes">
+              <div class="vn-head">
+                <span class="vn-k">Notes</span>
+                <a class="vn-ch" id="vn-ch" href="#journal"></a>
+                <span class="vn-st" id="vn-st"></span>
+              </div>
+              <div class="jb-host" id="vn-blocks"></div>
+            </section>
           </div>
         </div>
 
@@ -1561,6 +1697,46 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
         <p class="eyebrow"><b></b><span id="e-eyebrow"></span></p>
         <h1 class="display">Nothing here yet</h1>
         <p id="e-text"></p>
+      </div>
+    </section>
+
+    <!-- Journal -->
+    <section class="pane" id="p-journal">
+      <div class="jr">
+        <aside class="jr-side" aria-label="Journal channels">
+          <div class="jr-brand"><span class="jr-ic">&#x6607;</span>
+            <span>My Journal</span></div>
+          <input class="jr-q" id="jr-q" type="search" autocomplete="off"
+            placeholder="Search your journal" aria-label="Search your journal">
+          <nav class="jr-nav" id="jr-nav"></nav>
+        </aside>
+        <div class="jr-main">
+          <div class="jr-cover" aria-hidden="true"><img src="/media/wall.webp"
+            alt="" draggable="false"></div>
+          <div class="jr-doc" id="jr-doc">
+            <span class="jr-pic" aria-hidden="true">&#x6607;</span>
+            <a class="jr-chan" id="jr-chan" href="#journal"></a>
+            <input class="jr-title" id="jr-title" type="text" maxlength="140"
+              aria-label="Page title" placeholder="Untitled">
+            <p class="jr-meta"><span id="jr-st"></span>
+              <button class="jr-del" id="jr-del" type="button">Delete page
+              </button></p>
+            <div class="jb-host" id="jr-blocks"></div>
+            <p class="jr-hint">Type &#x201c;/&#x201d; for a block, or just
+              keep writing&#x2026;</p>
+          </div>
+          <div class="jr-none" id="jr-none" hidden>
+            <p class="jr-chan">Journal</p>
+            <h1 class="jr-h">Pick a channel</h1>
+            <p>Your notes stay private to you.</p>
+          </div>
+        </div>
+        <aside class="jr-rail" aria-label="Page tools">
+          <p class="jr-k">On this page</p>
+          <div id="jr-toc"></div>
+          <p class="jr-k">Add a block</p>
+          <div class="jr-add" id="jr-add"></div>
+        </aside>
       </div>
     </section>
 
@@ -2141,7 +2317,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   function parseHash() {
     var h = (location.hash || '').replace(/^#\/?/, '').split(SEP);
     var tab = h[0] || 'lectures';
-    if (!TAB_KIND[tab] && ['profile', 'admin'].indexOf(tab) < 0) {
+    if (!TAB_KIND[tab] && ['profile', 'admin', 'journal'].indexOf(tab) < 0) {
       tab = 'lectures';
     }
     if (tab === 'admin' && !(ME && ME.isAdmin)) tab = 'lectures';
@@ -2165,6 +2341,9 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     var watch = !!TAB_KIND[route.tab];
     setCls($('p-watch'), 'on', watch);
     setCls($('p-profile'), 'on', route.tab === 'profile');
+    setCls($('p-journal'), 'on', route.tab === 'journal');
+    if (route.tab === 'journal') renderJournal(); else jrLeave();
+    if (!watch) vnLeave();
     setCls($('p-admin'), 'on', route.tab === 'admin');
     if (!watch) unmount();
     if (watch) renderWatch();
@@ -2206,6 +2385,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     $('watch').hidden = !pick;
     $('w-empty').hidden = !!pick;
     if (!pick) {
+      vnShow(null);
       $('e-eyebrow').textContent = PLURAL[kind];
       $('e-text').textContent = PLURAL[kind] + ' will appear here as soon' +
         ' as they\u2019re published.';
@@ -2251,6 +2431,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     $('prev').disabled = at <= 0;
     $('next').disabled = at >= list.length - 1 || !!lockInfo(list[at + 1]);
     $('w-me').textContent = ME.user.name + '  \u00b7  ' + ME.user.id;
+    vnShow(pick, lk);
 
     // segmented progress: one segment per item
     var segs = $('segs'); clear(segs);
@@ -2265,6 +2446,508 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     });
     renderLibrary(kind, list, done, pct);
   }
+
+  // ======================================================================
+  // journal: Discord-style channels holding Notion-style pages
+  // ======================================================================
+  var JB_TYPES = [['p', 'Text'], ['h', 'Heading'], ['li', 'Bulleted list'],
+    ['todo', 'To-do'], ['quote', 'Quote'], ['call', 'Callout']];
+  var JB_PH = { p: 'Write, or type \u201c/\u201d for a block', h: 'Heading',
+    li: 'List item', todo: 'To-do', quote: 'Quote', call: 'Callout' };
+  var JB_FIT = !(window.CSS && CSS.supports && CSS.supports('field-sizing', 'content'));
+
+  // A small block editor: each block is a plain textarea, so nothing but text
+  // is ever stored and the page's copy protection leaves typing alone.
+  function blockEditor(host, onChange) {
+    var rows = [], menu = null, menuFor = null, menuAt = 0;
+    function fit(ta) {
+      if (!JB_FIT) return;
+      ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px';
+    }
+    function setType(r, t) {
+      r.t = t;
+      r.row.className = 'jb jb-' + t + (t === 'todo' && r.c ? ' done' : '');
+      r.ta.placeholder = JB_PH[t] || '';
+      fit(r.ta);
+    }
+    function focusAt(r, at) {
+      r.ta.focus();
+      var n = at === 'end' ? r.ta.value.length : at || 0;
+      r.ta.setSelectionRange(n, n);
+    }
+    function make(b) {
+      var r = { t: 'p', c: !!(b && b.c) };
+      r.row = el('div', 'jb');
+      r.box = el('input', 'jb-c');
+      r.box.type = 'checkbox'; r.box.checked = r.c;
+      r.box.setAttribute('aria-label', 'Done');
+      r.box.addEventListener('change', function () {
+        r.c = r.box.checked; setType(r, r.t); onChange();
+      });
+      r.ta = el('textarea', 'jb-t');
+      r.ta.rows = 1; r.ta.value = (b && b.x) || '';
+      r.row.appendChild(r.box); r.row.appendChild(r.ta);
+      wire(r);
+      setType(r, b && b.t ? b.t : 'p');
+      return r;
+    }
+    function place(r, i) {
+      rows.splice(i, 0, r);
+      var nxt = rows[i + 1];
+      if (nxt) host.insertBefore(r.row, nxt.row); else host.appendChild(r.row);
+      fit(r.ta);
+    }
+    function drop(r) {
+      rows.splice(rows.indexOf(r), 1);
+      if (r.row.parentNode) r.row.parentNode.removeChild(r.row);
+    }
+    var SHORT = [[/^#\s/, 'h'], [/^[-*]\s/, 'li'], [/^\[\s?\]\s/, 'todo'],
+      [/^>\s/, 'quote'], [/^!\s/, 'call']];
+    function wire(r) {
+      r.ta.addEventListener('input', function () {
+        var v = r.ta.value;
+        if (r.t === 'p') {
+          for (var k = 0; k < SHORT.length; k++) {
+            var m = SHORT[k][0].exec(v);
+            if (m) { r.ta.value = v.slice(m[0].length); setType(r, SHORT[k][1]); break; }
+          }
+        }
+        if (r.ta.value === '/') openMenu(r); else if (menuFor === r) closeMenu();
+        fit(r.ta); onChange();
+      });
+      r.ta.addEventListener('keydown', function (e) {
+        var k = e.key, ta = r.ta, a = ta.selectionStart, z = ta.selectionEnd;
+        var i = rows.indexOf(r);
+        if (menu && menuFor === r) {
+          if (k === 'ArrowDown' || k === 'ArrowUp') {
+            e.preventDefault();
+            menuAt = (menuAt + (k === 'ArrowDown' ? 1 : JB_TYPES.length - 1)) %
+              JB_TYPES.length;
+            drawMenu(); return;
+          }
+          if (k === 'Enter') { e.preventDefault(); pick(JB_TYPES[menuAt][0]); return; }
+          if (k === 'Escape') { e.preventDefault(); closeMenu(); return; }
+        }
+        if (k === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          var keep = r.t === 'li' || r.t === 'todo';
+          var rest = ta.value.slice(z);
+          if (keep && !ta.value) { setType(r, 'p'); onChange(); return; }
+          ta.value = ta.value.slice(0, a); fit(ta);
+          var n = make({ t: keep ? r.t : 'p', x: rest });
+          place(n, i + 1); focusAt(n, 0); onChange(); return;
+        }
+        if (k === 'Backspace' && a === 0 && z === 0) {
+          if (r.t !== 'p') { e.preventDefault(); setType(r, 'p'); onChange(); return; }
+          if (i > 0) {
+            e.preventDefault();
+            var pv = rows[i - 1], at = pv.ta.value.length;
+            pv.ta.value += ta.value; drop(r); fit(pv.ta); focusAt(pv, at);
+            onChange();
+          }
+          return;
+        }
+        if (k === 'ArrowUp' && a === 0 && i > 0) {
+          e.preventDefault(); focusAt(rows[i - 1], 'end'); return;
+        }
+        if (k === 'ArrowDown' && z === ta.value.length && i < rows.length - 1) {
+          e.preventDefault(); focusAt(rows[i + 1], 0);
+        }
+      });
+      r.ta.addEventListener('blur', function () {
+        setTimeout(function () { if (menuFor === r) closeMenu(); }, 150);
+      });
+    }
+    function openMenu(r) {
+      closeMenu();
+      menuFor = r; menuAt = 0;
+      menu = el('div', 'jb-menu');
+      menu.setAttribute('role', 'listbox');
+      r.row.appendChild(menu);
+      drawMenu();
+    }
+    function drawMenu() {
+      clear(menu);
+      JB_TYPES.forEach(function (t, k) {
+        var b = el('button', k === menuAt ? 'on' : '', t[1]);
+        b.type = 'button';
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); pick(t[0]); });
+        menu.appendChild(b);
+      });
+    }
+    function closeMenu() {
+      if (menu && menu.parentNode) menu.parentNode.removeChild(menu);
+      menu = null; menuFor = null;
+    }
+    function pick(t) {
+      var r = menuFor; closeMenu();
+      if (!r) return;
+      r.ta.value = ''; setType(r, t); focusAt(r, 0); onChange();
+    }
+    function current() {
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].ta === document.activeElement) return rows[i];
+      }
+      return rows[rows.length - 1];
+    }
+    return {
+      load: function (blocks) {
+        closeMenu(); clear(host); rows = [];
+        var list = blocks && blocks.length ? blocks : [{ t: 'p', x: '' }];
+        list.forEach(function (b) { place(make(b), rows.length); });
+      },
+      get: function () {
+        return rows.map(function (r) {
+          var o = { t: r.t, x: r.ta.value };
+          if (r.t === 'todo' && r.c) o.c = 1;
+          return o;
+        });
+      },
+      add: function (t) {
+        var r = current();
+        if (r && !r.ta.value && r.t === 'p') { setType(r, t); focusAt(r, 0); }
+        else { var n = make({ t: t, x: '' }); place(n, rows.indexOf(r) + 1); focusAt(n, 0); }
+        onChange();
+      },
+      heads: function () {
+        return rows.filter(function (r) { return r.t === 'h' && r.ta.value; });
+      },
+      refit: function () { rows.forEach(function (r) { fit(r.ta); }); },
+      focusEnd: function () { if (rows.length) focusAt(rows[rows.length - 1], 'end'); }
+    };
+  }
+
+  var JR_CATS = ['Daily', 'Trades', 'Mind', 'Lectures', 'Breakdowns'];
+  var JR = { ix: null, page: null, ed: null, t: null, dirty: false, busy: false,
+    shut: {}, adding: null, del: null, q: '' };
+
+  function jrAgo(t) {
+    if (!t) return '';
+    var s = Math.round((Date.now() - t) / 1000);
+    if (s < 45) return 'just now';
+    if (s < 3600) return Math.round(s / 60) + ' min ago';
+    if (s < 86400) return Math.round(s / 3600) + ' h ago';
+    return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  function jrToday() {
+    return new Date().toLocaleDateString(undefined,
+      { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+  function jrChan(id) {
+    var c = JR.ix ? JR.ix.chans : [];
+    for (var i = 0; i < c.length; i++) if (c[i].id === id) return c[i];
+    return null;
+  }
+  function jrPagesOf(ch) {
+    return JR.ix.pages.filter(function (p) { return p.ch === ch; })
+      .sort(function (a, b) { return (b.up || 0) - (a.up || 0); });
+  }
+  function jrStatus(t) { $('jr-st').textContent = t; }
+
+  function jrSave(now) {
+    clearTimeout(JR.t);
+    if (!JR.dirty || !JR.page) return;
+    if (!now) { JR.t = setTimeout(function () { jrSave(true); }, 800); return; }
+    if (JR.busy) { JR.t = setTimeout(function () { jrSave(true); }, 400); return; }
+    JR.busy = true; JR.dirty = false;
+    var pg = JR.page;
+    jrStatus('Saving\u2026');
+    api('POST', '/api/journal', { action: 'save', id: pg.id,
+      title: pg.vid ? undefined : $('jr-title').value, blocks: JR.ed.get() },
+      function (st, d) {
+        JR.busy = false;
+        if (st !== 200) {
+          JR.dirty = true; jrStatus('Couldn\u2019t save, retrying\u2026');
+          JR.t = setTimeout(function () { jrSave(true); }, 4000); return;
+        }
+        pg.up = d.up;
+        var ip = JR.ix && JR.ix.pages.filter(function (p) { return p.id === pg.id; })[0];
+        if (ip) { ip.up = d.up; if (!pg.vid) ip.title = $('jr-title').value || 'Untitled'; }
+        if (JR.page === pg) jrStatus('Saved \u00b7 edited ' + jrAgo(d.up));
+        jrDrawNav();
+      });
+  }
+  function jrChanged() {
+    JR.dirty = true; jrStatus('Editing\u2026'); jrSave(false); jrToc();
+  }
+
+  function renderJournal() {
+    if (!JR.ed) {
+      JR.ed = blockEditor($('jr-blocks'), jrChanged);
+      $('jr-title').addEventListener('input', jrChanged);
+      $('jr-q').addEventListener('input', function () {
+        JR.q = $('jr-q').value.toLowerCase(); jrDrawNav();
+      });
+      $('jr-del').addEventListener('click', jrDeletePage);
+      var add = $('jr-add');
+      JB_TYPES.forEach(function (t) {
+        var b = el('button', '', t[1]); b.type = 'button';
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        b.addEventListener('click', function () { if (JR.page) JR.ed.add(t[0]); });
+        add.appendChild(b);
+      });
+    }
+    if (!JR.ix) {
+      api('POST', '/api/journal', { action: 'index' }, function (st, d) {
+        if (st !== 200) { jrStatus('Couldn\u2019t open your journal.'); return; }
+        JR.ix = d; jrRoute();
+      });
+      return;
+    }
+    jrRoute();
+  }
+  function jrRoute() {
+    var want = route.id, pg = null, i;
+    for (i = 0; i < JR.ix.pages.length; i++) {
+      if (JR.ix.pages[i].id === want) pg = JR.ix.pages[i];
+    }
+    if (!pg && JR.page) pg = JR.page;
+    if (!pg) {
+      var all = JR.ix.pages.slice().sort(function (a, b) { return (b.up || 0) - (a.up || 0); });
+      pg = all[0] || null;
+    }
+    jrDrawNav();
+    if (!pg) { jrEmpty(); return; }
+    if (!JR.page || JR.page.id !== pg.id) jrOpen(pg.id);
+    else JR.ed.refit();
+  }
+  function jrEmpty() {
+    JR.page = null;
+    $('jr-doc').hidden = true; $('jr-none').hidden = false;
+  }
+  function jrOpen(id) {
+    jrSave(true);
+    api('POST', '/api/journal', { action: 'page', id: id }, function (st, d) {
+      if (st !== 200 || !d.page) { jrEmpty(); return; }
+      var pg = d.page, ch = jrChan(pg.ch);
+      JR.page = pg; JR.dirty = false;
+      $('jr-none').hidden = true; $('jr-doc').hidden = false;
+      $('jr-chan').textContent = '# ' + (ch ? ch.name : 'notes');
+      $('jr-title').value = pg.title || '';
+      $('jr-title').readOnly = !!pg.vid;
+      $('jr-del').hidden = !!pg.vid;
+      jrStatus(pg.up ? 'Saved \u00b7 edited ' + jrAgo(pg.up) : 'New page');
+      JR.ed.load(pg.blocks);
+      jrToc(); jrDrawNav();
+      if (location.hash !== '#journal' + SEP + pg.id) {
+        history.replaceState(null, '', '#journal' + SEP + pg.id);
+      }
+      if (!pg.blocks || !pg.blocks.length) JR.ed.focusEnd();
+    });
+  }
+  function jrToc() {
+    var toc = $('jr-toc'); clear(toc);
+    var hs = JR.ed ? JR.ed.heads() : [];
+    if (!hs.length) { toc.appendChild(el('p', 'jr-dim', 'Headings show up here.')); return; }
+    hs.forEach(function (r) {
+      var b = el('button', 'jr-tl', r.ta.value); b.type = 'button';
+      b.addEventListener('click', function () { r.ta.focus(); });
+      toc.appendChild(b);
+    });
+  }
+  function jrNewPage(ch) {
+    jrSave(true);
+    api('POST', '/api/journal', { action: 'newpage', ch: ch, title: jrToday() },
+      function (st, d) {
+        if (st !== 200) return;
+        JR.ix.pages.push(d.page); jrOpen(d.page.id);
+      });
+  }
+  function jrDeletePage() {
+    var pg = JR.page;
+    if (!pg || pg.vid) return;
+    if (JR.del !== 'p:' + pg.id) {
+      JR.del = 'p:' + pg.id; $('jr-del').textContent = 'Delete for good?';
+      setTimeout(function () {
+        if (JR.del === 'p:' + pg.id) { JR.del = null; $('jr-del').textContent = 'Delete page'; }
+      }, 4000);
+      return;
+    }
+    JR.del = null; $('jr-del').textContent = 'Delete page';
+    JR.dirty = false; clearTimeout(JR.t);
+    api('POST', '/api/journal', { action: 'delpage', id: pg.id }, function (st) {
+      if (st !== 200) return;
+      JR.ix.pages = JR.ix.pages.filter(function (p) { return p.id !== pg.id; });
+      JR.page = null; route.id = null;
+      history.replaceState(null, '', '#journal');
+      jrRoute();
+    });
+  }
+  function jrAddChannel(cat, input) {
+    var name = input.value.trim();
+    JR.adding = null;
+    if (!name) { jrDrawNav(); return; }
+    api('POST', '/api/journal', { action: 'chan', cat: cat, name: name }, function (st, d) {
+      if (st !== 200) { jrDrawNav(); return; }
+      JR.ix.chans.push(d.chan); jrNewPage(d.chan.id);
+    });
+  }
+  function jrDeleteChannel(ch) {
+    api('POST', '/api/journal', { action: 'delchan', id: ch.id }, function (st) {
+      if (st !== 200) return;
+      JR.ix.chans = JR.ix.chans.filter(function (c) { return c.id !== ch.id; });
+      JR.ix.pages = JR.ix.pages.filter(function (p) { return p.ch !== ch.id; });
+      if (JR.page && JR.page.ch === ch.id) { JR.page = null; route.id = null; }
+      JR.del = null; jrRoute();
+    });
+  }
+  function jrDrawNav() {
+    var nav = $('jr-nav'); clear(nav);
+    if (!JR.ix) return;
+    var q = JR.q;
+    JR_CATS.forEach(function (cat) {
+      var chans = JR.ix.chans.filter(function (c) { return c.cat === cat; });
+      var user = cat !== 'Lectures' && cat !== 'Breakdowns';
+      if (!chans.length && !user) return;
+      var shown = chans.filter(function (c) {
+        if (!q) return true;
+        if (c.name.indexOf(q) >= 0) return true;
+        return jrPagesOf(c.id).some(function (p) {
+          return String(p.title || '').toLowerCase().indexOf(q) >= 0;
+        });
+      });
+      if (q && !shown.length) return;
+      var head = el('div', 'jr-cat');
+      var tog = el('button', 'jr-cat-t' + (JR.shut[cat] ? ' shut' : ''), cat);
+      tog.type = 'button';
+      tog.addEventListener('click', function () { JR.shut[cat] = !JR.shut[cat]; jrDrawNav(); });
+      head.appendChild(tog);
+      if (user) {
+        var plus = el('button', 'jr-plus', '+'); plus.type = 'button';
+        plus.setAttribute('aria-label', 'New channel in ' + cat);
+        plus.addEventListener('click', function () {
+          JR.adding = cat; JR.shut[cat] = false; jrDrawNav();
+        });
+        head.appendChild(plus);
+      }
+      nav.appendChild(head);
+      if (JR.shut[cat] && !q) return;
+      shown.forEach(function (c) { nav.appendChild(jrChanRow(c)); });
+      if (JR.adding === cat) {
+        var f = el('div', 'jr-new');
+        var inp = el('input'); inp.type = 'text'; inp.maxLength = 40;
+        inp.placeholder = 'new-channel'; inp.setAttribute('aria-label', 'Channel name');
+        inp.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') { e.preventDefault(); jrAddChannel(cat, inp); }
+          if (e.key === 'Escape') { JR.adding = null; jrDrawNav(); }
+        });
+        inp.addEventListener('blur', function () {
+          if (JR.adding === cat) jrAddChannel(cat, inp);
+        });
+        f.appendChild(el('span', 'jr-hash', '#')); f.appendChild(inp);
+        nav.appendChild(f);
+        setTimeout(function () { inp.focus(); }, 0);
+      }
+    });
+  }
+  function jrChanRow(c) {
+    var wrap = el('div', 'jr-ch-w');
+    var on = JR.page && JR.page.ch === c.id;
+    var row = el('div', 'jr-ch' + (on ? ' on' : ''));
+    var a = el('button', 'jr-ch-b'); a.type = 'button';
+    a.appendChild(el('span', 'jr-hash', '#'));
+    a.appendChild(el('span', 'jr-ch-n', c.name));
+    a.addEventListener('click', function () {
+      var ps = jrPagesOf(c.id);
+      if (ps.length) jrOpen(ps[0].id); else if (!c.vid) jrNewPage(c.id);
+    });
+    row.appendChild(a);
+    if (JR.del === 'c:' + c.id) {
+      var yes = el('button', 'jr-x on', 'Delete'); yes.type = 'button';
+      yes.addEventListener('click', function () { jrDeleteChannel(c); });
+      var no = el('button', 'jr-x', 'Keep'); no.type = 'button';
+      no.addEventListener('click', function () { JR.del = null; jrDrawNav(); });
+      row.appendChild(yes); row.appendChild(no);
+    } else {
+      var x = el('button', 'jr-x', '\u00d7'); x.type = 'button';
+      x.setAttribute('aria-label', 'Delete #' + c.name);
+      x.addEventListener('click', function () { JR.del = 'c:' + c.id; jrDrawNav(); });
+      row.appendChild(x);
+    }
+    wrap.appendChild(row);
+    if (on && !c.vid) {
+      jrPagesOf(c.id).forEach(function (p) {
+        var pb = el('button', 'jr-pg' + (JR.page && JR.page.id === p.id ? ' on' : ''),
+          p.title || 'Untitled');
+        pb.type = 'button';
+        pb.addEventListener('click', function () { jrOpen(p.id); });
+        wrap.appendChild(pb);
+      });
+      var np = el('button', 'jr-pg jr-np', '+ New page'); np.type = 'button';
+      np.addEventListener('click', function () { jrNewPage(c.id); });
+      wrap.appendChild(np);
+    }
+    return wrap;
+  }
+  function jrLeave() { if (JR.dirty) jrSave(true); }
+
+  // ---------- notes under each video, saved to its own journal channel -----
+  var VN = { vid: null, ed: null, t: null, dirty: false, busy: false, seq: 0 };
+  function vnSave(now) {
+    clearTimeout(VN.t);
+    if (!VN.dirty || !VN.vid) return;
+    if (!now) { VN.t = setTimeout(function () { vnSave(true); }, 900); return; }
+    if (VN.busy) { VN.t = setTimeout(function () { vnSave(true); }, 400); return; }
+    VN.busy = true; VN.dirty = false;
+    var vid = VN.vid;
+    $('vn-st').textContent = 'Saving\u2026';
+    api('POST', '/api/journal', { action: 'save', vid: vid, blocks: VN.ed.get() },
+      function (st) {
+        VN.busy = false;
+        if (st !== 200) {
+          VN.dirty = true; $('vn-st').textContent = 'Couldn\u2019t save, retrying\u2026';
+          VN.t = setTimeout(function () { vnSave(true); }, 4000); return;
+        }
+        JR.ix = null;          // the journal's channel list picks this up
+        if (VN.vid === vid) $('vn-st').textContent = 'Saved to your journal';
+      });
+  }
+  function vnShow(it, lk) {
+    var box = $('vnotes');
+    if (!it || lk) { vnLeave(); box.hidden = true; VN.vid = null; return; }
+    box.hidden = false;
+    if (!VN.ed) {
+      VN.ed = blockEditor($('vn-blocks'), function () {
+        VN.dirty = true; $('vn-st').textContent = 'Editing\u2026'; vnSave(false);
+      });
+    }
+    if (VN.vid === it.id) { VN.ed.refit(); return; }
+    vnLeave();
+    VN.vid = it.id;
+    var seq = ++VN.seq;
+    $('vn-ch').textContent = '#\u2009' + jrSlug(it.title);
+    $('vn-st').textContent = '';
+    VN.ed.load([]);
+    api('POST', '/api/journal', { action: 'video', vid: it.id }, function (st, d) {
+      if (seq !== VN.seq || st !== 200 || !d.page) return;
+      VN.ed.load(d.page.blocks);
+      $('vn-ch').href = '#journal' + (d.page.id ? SEP + d.page.id : '');
+      if (d.page.up) $('vn-st').textContent = 'Saved \u00b7 edited ' + jrAgo(d.page.up);
+    });
+  }
+  function vnLeave() { if (VN.dirty) vnSave(true); }
+  function jrSlug(s) {
+    return String(s || '').toLowerCase().replace(/['\u2019]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'notes';
+  }
+  // last edits go out even when the tab closes
+  window.addEventListener('pagehide', function () {
+    if (DEMO || !window.fetch) return;
+    function send(body) {
+      try {
+        fetch('/api/journal', { method: 'POST', keepalive: true,
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      } catch (e) {}
+    }
+    if (VN.dirty && VN.vid) {
+      VN.dirty = false; send({ action: 'save', vid: VN.vid, blocks: VN.ed.get() });
+    }
+    if (JR.dirty && JR.page) {
+      JR.dirty = false;
+      send({ action: 'save', id: JR.page.id,
+        title: JR.page.vid ? undefined : $('jr-title').value, blocks: JR.ed.get() });
+    }
+  });
 
   var thumbFor = null;
   function showThumb(it) {

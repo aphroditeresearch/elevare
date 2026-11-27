@@ -73,6 +73,80 @@
     return 'S-' + Math.random().toString(16).slice(2, 10).toUpperCase();
   }
 
+  // ---------------- journal (kept in memory, per signed-in person) ----------
+  var JRN = {};
+  function jslug(t) {
+    return String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '').slice(0, 40) || 'notes';
+  }
+  function jix(uid) {
+    if (!JRN[uid]) {
+      JRN[uid] = { chans: [
+        { id: 'c1', cat: 'Daily', name: 'session-notes' },
+        { id: 'c2', cat: 'Daily', name: 'thoughts' },
+        { id: 'c3', cat: 'Trades', name: 'trade-executions' },
+        { id: 'c4', cat: 'Mind', name: 'lessons' }],
+        pages: [{ id: 'p1', ch: 'c1', title: 'Welcome to your journal', up: Date.now() }],
+        body: { p1: [{ t: 'p', x: 'Everything you write here stays private to you.' },
+          { t: 'h', x: 'Try it' }, { t: 'li', x: 'Type / to pick a block' },
+          { t: 'todo', x: 'Write tomorrow\u2019s plan' }] } };
+    }
+    return JRN[uid];
+  }
+  var jn = 10;
+  function journal(uid, b) {
+    var J = jix(uid), a = b.action, i;
+    function pg(id) { for (i = 0; i < J.pages.length; i++) if (J.pages[i].id === id) return J.pages[i]; }
+    function byVid(v) { for (i = 0; i < J.pages.length; i++) if (J.pages[i].vid === v) return J.pages[i]; }
+    if (a === 'index') return [200, { chans: clone(J.chans), pages: clone(J.pages) }];
+    if (a === 'page') {
+      var p = pg(b.id); if (!p) return [404, { error: 'not_found' }];
+      var o = clone(p); o.blocks = clone(J.body[p.id] || []); return [200, { page: o }];
+    }
+    if (a === 'video') {
+      var it = find(b.vid); if (!it) return [404, { error: 'not_found' }];
+      var vp = byVid(it.id);
+      return [200, { page: { id: vp ? vp.id : null, vid: it.id, title: it.title,
+        up: vp ? vp.up : 0, blocks: clone(vp ? J.body[vp.id] || [] : []) } }];
+    }
+    if (a === 'save') {
+      var sp;
+      if (b.vid) {
+        var vi = find(b.vid); if (!vi) return [404, { error: 'not_found' }];
+        sp = byVid(vi.id);
+        if (!sp) {
+          var ch = { id: 'c' + (++jn), cat: vi.kind === 'breakdown' ? 'Breakdowns' : 'Lectures',
+            name: jslug(vi.title), vid: vi.id };
+          J.chans.push(ch);
+          sp = { id: 'p' + (++jn), ch: ch.id, title: vi.title, vid: vi.id };
+          J.pages.push(sp);
+        }
+      } else {
+        sp = pg(b.id); if (!sp) return [404, { error: 'not_found' }];
+        if (b.title !== undefined) sp.title = String(b.title).slice(0, 140) || 'Untitled';
+      }
+      sp.up = Date.now(); J.body[sp.id] = clone(b.blocks || []);
+      return [200, { ok: true, id: sp.id, ch: sp.ch, up: sp.up }];
+    }
+    if (a === 'newpage') {
+      var np = { id: 'p' + (++jn), ch: b.ch, title: b.title || 'Untitled', up: Date.now() };
+      J.pages.push(np); J.body[np.id] = []; return [200, { ok: true, page: clone(np) }];
+    }
+    if (a === 'chan') {
+      var nc = { id: 'c' + (++jn), cat: b.cat || 'Daily', name: jslug(b.name) };
+      J.chans.push(nc); return [200, { ok: true, chan: clone(nc) }];
+    }
+    if (a === 'delpage') {
+      J.pages = J.pages.filter(function (x) { return x.id !== b.id; }); return [200, { ok: true }];
+    }
+    if (a === 'delchan') {
+      J.chans = J.chans.filter(function (x) { return x.id !== b.id; });
+      J.pages = J.pages.filter(function (x) { return x.ch !== b.id; });
+      return [200, { ok: true }];
+    }
+    return [400, { error: 'action' }];
+  }
+
   // ---------------- fake API ----------------
   function route(method, path, b) {
     if (path === '/api/me' && method === 'POST' && b.action === 'logout') {
@@ -135,6 +209,7 @@
       (DB.seen[uid] = DB.seen[uid] || {})[it.id] = 1;
       return [200, { otp: 'demo', playbackInfo: 'demo', session: sid }];
     }
+    if (path === '/api/journal') return journal(uid, b);
     if (path === '/api/admin') {
       if (!isAdmin()) {
         log('admin-probe', method + ' /api/admin');

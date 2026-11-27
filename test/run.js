@@ -30,7 +30,7 @@ function client(ua) {
   }
   async function signIn(code) {
     // tests sign in far more often than the 20-per-10-minutes limit allows
-    for (const k of Array.from(mocks.store.keys())) if (/^vault:rl:login:/.test(k)) mocks.store.delete(k);
+    for (const k of Array.from(mocks.store.keys())) if (/^(vault|elevare):rl:login:/.test(k)) mocks.store.delete(k);
     const a = await req('GET', '/api/login');
     if (!/discord\.com\/oauth2\/authorize/.test(a.loc || '')) return a.loc;
     const state = new URL(a.loc).searchParams.get('state');
@@ -666,6 +666,53 @@ async function t(name, fn) {
     await member.req('POST', '/api/me', { action: 'flag', kind: 'printscreen' });
     await member.req('POST', '/api/me', { action: 'flag', kind: 'printscreen' });
     assert.strictEqual(mocks.hooks.length, 1);
+  });
+
+  console.log('Journal');
+  await t('a new journal starts with its default channels', async () => {
+    const r = await member.req('POST', '/api/journal', { action: 'index' });
+    assert.strictEqual(r.status, 200);
+    const names = r.data.chans.map(c => c.name);
+    ['session-notes', 'thoughts', 'trade-executions', 'lessons'].forEach(n => assert.ok(names.includes(n), n));
+  });
+  await t('notes under a video save to that video\u2019s own channel', async () => {
+    const blocks = [{ t: 'h', x: 'Key idea' }, { t: 'p', x: 'Wait for the second touch.' },
+      { t: 'todo', x: 'Rewatch the open', c: 1 }];
+    const s1 = await member.req('POST', '/api/journal', { action: 'save', vid: L1, blocks });
+    assert.strictEqual(s1.status, 200);
+    const ix = await member.req('POST', '/api/journal', { action: 'index' });
+    const ch = ix.data.chans.find(c => c.vid === L1);
+    assert.ok(ch && ch.cat === 'Lectures' && ch.name === 'lock-one');
+    const v = await member.req('POST', '/api/journal', { action: 'video', vid: L1 });
+    assert.deepStrictEqual(v.data.page.blocks, blocks);
+    const again = await member.req('POST', '/api/journal', { action: 'save', vid: L1, blocks: [] });
+    assert.strictEqual(again.data.id, s1.data.id);
+  });
+  await t('journal pages: create, write, rename, delete', async () => {
+    const ix = await member.req('POST', '/api/journal', { action: 'index' });
+    const ch = ix.data.chans.find(c => c.name === 'session-notes');
+    const np = await member.req('POST', '/api/journal', { action: 'newpage', ch: ch.id, title: 'Monday' });
+    const id = np.data.page.id;
+    await member.req('POST', '/api/journal', { action: 'save', id, title: 'Monday open',
+      blocks: [{ t: 'p', x: 'Calm.' }, { t: 'bogus', x: '<script>x</script>' }] });
+    const pg = await member.req('POST', '/api/journal', { action: 'page', id });
+    assert.strictEqual(pg.data.page.title, 'Monday open');
+    assert.strictEqual(pg.data.page.blocks[1].t, 'p');   // unknown types become text
+    const nc = await member.req('POST', '/api/journal', { action: 'chan', cat: 'Mind', name: 'My Wins!' });
+    assert.strictEqual(nc.data.chan.name, 'my-wins');
+    assert.strictEqual((await member.req('POST', '/api/journal', { action: 'delpage', id })).status, 200);
+    assert.strictEqual((await member.req('POST', '/api/journal', { action: 'page', id })).status, 404);
+  });
+  await t('one member can\u2019t read another member\u2019s journal', async () => {
+    const mine = await member.req('POST', '/api/journal', { action: 'index' });
+    const pid = mine.data.pages[0].id;
+    const other = client(); assert.strictEqual(await other.signIn('100000000000000008'), '/');
+    assert.strictEqual((await other.req('POST', '/api/journal', { action: 'page', id: pid })).status, 404);
+    const v = await other.req('POST', '/api/journal', { action: 'video', vid: L1 });
+    assert.deepStrictEqual(v.data.page.blocks, []);
+  });
+  await t('journal needs a signed-in member', async () => {
+    assert.strictEqual((await client().req('POST', '/api/journal', { action: 'index' })).status, 401);
   });
 
   console.log('Blocking & role removal');
