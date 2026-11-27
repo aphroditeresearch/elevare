@@ -2080,6 +2080,62 @@ button.jm-box:hover { border-color: var(--red); }
 .lb-total { grid-column: 1; margin: 6px 0 0; }
 .lb-stats { grid-column: 1; justify-content: flex-start; font-size: 14px; }
 .lb-cta { grid-column: 2; grid-row: 1 / span 3; align-self: end; margin: 0; }
+/* ---- luxe: quiet, exact, expensive. Hairlines, glass, platinum ice ---- */
+.app {
+  --line: rgba(214, 232, 248, .075); --line2: rgba(214, 232, 248, .13);
+  --ink: #f2f6f9; --soft: #c3ccd6; --muted: #8b96a3; --dim: #5e6977;
+  --panel: #090d12;
+  background: radial-gradient(90% 55% at 50% -12%, rgba(150, 196, 236, .10), transparent 70%),
+    radial-gradient(60% 40% at 100% 0%, rgba(90, 150, 220, .05), transparent 70%), #05070a;
+  background-attachment: fixed;
+}
+.top { height: 76px; padding: 0 36px; gap: 30px;
+  background: rgba(5, 7, 10, .72); border-bottom: 1px solid var(--line); box-shadow: none;
+  -webkit-backdrop-filter: blur(16px) saturate(1.25); backdrop-filter: blur(16px) saturate(1.25); }
+.brand img { height: 30px; width: auto; filter: drop-shadow(0 0 14px rgba(120, 190, 255, .18)); }
+.nav a { color: var(--muted); transition: color .2s ease; }
+.nav a:hover, .nav a.on { color: var(--ink); }
+.nav a.on:after { height: 1px; background: #bfe2ff; }
+.announce { background: #070a0e; border-bottom: 1px solid var(--line); }
+.announce .k { color: #a9d8ff; font-family: "Chakra Petch", var(--sans); }
+/* platinum ice for the main action, a clean outline for the rest */
+.btn:not(.vl-go), .btn.lit:not(.vl-go), .sb, .ghost, .lb-cta, .po-send {
+  background: linear-gradient(180deg, #eef7ff, #cfe6fa); color: #06111b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 6px 18px -10px rgba(150, 205, 255, .55);
+  font: 600 14px "Chakra Petch", var(--sans); letter-spacing: .02em; }
+.btn:not(.vl-go):hover, .btn.lit:not(.vl-go):hover, .sb:hover, .ghost:hover,
+.lb-cta:hover, .po-send:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffffff, #dcefff); color: #04101a;
+  box-shadow: inset 0 1px 0 #fff, 0 8px 24px -10px rgba(170, 215, 255, .75); }
+.sb.line, .ghost.line { background: transparent; color: var(--ink); box-shadow: none;
+  border: 1px solid var(--line2); }
+.sb.line:hover, .ghost.line:hover { background: rgba(214, 232, 248, .05);
+  border-color: rgba(191, 226, 255, .5); color: #fff; box-shadow: none; }
+.sb.red { background: transparent; color: #ff9aa2; border: 1px solid rgba(255, 120, 130, .35);
+  box-shadow: none; }
+.sb.red:hover { background: rgba(255, 90, 100, .1); color: #ffc2c7; box-shadow: none; }
+.btn:not(.vl-go):disabled, .btn.lit:not(.vl-go):disabled, .po-send:disabled {
+  background: #141b23; color: #5e6977; box-shadow: none; }
+/* panels: a faint light along the top edge, like glass */
+.rail, .pcard, .po, .jr, .nw-tab, .abox, .lb-pod, .lb-list, .vnotes {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035), 0 24px 60px -40px rgba(0, 0, 0, .9); }
+.display { letter-spacing: -.005em; }
+::selection { background: rgba(169, 216, 255, .3); }
+/* small labels over headings: tracked caps, used sparingly (a luxury cue) */
+.eyebrow, .ghead .gt, .ptile .k, .lb-title, .nw-th, .codebox span, .po-form label {
+  font-family: "Chakra Petch", var(--sans); font-size: 11px; font-weight: 600;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+.ghead .gt { color: var(--soft); }
+.lb-title { font-size: 12px; color: #a9d8ff; }
+.eyebrow b { background: #a9d8ff; }
+/* the entrance: L V R lingers, then dissolves into the site */
+.rdy.leaving { display: flex !important; position: fixed; inset: 0; z-index: 300;
+  transition: opacity 1.5s cubic-bezier(.4, 0, .2, 1); }
+.rdy.leaving.gone { opacity: 0; pointer-events: none; }
+.rdy.leaving.gone .rdy-mark { scale: 1.06; filter: blur(3px)
+  drop-shadow(0 0 26px rgba(44, 158, 240, .35)); transition: scale 1.6s ease, filter 1.6s ease; }
+.app.arrive .wrap { animation: arrive 1.6s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes arrive { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
 </style>
 </head>
 <body>
@@ -2228,7 +2284,7 @@ button.jm-box:hover { border-color: var(--red); }
   </div>
   <header class="top">
     <a class="brand" id="top-wm" href="#lectures"><img
-      src="/media/logo-elevare.webp" alt="Elevare" width="1600" height="488"
+      src="/media/lvr-mark.webp" alt="LVR" width="628" height="240"
       draggable="false"></a>
     <span class="live" id="live" title="Market session, New York time">
       <i></i><span id="live-t"></span></span>
@@ -6788,10 +6844,22 @@ button.jm-box:hover { border-color: var(--red); }
     function inside() {
       if (fin) return;
       fin = true;
-      setCls($('v-ready'), 'fin', true);              // black, then L V R
+      var sec = $('v-ready');
+      setCls(sec, 'fin', true);                       // black, then L V R
       setTimeout(function () {
-        setCls($('sys-yes'), 'hit', false); enter(RDY.d);   // a clean cut inside
-      }, 3300);
+        // the site opens underneath while L V R dissolves on top of it
+        setCls(sec, 'leaving', true);
+        setCls($('sys-yes'), 'hit', false);
+        enter(RDY.d);
+        setCls($('v-app'), 'arrive', true);
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { setCls(sec, 'gone', true); });
+        });
+        setTimeout(function () {
+          setCls(sec, 'leaving', false); setCls(sec, 'gone', false);
+          setCls($('v-app'), 'arrive', false);
+        }, 1700);
+      }, 2800);
     }
     setTimeout(function () { setCls($('v-ready'), 'yes', true); }, 220);
     setTimeout(function () {
