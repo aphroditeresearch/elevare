@@ -44,7 +44,8 @@ walk(path.join(__dirname, '..'));
 // the served page is built from src/index.html: it must be up to date
 try {
   const site = require('../api/_site.js');
-  const { hashOf } = require('../dev/build-site.js');
+  // same hash as dev/build-site.js, without loading its build tools
+  const hashOf = t => require('crypto').createHash('sha256').update(t).digest('hex').slice(0, 16);
   if (site.hash !== hashOf(html)) {
     console.log('api/_site.js is out of date: run `npm run site`'); bad++;
   }
