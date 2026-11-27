@@ -730,6 +730,55 @@ async function t(name, fn) {
     assert.strictEqual((await client().req('POST', '/api/journal', { action: 'index' })).status, 401);
   });
 
+  console.log('Payouts');
+  const PNG = 'data:image/png;base64,' + Buffer.from('payout-proof-one').toString('base64');
+  let poId;
+  await t('a member submits a payout and sees it in review', async () => {
+    const r = await member.req('POST', '/api/payouts', { action: 'submit', amount: 2500.5,
+      firm: 'Topstep', date: '2026-11-20', image: PNG, show: true });
+    assert.strictEqual(r.status, 200);
+    poId = r.data.item.id;
+    const m = await member.req('POST', '/api/payouts', { action: 'mine' });
+    assert.strictEqual(m.data.list[0].status, 'pending');
+    assert.strictEqual(m.data.list[0].amount, 2500.5);
+  });
+  await t('bad payouts are refused (no proof, bad amount, duplicate image)', async () => {
+    const base = { action: 'submit', amount: 100, firm: 'Apex', date: '2026-11-20' };
+    assert.strictEqual((await member.req('POST', '/api/payouts', Object.assign({}, base,
+      { image: 'data:text/html;base64,PHNjcmlwdD4=' }))).status, 400);
+    assert.strictEqual((await member.req('POST', '/api/payouts', Object.assign({}, base,
+      { amount: -5, image: PNG }))).status, 400);
+    assert.strictEqual((await member.req('POST', '/api/payouts', Object.assign({}, base,
+      { image: PNG }))).status, 409);
+  });
+  await t('pending payouts stay off the leaderboard', async () => {
+    const b = await member.req('POST', '/api/payouts', { action: 'board' });
+    assert.strictEqual(b.data.total, 0);
+  });
+  await t('only admins see the review queue', async () => {
+    assert.strictEqual((await member.req('POST', '/api/payouts', { action: 'queue' })).status, 403);
+    assert.strictEqual((await member.req('POST', '/api/payouts', { action: 'review', id: poId, ok: true })).status, 403);
+    const q = await admin.req('POST', '/api/payouts', { action: 'queue' });
+    assert.ok(q.data.pending.some(p => p.id === poId));
+  });
+  await t('approved payouts feed the leaderboard and the proof opens', async () => {
+    await admin.req('POST', '/api/payouts', { action: 'review', id: poId, ok: true, note: 'Nice' });
+    const b = await member.req('POST', '/api/payouts', { action: 'board' });
+    assert.strictEqual(b.data.total, 2500.5);
+    assert.strictEqual(b.data.rows[0].uid, MEMBER);
+    const other = client(); assert.strictEqual(await other.signIn('100000000000000008'), '/');
+    const img = await other.req('POST', '/api/payouts', { action: 'img', id: poId });
+    assert.strictEqual(img.data.image, PNG);
+  });
+  await t('hiding from the leaderboard keeps the total but drops the name', async () => {
+    await member.req('POST', '/api/payouts', { action: 'show', id: poId, show: false });
+    const b = await member.req('POST', '/api/payouts', { action: 'board' });
+    assert.strictEqual(b.data.total, 2500.5);
+    assert.strictEqual(b.data.rows.length, 0);
+    const other = client(); await other.signIn('100000000000000008');
+    assert.strictEqual((await other.req('POST', '/api/payouts', { action: 'img', id: poId })).status, 404);
+  });
+
   console.log('Blocking & role removal');
   await t('blocked member is locked out and cannot sign back in', async () => {
     await admin.req('POST', '/api/admin', { action: 'block', uid: MEMBER });

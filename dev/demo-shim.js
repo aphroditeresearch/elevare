@@ -173,6 +173,78 @@
     return [400, { error: 'action' }];
   }
 
+  // ---------------- payouts (sample verified payouts for the leaderboard) ------
+  var PIMG = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" ' +
+    'width="640" height="400"><rect width="640" height="400" fill="#0b1219"/>' +
+    '<rect x="20" y="20" width="600" height="360" fill="none" stroke="#2c9ef0"/>' +
+    '<text x="320" y="190" fill="#ecf3f8" font-family="Georgia" font-size="40" ' +
+    'text-anchor="middle">PAYOUT CERTIFICATE</text><text x="320" y="240" fill="#74c5ff" ' +
+    'font-family="Georgia" font-size="22" text-anchor="middle">Sample image</text></svg>');
+  var POS = [
+    ['200000000000000011', 'Kaito', 18450, 'Apex Trader Funding', '2026-11-20'],
+    ['200000000000000011', 'Kaito', 9200, 'Lucid Trading', '2026-11-02'],
+    ['200000000000000012', 'Rena', 21300, 'Topstep', '2026-11-18'],
+    ['200000000000000013', 'Sora', 11800, 'Tradeify', '2026-11-15'],
+    ['200000000000000014', 'Haru', 7400, 'MyFundedFutures', '2026-11-12'],
+    ['200000000000000015', 'Mika', 5150, 'Apex Trader Funding', '2026-11-09'],
+    ['200000000000000016', 'Ren', 3900, 'Lucid Trading', '2026-11-06']
+  ].map(function (r, i) {
+    return { id: 'po' + i, uid: r[0], name: r[1] + ' (sample)', amount: r[2], firm: r[3],
+      date: r[4], show: true, status: 'approved', t: Date.now() - i * 864e5 };
+  });
+  POS.push({ id: 'poq', uid: MEMBER.id, name: MEMBER.name, amount: 2500, firm: 'Topstep',
+    date: '2026-11-25', show: true, status: 'pending', t: Date.now() - 3600e3 });
+  var pn = 50;
+  function payouts(uid, b) {
+    var a = b.action;
+    function one(id) { return POS.filter(function (p) { return p.id === id; })[0]; }
+    if (a === 'board') {
+      var ok = POS.filter(function (p) { return p.status === 'approved'; }), by = {};
+      ok.forEach(function (p) {
+        if (!p.show) return;
+        var e = by[p.uid] || (by[p.uid] = { uid: p.uid, name: p.name, avatar: null,
+          total: 0, count: 0, firms: [] });
+        e.total += p.amount; e.count++; if (e.firms.indexOf(p.firm) < 0) e.firms.push(p.firm);
+      });
+      var rows = Object.keys(by).map(function (k) { return by[k]; })
+        .sort(function (x, y) { return y.total - x.total; });
+      var people = {}; ok.forEach(function (p) { people[p.uid] = 1; });
+      return [200, { total: ok.reduce(function (n, p) { return n + p.amount; }, 0),
+        payouts: ok.length, traders: Object.keys(people).length, rows: rows }];
+    }
+    if (a === 'mine') {
+      return [200, { list: clone(POS.filter(function (p) { return p.uid === uid; })) }];
+    }
+    if (a === 'submit') {
+      var np = { id: 'po' + (++pn), uid: uid, name: DB.who.name, amount: Number(b.amount),
+        firm: b.firm, date: b.date, show: b.show !== false, status: 'pending', t: Date.now(),
+        img: b.image };
+      POS.push(np); return [200, { ok: true }];
+    }
+    if (a === 'withdraw') {
+      POS = POS.filter(function (p) { return !(p.id === b.id && p.status === 'pending'); });
+      return [200, { ok: true }];
+    }
+    if (a === 'show') { var sp = one(b.id); if (sp) sp.show = !!b.show; return [200, { ok: true }]; }
+    if (a === 'img') { var ip = one(b.id); return [200, { image: ip && ip.img || PIMG }]; }
+    if (a === 'trader') {
+      return [200, { list: clone(POS.filter(function (p) {
+        return p.uid === b.uid && p.status === 'approved' && p.show; })) }];
+    }
+    if (!isAdmin()) return [403, { error: 'admin' }];
+    if (a === 'queue') {
+      return [200, { pending: clone(POS.filter(function (p) { return p.status === 'pending'; })),
+        done: clone(POS.filter(function (p) { return p.status !== 'pending'; })) }];
+    }
+    if (a === 'review') {
+      var rp = one(b.id); if (!rp) return [404, { error: 'not_found' }];
+      rp.status = b.ok ? 'approved' : 'rejected'; rp.note = b.note || ''; rp.by = DB.who.name;
+      return [200, { ok: true }];
+    }
+    if (a === 'remove') { POS = POS.filter(function (p) { return p.id !== b.id; }); return [200, { ok: true }]; }
+    return [400, { error: 'action' }];
+  }
+
   // ---------------- fake API ----------------
   function route(method, path, b) {
     if (path === '/api/me' && method === 'POST' && b.action === 'logout') {
@@ -236,6 +308,7 @@
       return [200, { otp: 'demo', playbackInfo: 'demo', session: sid }];
     }
     if (path === '/api/journal') return journal(uid, b);
+    if (path === '/api/payouts') return payouts(uid, b);
     if (path === '/api/admin') {
       if (!isAdmin()) {
         log('admin-probe', method + ' /api/admin');
