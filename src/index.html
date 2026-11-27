@@ -6285,21 +6285,51 @@ button.jm-box:hover { border-color: var(--red); }
     return h < 5 ? 'Late one' : h < 12 ? 'Good morning' :
       h < 18 ? 'Good afternoon' : 'Good evening';
   }
-  // Market session by New York time (Mon-Fri; futures week opens Sun 6pm).
-  function session() {
+  // Market session by New York time (Eastern, daylight saving included).
+  // Futures run Sun 6pm to Fri 5pm with a 5-6pm break each weekday; the NY
+  // session follows the NYSE holiday and early-close calendar (nyse.com).
+  var MKT_OFF = {
+    '2026-01-01': 'New Year\u2019s Day', '2026-01-19': 'MLK Day',
+    '2026-02-16': 'Presidents\u2019 Day', '2026-04-03': 'Good Friday',
+    '2026-05-25': 'Memorial Day', '2026-06-19': 'Juneteenth',
+    '2026-07-03': 'Independence Day', '2026-09-07': 'Labor Day',
+    '2026-11-26': 'Thanksgiving', '2026-12-25': 'Christmas',
+    '2027-01-01': 'New Year\u2019s Day', '2027-01-18': 'MLK Day',
+    '2027-02-15': 'Presidents\u2019 Day', '2027-03-26': 'Good Friday',
+    '2027-05-31': 'Memorial Day', '2027-06-18': 'Juneteenth',
+    '2027-07-05': 'Independence Day', '2027-09-06': 'Labor Day',
+    '2027-11-25': 'Thanksgiving', '2027-12-24': 'Christmas',
+    '2028-01-17': 'MLK Day', '2028-02-21': 'Presidents\u2019 Day',
+    '2028-04-14': 'Good Friday', '2028-05-29': 'Memorial Day',
+    '2028-06-19': 'Juneteenth', '2028-07-04': 'Independence Day',
+    '2028-09-04': 'Labor Day', '2028-11-23': 'Thanksgiving', '2028-12-25': 'Christmas'
+  };
+  // NYSE closes at 1:00 pm ET on these days
+  var MKT_EARLY = { '2026-11-27': 1, '2026-12-24': 1, '2027-11-26': 1, '2028-07-03': 1,
+    '2028-11-24': 1 };
+  function nyNow(date) {
     var p = {};
     try {
-      new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York',
-        weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: false })
-        .formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+      new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric',
+        month: '2-digit', day: '2-digit', weekday: 'short', hour: 'numeric',
+        minute: 'numeric', hour12: false })
+        .formatToParts(date || new Date()).forEach(function (x) { p[x.type] = x.value; });
     } catch (e) { return null; }
-    var m = (+p.hour % 24) * 60 + (+p.minute), d = p.weekday;
-    var shut = d === 'Sat' || (d === 'Sun' && m < 1080) ||
-      (d === 'Fri' && m >= 1020);
+    return { m: (+p.hour % 24) * 60 + (+p.minute), d: p.weekday,
+      ymd: p.year + '-' + p.month + '-' + p.day };
+  }
+  function session(date) {
+    var n = nyNow(date);
+    if (!n) return null;
+    var m = n.m, d = n.d, off = MKT_OFF[n.ymd], early = MKT_EARLY[n.ymd];
+    var shut = d === 'Sat' || (d === 'Sun' && m < 1080) || (d === 'Fri' && m >= 1020);
     if (shut) return { t: 'Markets closed', on: false };
+    if (m >= 1020 && m < 1080) return { t: 'Daily break', on: false };
     if (m >= 1080 || m < 180) return { t: 'Asia session', on: true };
+    if (off) return { t: off + ', NYSE closed', on: false };
     if (m < 480) return { t: 'London session', on: true };
     if (m < 570) return { t: 'NY pre-market', on: true };
+    if (early && m >= 780) return { t: 'Early close (1pm)', on: false };
     if (m < 720) return { t: 'NY AM session', on: true };
     if (m < 810) return { t: 'NY lunch', on: true };
     if (m < 960) return { t: 'NY PM session', on: true };
@@ -6313,6 +6343,9 @@ button.jm-box:hover { border-color: var(--red); }
     setCls($('live'), 'on', s.on);
   }
   setInterval(tickSession, 30000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && ME) tickSession();
+  });
   function showAgree(d) {
     ME = d;
     buildTiles();
