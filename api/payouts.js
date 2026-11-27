@@ -8,7 +8,6 @@ const L = require('./_lib');
 
 const MAX_IMG = 1000000;          // data URL characters (about 730 KB of image)
 const MAX_AMOUNT = 10000000;      // dollars
-const MAX_PENDING = 10;
 const IMG_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 
 const HK = () => L.K('po');
@@ -82,7 +81,7 @@ module.exports = async function (req, res) {
     }
 
     if (a === 'submit') {
-      if (!(await L.rateLimit('po-up:' + s.uid, 15, 3600))) return L.json(res, 429, { error: 'slow' });
+      if (!(await L.rateLimit('po-up:' + s.uid, 30, 3600))) return L.json(res, 429, { error: 'slow' });
       const amount = Math.round(Number(b.amount) * 100) / 100;
       if (!(amount > 0) || amount > MAX_AMOUNT) return L.json(res, 400, { error: 'amount' });
       const firm = String(b.firm || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 40);
@@ -92,9 +91,6 @@ module.exports = async function (req, res) {
       const img = String(b.image || '');
       if (img.length > MAX_IMG || !IMG_RE.test(img)) return L.json(res, 400, { error: 'image' });
       const list = await all();
-      if (list.filter(p => p.uid === s.uid && p.status === 'pending').length >= MAX_PENDING) {
-        return L.json(res, 409, { error: 'too_many' });
-      }
       const hash = crypto.createHash('sha256').update(img).digest('hex');
       if (list.some(p => p.hash === hash)) return L.json(res, 409, { error: 'duplicate' });
       const p = { id: L.rid(8), uid: s.uid, name: s.name, avatar: s.avatar || null,
