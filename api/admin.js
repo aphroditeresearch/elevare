@@ -276,6 +276,10 @@ module.exports = async function (req, res) {
       if (link && !/^https:\/\//i.test(link)) return L.json(res, 400, { error: 'link' });
       c.announcement = text ? { text: text, link: link || '', t: Date.now() } : null;
       await L.saveContent(c);
+      if (text) {
+        await L.notify('all', { kind: 'announce', title: 'Announcement', body: text,
+          href: link || '' });
+      }
       return L.json(res, 200, { ok: true, content: c });
     }
     if (a === 'rules-save') {

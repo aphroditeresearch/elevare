@@ -1657,6 +1657,44 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .apo-row b { color: var(--ink); }
 .pmuted { color: var(--muted); }
 .apo-done .sb { margin-left: auto; }
+
+/* ---- notifications ---- */
+.nt { position: relative; margin-left: 6px; }
+.nt-b { position: relative; width: 42px; height: 42px; display: inline-flex;
+  align-items: center; justify-content: center; background: none; cursor: pointer;
+  border: 1px solid var(--line2); color: var(--soft); transition: color .2s, border-color .2s; }
+.nt-b svg { width: 19px; height: 19px; }
+.nt-b:hover, .nt.on .nt-b { color: var(--ink); border-color: var(--red); }
+.nt-n { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px;
+  padding: 0 5px; box-sizing: border-box; border-radius: 9px; display: flex;
+  align-items: center; justify-content: center; background: var(--red2); color: #031018;
+  font: 700 10px/1 var(--sans); box-shadow: 0 0 12px rgba(116, 197, 255, .7); }
+.nt-p { position: absolute; right: 0; top: calc(100% + 12px); z-index: 70; width: 380px;
+  max-height: 70vh; display: flex; flex-direction: column; background: #070b0f;
+  border: 1px solid var(--line2); box-shadow: 0 30px 70px rgba(0, 0, 0, .7);
+  animation: ntIn .25s cubic-bezier(.2, .7, .2, 1); }
+.nt-p[hidden] { display: none; }
+@keyframes ntIn { from { opacity: 0; transform: translateY(-6px); } }
+.nt-h { padding: 16px 18px 12px; border-bottom: 1px solid var(--line); }
+.nt-h b { color: var(--ink); font: 600 13px "Cinzel", Georgia, serif; letter-spacing: .24em;
+  text-transform: uppercase; }
+.nt-list { overflow-y: auto; }
+.nt-i { display: flex; gap: 14px; padding: 14px 18px; text-decoration: none;
+  border-bottom: 1px solid var(--line); color: var(--soft); }
+.nt-i:hover { background: rgba(44, 158, 240, .06); }
+.nt-i.new { background: rgba(44, 158, 240, .09); box-shadow: inset 2px 0 0 var(--red2); }
+.nt-ic { flex: none; width: 32px; height: 32px; display: flex; align-items: center;
+  justify-content: center; border: 1px solid var(--line2); color: var(--red2); }
+.nt-ic svg { width: 15px; height: 15px; }
+.k-payout-no .nt-ic { color: var(--err); }
+.nt-tx { display: flex; flex-direction: column; gap: 3px; min-width: 0;
+  font: 13px/1.45 var(--sans); }
+.nt-tx b { color: var(--ink); font-weight: 600; }
+.nt-tx span { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; }
+.nt-tx em { color: var(--dim); font: normal 11px var(--sans); }
+.nt-empty { margin: 0; padding: 30px 18px; text-align: center; color: var(--muted);
+  font: 13px var(--sans); }
 </style>
 </head>
 <body>
@@ -1773,6 +1811,18 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       <a href="#profile" data-tab="profile">Profile</a>
       <a href="#admin" data-tab="admin" id="nav-admin" hidden>Admin</a>
     </nav>
+    <div class="nt" id="nt">
+      <button class="nt-b" id="nt-b" type="button" aria-label="Notifications"
+        aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0
+        0112 0v5l1.5 2h-15zM10 20a2 2 0 004 0"/></svg><span class="nt-n" id="nt-n"
+        hidden></span></button>
+      <div class="nt-p" id="nt-p" hidden>
+        <div class="nt-h"><b>Notifications</b></div>
+        <div class="nt-list" id="nt-list"></div>
+      </div>
+    </div>
     <button id="out" class="out" type="button">Sign out</button>
   </header>
 
@@ -2576,6 +2626,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     if (!watch) unmount();
     if (watch) renderWatch();
     if (route.tab === 'profile') { renderProfile(); poLoad(); }
+    if (route.tab === 'admin' && route.id === 'payouts') ADM.tab = 'payouts';
     if (route.tab === 'admin') admOpen();
     else admClose();
     if (prevTab !== route.tab) window.scrollTo(0, 0);
@@ -3559,6 +3610,123 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       });
     });
   }
+
+  // ======================================================================
+  // notifications: the bell in the top bar
+  // ======================================================================
+  var NT = { items: [], readAt: 0, unread: 0, known: null, open: false, busy: false,
+    base: '' };
+  var NT_ICON = {
+    content: 'M5 4.5v15l13-7.5z',
+    announce: 'M4 10v4h3l5 4V6L7 10H4zm12-1.5a4 4 0 010 7',
+    'payout-new': 'M12 3v18M7 8h7a3 3 0 010 6H8a3 3 0 000 6h9',
+    'payout-ok': 'M4 12.5l5 5L20 6.5',
+    'payout-no': 'M6 6l12 12M18 6L6 18'
+  };
+  function ntLink(n) {
+    if (n.href) return n.href;
+    if (!n.tab) return '';
+    return '#' + n.tab + (n.ref ? SEP + n.ref : '');
+  }
+  function ntPaint() {
+    var b = $('nt-n');
+    b.hidden = !NT.unread;
+    b.textContent = NT.unread > 9 ? '9+' : String(NT.unread);
+    $('nt-b').setAttribute('aria-label', NT.unread ?
+      'Notifications, ' + NT.unread + ' unread' : 'Notifications');
+    if (!NT.base) NT.base = document.title.replace(/^\(\d+\+?\)\s*/, '');
+    document.title = (NT.unread ? '(' + (NT.unread > 9 ? '9+' : NT.unread) + ') ' : '') +
+      NT.base;
+  }
+  function ntDraw() {
+    var host = $('nt-list'); clear(host);
+    if (!NT.items.length) {
+      host.appendChild(el('p', 'nt-empty', 'You\u2019re all caught up.'));
+      return;
+    }
+    NT.items.forEach(function (n) {
+      var link = ntLink(n);
+      var a = el('a', 'nt-i' + (n.t > NT.seenAt ? ' new' : '') + ' k-' + n.kind);
+      a.href = link || '#';
+      if (n.href) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+      var ic = el('span', 'nt-ic');
+      ic.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+        ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' +
+        ' aria-hidden="true"><path d="' + (NT_ICON[n.kind] || NT_ICON.announce) +
+        '"/></svg>';
+      a.appendChild(ic);
+      var tx = el('span', 'nt-tx');
+      tx.appendChild(el('b', null, n.title));
+      if (n.body) tx.appendChild(el('span', null, n.body));
+      tx.appendChild(el('em', null, jrAgo(n.t)));
+      a.appendChild(tx);
+      a.addEventListener('click', function (e) {
+        if (!link) e.preventDefault();
+        ntShow(false);
+      });
+      host.appendChild(a);
+    });
+  }
+  function ntPoll() {
+    if (!ME || NT.busy || document.hidden) return;
+    NT.busy = true;
+    api('POST', '/api/notify', { action: 'list' }, function (st, d) {
+      NT.busy = false;
+      if (st !== 200 || !d.items) return;
+      var first = NT.known === null;
+      var known = NT.known || {};
+      var fresh = d.items.filter(function (n) { return !known[n.id] && n.t > d.readAt; });
+      NT.known = {};
+      d.items.forEach(function (n) { NT.known[n.id] = 1; });
+      NT.items = d.items; NT.readAt = d.readAt;
+      NT.unread = NT.open ? 0 : d.unread;
+      if (!NT.open) NT.seenAt = d.readAt;
+      ntPaint();
+      if (NT.open) ntDraw();
+      // keep what's on screen in step with what just happened
+      if (!first && fresh.length) {
+        var kinds = fresh.map(function (n) { return n.kind; }).join(' ');
+        if (/payout-(ok|no)/.test(kinds) && route.tab === 'profile') poLoad();
+        if (/payout-(ok|no)/.test(kinds) && route.tab === 'payouts') renderBoard();
+        if (/payout-new/.test(kinds) && route.tab === 'admin' && ADM.tab === 'payouts') {
+          admRender();
+        }
+        if (/content/.test(kinds)) refreshMe();
+      }
+      // something new arrived while the page was open
+      if (!first && fresh.length && !NT.open) {
+        toast(fresh.length === 1 ? fresh[0].title + (fresh[0].body ? ': ' +
+          fresh[0].body : '') : fresh.length + ' new notifications');
+      }
+    });
+  }
+  function ntShow(on) {
+    NT.open = on;
+    $('nt-p').hidden = !on;
+    $('nt-b').setAttribute('aria-expanded', on ? 'true' : 'false');
+    setCls($('nt'), 'on', on);
+    if (!on) return;
+    NT.seenAt = NT.readAt;
+    ntDraw();
+    if (NT.unread) {
+      NT.unread = 0; ntPaint();
+      api('POST', '/api/notify', { action: 'read' }, function (st) {
+        if (st === 200) NT.readAt = Date.now();
+      });
+    }
+  }
+  $('nt-b').addEventListener('click', function (e) {
+    e.stopPropagation(); ntShow(!NT.open);
+  });
+  $('nt-p').addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('click', function () { if (NT.open) ntShow(false); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && NT.open) { ntShow(false); $('nt-b').focus(); }
+  });
+  setInterval(ntPoll, 45000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) ntPoll();
+  });
 
   var thumbFor = null;
   function showThumb(it) {
@@ -5267,6 +5435,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     }
     if (d.agreed === false && !d.isAdmin) return showAgree(d);
     applyMe(d);
+    NT.known = null; ntPoll();
     setTimeout(vmScore, 4000);
     DEVICE = deviceId();
     buildTiles();

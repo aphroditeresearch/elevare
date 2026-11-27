@@ -779,6 +779,51 @@ async function t(name, fn) {
     assert.strictEqual((await other.req('POST', '/api/payouts', { action: 'img', id: poId })).status, 404);
   });
 
+  console.log('Notifications');
+  const bell = async c => (await c.req('POST', '/api/notify', { action: 'list' })).data;
+  await t('admins are told when a payout is waiting; members are not', async () => {
+    const a = await bell(admin);
+    assert.ok(a.items.some(n => n.kind === 'payout-new' && n.tab === 'admin'));
+    const m = await bell(member);
+    assert.ok(!m.items.some(n => n.kind === 'payout-new'));
+  });
+  await t('the member hears back when their payout is reviewed', async () => {
+    const m = await bell(member);
+    const n = m.items.find(x => x.kind === 'payout-ok');
+    assert.ok(n && /Topstep/.test(n.body) && /Nice/.test(n.body));
+    const other = client(); await other.signIn('100000000000000008');
+    assert.ok(!(await bell(other)).items.some(x => x.kind === 'payout-ok'));
+  });
+  await t('announcements reach everyone', async () => {
+    await admin.req('POST', '/api/admin', { action: 'announce', text: 'Live at 9:15 tomorrow' });
+    const m = await bell(member);
+    assert.ok(m.items.some(n => n.kind === 'announce' && n.body === 'Live at 9:15 tomorrow'));
+  });
+  await t('a newly published video notifies everyone once', async () => {
+    const before = (await bell(member)).items.filter(n => n.kind === 'content').length;
+    const sid = (await admin.req('POST', '/api/admin', { action: 'section-save', kind: 'lecture',
+      title: 'Bell Section' })).data.section.id;
+    const id = await readyLecture(sid, 'Bell Lecture');
+    await admin.req('POST', '/api/admin', { action: 'status' });   // a second save: no repeat
+    const after = (await bell(member)).items.filter(n => n.kind === 'content');
+    assert.strictEqual(after.length, before + 1);
+    assert.strictEqual(after[0].body, 'Bell Lecture');
+    assert.strictEqual(after[0].ref, id);
+  });
+  await t('switching notifications on with videos already published sends nothing', async () => {
+    const before = (await bell(member)).items.filter(n => n.kind === 'content').length;
+    mocks.store.delete('elevare:nt:seeded'); mocks.store.delete('elevare:nt:items');
+    await admin.req('POST', '/api/admin', { action: 'announce', text: '' });   // any save
+    const after = (await bell(member)).items.filter(n => n.kind === 'content').length;
+    assert.strictEqual(after, before);
+    assert.strictEqual(mocks.store.get('elevare:nt:seeded'), '1');
+  });
+  await t('opening the bell marks everything read', async () => {
+    assert.ok((await bell(member)).unread > 0);
+    await member.req('POST', '/api/notify', { action: 'read' });
+    assert.strictEqual((await bell(member)).unread, 0);
+  });
+
   console.log('Blocking & role removal');
   await t('blocked member is locked out and cannot sign back in', async () => {
     await admin.req('POST', '/api/admin', { action: 'block', uid: MEMBER });

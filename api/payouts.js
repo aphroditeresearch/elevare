@@ -104,6 +104,9 @@ module.exports = async function (req, res) {
       await put(p);
       await L.kv('SADD', UK(s.uid), p.id);
       await L.sessLog('payout-submitted', s, req);
+      await L.notify('admins', { kind: 'payout-new', title: 'Payout to review',
+        body: s.name + ' \u00b7 $' + amount.toLocaleString('en-US') + ' \u00b7 ' + firm,
+        tab: 'admin', ref: 'payouts' });
       return L.json(res, 200, { ok: true, item: mine(p) });
     }
 
@@ -160,6 +163,12 @@ module.exports = async function (req, res) {
       p.rt = Date.now(); p.by = s.name;
       await put(p);
       await L.sessLog('payout-' + p.status + ':' + p.id, s, req);
+      const ok = p.status === 'approved';
+      await L.notify(p.uid, { kind: ok ? 'payout-ok' : 'payout-no',
+        title: ok ? 'Payout verified' : 'Payout not approved',
+        body: '$' + p.amount.toLocaleString('en-US') + ' \u00b7 ' + p.firm +
+          (p.note ? ' \u2014 ' + p.note : ''),
+        tab: ok ? 'payouts' : 'profile' });
       return L.json(res, 200, { ok: true });
     }
     if (a === 'remove') {

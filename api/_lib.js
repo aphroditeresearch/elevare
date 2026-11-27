@@ -210,7 +210,39 @@ async function loadContent() {
   if (!c.announcement) c.announcement = null;
   return c;
 }
-async function saveContent(c) { await kv('SET', K('content'), JSON.stringify(c)); }
+async function saveContent(c) {
+  await kv('SET', K('content'), JSON.stringify(c));
+  try { await noteNewContent(c); } catch (e) { console.error('notify', e); }
+}
+
+// ---------- notifications ----------
+// Lists per member ("nt:<uid>"), for everyone ("nt:all") and for admins
+// ("nt:admins"). Each holds the newest 100; members read them through
+// api/notify.js. A notification never carries anything private to someone else.
+const NT_MAX = 100;
+async function notify(target, n) {
+  const item = Object.assign({ id: rid(6), t: Date.now() }, n);
+  const k = K('nt:' + target);
+  await kv('LPUSH', k, JSON.stringify(item));
+  await kv('LTRIM', k, 0, NT_MAX - 1);
+  return item;
+}
+// A video counts as new the first time it is saved as ready. The first run
+// only records what is already published, so nobody gets old news.
+async function noteNewContent(c) {
+  const ready = (c.items || []).filter(it => it.status === 'ready');
+  const known = (await kv('SMEMBERS', K('nt:items'))) || [];
+  const seeded = await kv('GET', K('nt:seeded'));
+  const fresh = ready.filter(it => known.indexOf(it.id) < 0);
+  if (!fresh.length) { if (!seeded) await kv('SET', K('nt:seeded'), '1'); return; }
+  for (const it of fresh) await kv('SADD', K('nt:items'), it.id);
+  if (!seeded) { await kv('SET', K('nt:seeded'), '1'); return; }
+  for (const it of fresh) {
+    const bd = it.kind === 'breakdown';
+    await notify('all', { kind: 'content', title: bd ? 'New breakdown' : 'New lecture',
+      body: it.title, tab: bd ? 'breakdowns' : 'lectures', ref: it.id, tier: it.tier || '' });
+  }
+}
 
 async function isBlocked(uid) { return (await kv('SISMEMBER', K('blocked'), uid)) === 1; }
 
@@ -746,7 +778,7 @@ module.exports = {
   kv, K, rateLimit, loadContent, saveContent, isBlocked, alert, ripIntent, pingLine,
   isAdminOf, hasAccess, discordMember, displayName,
   discordUser, profileBits,
-  createSession, getSession, pageAccess, fingerprint, sessLog, authFail,
+  createSession, getSession, pageAccess, fingerprint, sessLog, authFail, notify,
   safariAllowed, isSafari, browserOk, isMobile, embeddedBrowser, tiers, tierRole, hasTier, saveSession, destroySession, refresh, requireMember,
   vdo
 };

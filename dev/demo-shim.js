@@ -245,6 +245,19 @@
     return [400, { error: 'action' }];
   }
 
+  var NTR = {};
+  var NTS = [
+    { id: 'n1', t: Date.now() - 20 * 60e3, kind: 'payout-new', title: 'Payout to review',
+      body: 'Member Placeholder \u00b7 $2,500 \u00b7 Topstep', tab: 'admin', ref: 'payouts',
+      admin: true },
+    { id: 'n2', t: Date.now() - 3 * 3600e3, kind: 'content', title: 'New lecture',
+      body: 'Placeholder Lecture Nine', tab: 'lectures', ref: 'i9' },
+    { id: 'n3', t: Date.now() - 26 * 3600e3, kind: 'payout-ok', title: 'Payout verified',
+      body: '$9,200 \u00b7 Lucid Trading', tab: 'payouts' },
+    { id: 'n4', t: Date.now() - 50 * 3600e3, kind: 'announce', title: 'Announcement',
+      body: 'Live session moves to 9:15 ET tomorrow.' }
+  ];
+
   // ---------------- fake API ----------------
   function route(method, path, b) {
     if (path === '/api/me' && method === 'POST' && b.action === 'logout') {
@@ -309,6 +322,13 @@
     }
     if (path === '/api/journal') return journal(uid, b);
     if (path === '/api/payouts') return payouts(uid, b);
+    if (path === '/api/notify') {
+      if (b.action === 'read') { NTR[uid] = Date.now(); return [200, { ok: true }]; }
+      var nl = NTS.filter(function (n) { return !n.admin || isAdmin(); });
+      var ra = NTR[uid] || 0;
+      return [200, { items: clone(nl), readAt: ra,
+        unread: nl.filter(function (n) { return n.t > ra; }).length }];
+    }
     if (path === '/api/admin') {
       if (!isAdmin()) {
         log('admin-probe', method + ' /api/admin');
