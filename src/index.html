@@ -420,7 +420,8 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 .live {
   display: inline-flex; align-items: center; gap: 9px; height: 30px;
   padding: 0 12px; margin-left: 8px; border: 1px solid var(--line);
-  font-size: 12px; font-weight: 500; letter-spacing: .01em; color: var(--muted); white-space: nowrap;
+  font-size: 12px; font-weight: 500; letter-spacing: .01em; color: var(--muted);
+    white-space: nowrap;
 }
 .live i { width: 6px; height: 6px; border-radius: 50%; background: #434c62; }
 .live.on i { background: var(--ok); animation: blink 2.4s ease-in-out infinite; }
@@ -440,7 +441,8 @@ input, textarea, select { -webkit-user-select: text; user-select: text; }
 .out {
   height: 36px; padding: 0 16px; background: none; cursor: pointer;
   border: 1px solid var(--line2); color: var(--soft);
-  font-size: 13px; font-weight: 500; letter-spacing: .01em; transition: border-color .15s, color .15s;
+  font-size: 13px; font-weight: 500; letter-spacing: .01em;
+    transition: border-color .15s, color .15s;
 }
 .out:hover { border-color: var(--muted); color: var(--ink); }
 .wrap {
@@ -1859,7 +1861,8 @@ button.jm-box:hover { border-color: var(--red); }
 .lb-bar { height: 2px; background: var(--line); }
 .lb-bar i { display: block; height: 2px; background: linear-gradient(90deg, var(--red),
   var(--red2)); box-shadow: 0 0 8px rgba(116, 197, 255, .6); }
-.lb-row .lb-amt { text-align: right; color: var(--ink); font: 600 17px "Chakra Petch", var(--sans); }
+.lb-row .lb-amt { text-align: right; color: var(--ink);
+  font: 600 17px "Chakra Petch", var(--sans); }
 .lb-none { position: relative; text-align: center; color: var(--muted); }
 @media (max-width: 900px) { .lb-row { grid-template-columns: 34px 38px 1fr 110px; }
   .lb-c, .lb-bar { display: none; } }
@@ -1918,7 +1921,8 @@ button.jm-box:hover { border-color: var(--red); }
 .po-amt { min-width: 100px; color: var(--ink); font: 600 16px "Chakra Petch", var(--sans); }
 .po-firm { min-width: 150px; }
 .po-date { color: var(--muted); }
-.po-st { padding: 4px 9px; font: 600 12px var(--sans); letter-spacing: .01em; border: 1px solid var(--line2); color: var(--muted); }
+.po-st { padding: 4px 9px; font: 600 12px var(--sans); letter-spacing: .01em;
+  border: 1px solid var(--line2); color: var(--muted); }
 .po-st.approved { color: var(--red2); border-color: rgba(116, 197, 255, .5); }
 .po-st.rejected { color: var(--err); border-color: #4a1d1f; }
 .po-x { margin-left: auto; background: none; border: 0; cursor: pointer; color: var(--muted);
