@@ -1362,14 +1362,28 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .rdy.gate .sys-gate { visibility: visible; animation: sysgate 1.6s ease-in-out infinite; }
 .rdy.gate .sys { position: absolute; }
 @keyframes sysgate { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
-.rdy-snd { position: absolute; left: 28px; bottom: 22px; z-index: 6; }
+.rdy-ctl { position: absolute; left: 28px; bottom: 22px; z-index: 6; display: flex;
+  gap: 22px; }
+#rdy-skip { display: none; }
+.rdy.roll:not(.held) #rdy-skip { display: block; }
+.rdy.dead .rdy-ctl, .rdy.yroll .rdy-ctl { opacity: 0; pointer-events: none; }
+/* the clip: plays full screen, then holds its last frame, dimmed, under the window */
+.rdy-v { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  background: #000; opacity: 0; pointer-events: none;
+  transition: opacity .35s ease, filter .9s ease; }
+.rdy.roll .rdy-v { opacity: 1; }
+.rdy.held .rdy-v { filter: brightness(.42) blur(3px) saturate(1.1); }
+.rdy-scene:after { transition: opacity .9s ease; }
+.rdy.roll:not(.held) .rdy-scene:after { opacity: 0; }
+.rdy-v2 { z-index: 4; transition: none; }
+.rdy.roll .rdy-v2 { opacity: 0; }
+.rdy.yroll .rdy-v2 { opacity: 1; filter: none; }
 
 /* No: a red flash, the screen blurs out, "wasted", then black behind it */
 .rdy.dead .rdy-scene { filter: grayscale(1) blur(9px) brightness(.85) contrast(1.1);
   transition: filter .45s ease-out; animation: dpush 6s cubic-bezier(.15, .6, .3, 1) forwards; }
 @keyframes dpush { to { transform: scale(1.14) rotate(-1.5deg); } }
 .rdy.dead .sys-btn { pointer-events: none; }
-.rdy.dead .rdy-snd { opacity: 0; pointer-events: none; }
 .wst { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center;
   justify-content: center; pointer-events: none; }
 .wst:before { content: ""; position: absolute; inset: 0; background: #b0201c;
@@ -2071,6 +2085,8 @@ button.jm-box:hover { border-color: var(--red); }
   <div class="rdy-scene">
     <img class="rdy-wall" src="/media/wall.webp" alt="" aria-hidden="true"
       draggable="false">
+    <video class="rdy-v" id="rdy-v1" data-src="/media/arise.mp4" playsinline
+      preload="none" disablepictureinpicture data-lvr="1" aria-hidden="true"></video>
     <p class="sys-gate" id="sys-gate">Press any key to continue</p>
     <div class="sys" id="sys" role="dialog" aria-labelledby="sys-q">
       <p class="sys-head"><span class="sys-ic" aria-hidden="true">!</span>
@@ -2083,12 +2099,17 @@ button.jm-box:hover { border-color: var(--red); }
       </div>
     </div>
   </div>
+  <video class="rdy-v rdy-v2" id="rdy-v2" data-src="/media/arise-yes.mp4" playsinline
+    preload="none" disablepictureinpicture data-lvr="1" aria-hidden="true"></video>
   <div class="wst" aria-hidden="true">
     <i class="wst-f"></i><i class="wst-v"></i><i class="wst-k"></i>
     <b class="wst-t">wasted</b>
   </div>
-  <button class="vl-skip rdy-snd" id="rdy-snd" type="button"
-    aria-pressed="true">Sound off</button>
+  <div class="rdy-ctl">
+    <button class="vl-skip" id="rdy-skip" type="button">Skip</button>
+    <button class="vl-skip" id="rdy-snd" type="button"
+      aria-pressed="true">Sound off</button>
+  </div>
   <audio id="wst-snd" preload="auto" src="/media/wasted.m4a"></audio>
 </section>
 
@@ -6345,38 +6366,58 @@ button.jm-box:hover { border-color: var(--red); }
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
   }
   function showReady(d) {
-    var sec = $('v-ready');
-    RDY.d = d; RDY.done = false; clearTimeout(RDY.t);
-    ['open', 'typed', 'gate', 'yes', 'dead', 'black', 'wasted'].forEach(function (c) {
-      setCls(sec, c, false);
-    });
+    var sec = $('v-ready'), v = $('rdy-v1'), y = $('rdy-v2');
+    RDY.d = d; RDY.done = false; RDY.over = false; clearTimeout(RDY.t);
+    ['open', 'typed', 'gate', 'yes', 'dead', 'black', 'wasted', 'roll', 'held', 'yroll']
+      .forEach(function (c) { setCls(sec, c, false); });
     $('sys-t').textContent = '';
     rdySound();
     show('v-ready');
     window.scrollTo(0, 0);
     var c = sfxCtx();
-    function begin() {
-      setCls(sec, 'gate', false);
-      setCls(sec, 'open', true); sfx('open');
-      RDY.t = setTimeout(rdyType, 800);
+    if (!v.getAttribute('src')) v.src = v.getAttribute('data-src');
+    v.muted = !sfxOn();
+    // the clip ends on its hit, and the system window opens over its last frame
+    function after() {
+      if (RDY.over) return;
+      RDY.over = true;
+      try { v.pause(); } catch (e) {}
+      setCls(sec, 'roll', true); setCls(sec, 'held', true);
+      RDY.t = setTimeout(function () {
+        setCls(sec, 'open', true); sfx('open');
+        RDY.t = setTimeout(rdyType, 800);
+      }, 200);
     }
-    if (!c || c.state === 'running' || !sfxOn()) { begin(); return; }
-    // Chrome keeps sound off until the first click or key; ask for one
-    try { c.resume(); } catch (e) {}
-    setTimeout(function () {
-      if (c.state === 'running') { begin(); return; }
+    RDY.after = after;
+    function rolling() {
+      setCls(sec, 'gate', false); setCls(sec, 'roll', true);
+      if (c && c.state !== 'running') { try { c.resume(); } catch (e) {} }
+      if (!y.getAttribute('src')) { y.src = y.getAttribute('data-src'); y.load(); }
+    }
+    v.onended = after;
+    v.onerror = after;
+    function gate() {
+      // Chrome keeps sound off until the first click or key; ask for one
       setCls(sec, 'gate', true);
       function go(e) {
-        if (e && e.target && e.target.id === 'rdy-snd') return;
+        if (e && e.target && e.target.closest && e.target.closest('.rdy-ctl')) return;
         document.removeEventListener('pointerdown', go, true);
         document.removeEventListener('keydown', go, true);
-        var p = null;
-        try { p = c.resume(); } catch (er) {}
-        if (p && p.then) p.then(begin, begin); else begin();
+        if (c) { try { c.resume(); } catch (er) {} }
+        var q = v.play();
+        rolling();
+        if (q && q.catch) q.catch(after);
       }
       document.addEventListener('pointerdown', go, true);
       document.addEventListener('keydown', go, true);
-    }, 150);
+    }
+    var p = v.play();
+    if (p && p.then) {
+      p.then(rolling, function () {
+        if (!v.muted) { gate(); return; }
+        after();
+      });
+    } else rolling();
   }
   function rdyType() {
     var sec = $('v-ready'), t = $('sys-t'), i = 0;
@@ -6401,8 +6442,21 @@ button.jm-box:hover { border-color: var(--red); }
     RDY.done = true;
     sfx('yes'); setCls($('sys-yes'), 'hit', true);
     try { sessionStorage.setItem('elevare.ready', '1'); } catch (e) {}
+    var y = $('rdy-v2'), fin = false;
+    function inside() {
+      if (fin) return;
+      fin = true; setCls($('sys-yes'), 'hit', false); enter(RDY.d);
+    }
     setTimeout(function () { setCls($('v-ready'), 'yes', true); }, 220);
-    setTimeout(function () { setCls($('sys-yes'), 'hit', false); enter(RDY.d); }, 950);
+    setTimeout(function () {
+      if (!y.getAttribute('src')) y.src = y.getAttribute('data-src');
+      y.muted = !sfxOn();
+      y.onended = inside; y.onerror = inside;
+      setCls($('v-ready'), 'yroll', true);
+      var p = y.play();
+      if (p && p.catch) p.catch(inside);
+      setTimeout(inside, 8000);
+    }, 800);
   }
   function rdyNo() {
     if (RDY.done) return;
@@ -6442,18 +6496,21 @@ button.jm-box:hover { border-color: var(--red); }
       (document.activeElement === $('sys-yes') ? $('sys-no') : $('sys-yes')).focus();
     }
   });
+  $('rdy-skip').addEventListener('click', function () { if (RDY.after) RDY.after(); });
   $('rdy-snd').addEventListener('click', function () {
     var on = !sfxOn();
     try { localStorage.setItem('elevare.sfx', on ? '1' : '0'); } catch (e) {}
     rdySound();
+    $('rdy-v1').muted = !on; $('rdy-v2').muted = !on;
     var c = sfxCtx();
     if (on && c && c.state !== 'running') { try { c.resume(); } catch (er) {} }
   });
 
   function enter(d) {
     tabMark(true);
-    if (d.agreed === false && !d.isAdmin) return showAgree(d);
     if (needReady()) return showReady(d);
+    try { $('rdy-v1').pause(); $('rdy-v2').pause(); } catch (e) {}
+    if (d.agreed === false && !d.isAdmin) return showAgree(d);
     if (d.needsMfa) {
       setTimeout(function () {
         toast('Admin tools are off: turn on two-factor authentication in' +
@@ -6484,11 +6541,11 @@ button.jm-box:hover { border-color: var(--red); }
     var snd = document.getElementById('vl-sound');
     var done = false, started = false, wait = 0, tried = false;
     var FADE = 1800;                     // same length as the picture's fade
-    function fadeOut() {                 // the sound follows the picture down
-      var t0 = 0, v0 = v.volume;
+    function fadeOut(ms) {               // the sound follows the picture down
+      var t0 = 0, v0 = v.volume, len = ms || FADE;
       function step(now) {
         if (!t0) t0 = now;
-        var k = Math.min(1, (now - t0) / FADE);
+        var k = Math.min(1, (now - t0) / len);
         v.volume = v0 * (1 - k * k * (3 - 2 * k));
         if (k < 1) requestAnimationFrame(step);
         else v.pause();
@@ -6500,7 +6557,14 @@ button.jm-box:hover { border-color: var(--red); }
       done = true;
       try { sessionStorage.setItem('elevare.intro', '1'); } catch (e) {}
       setCls(sec, 'vl-live', true);
-      if (natural === true) return;      // let the clip ring out on its own
+      if (natural === true) {
+        // the music fades away over what's left of the clip, as the picture
+        // fades out, instead of stopping dead on the last frame
+        if (!v.muted && v.duration) {
+          fadeOut(Math.max(400, (v.duration - v.currentTime) * 1000 - 80));
+        }
+        return;
+      }
       if (!v.paused && !v.muted) fadeOut();
       else setTimeout(function () { v.pause(); }, 1100);
     }
