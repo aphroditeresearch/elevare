@@ -6,12 +6,12 @@
 const L = require('./_lib');
 
 const TYPES = ['p', 'h', 'li', 'todo', 'quote', 'call'];
-const CATS = ['Daily', 'Trades', 'Mind'];
-const DEFAULTS = [
-  ['Daily', 'session-notes'], ['Daily', 'thoughts'],
-  ['Trades', 'trade-executions'], ['Mind', 'lessons']
-];
-const MAX = { chans: 200, pages: 2000, blocks: 400, text: 4000, title: 140, bytes: 60000 };
+// A new journal starts with these; everything else is the member's to make.
+// (Lectures and Breakdowns fill themselves from the notes under each video.)
+const STARTER = [['Trade Journal', 'trade-executions'], ['Markups', 'markups'],
+  ['Daily Thesis', 'daily-thesis']];
+const MAX = { cats: 40, chans: 200, pages: 2000, blocks: 400, text: 4000, title: 140,
+  bytes: 60000 };
 const KIND_CAT = { lecture: 'Lectures', breakdown: 'Breakdowns' };
 
 const IK = uid => L.K('jr:' + uid);
@@ -21,6 +21,10 @@ const id36 = () => L.rid(6);
 function slug(s) {
   return String(s || '').toLowerCase().replace(/['’]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'notes';
+}
+function cleanCat(s) {
+  return String(s || '').replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ')
+    .trim().slice(0, 24);
 }
 function cleanTitle(s) {
   return String(s || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, MAX.title);
@@ -43,9 +47,11 @@ async function loadIndex(uid) {
   const raw = await L.kv('GET', IK(uid));
   let ix = null; try { ix = raw ? JSON.parse(raw) : null; } catch (e) { ix = null; }
   if (!ix || !Array.isArray(ix.chans) || !Array.isArray(ix.pages)) {
-    ix = { v: 1, chans: DEFAULTS.map(d => ({ id: id36(), cat: d[0], name: d[1] })), pages: [] };
+    ix = { v: 2, cats: STARTER.map(x => x[0]),
+      chans: STARTER.map(x => ({ id: id36(), cat: x[0], name: x[1] })), pages: [] };
     await saveIndex(uid, ix);
   }
+  if (!Array.isArray(ix.cats)) ix.cats = [];
   return ix;
 }
 async function saveIndex(uid, ix) { await L.kv('SET', IK(uid), JSON.stringify(ix)); }
@@ -64,7 +70,7 @@ function present(ix, c) {
   const titles = {};
   c.items.forEach(it => { titles[it.id] = it; });
   return {
-    cats: CATS,
+    cats: ix.cats,
     chans: ix.chans.map(ch => {
       const it = ch.vid ? titles[ch.vid] : null;
       return {
@@ -74,7 +80,8 @@ function present(ix, c) {
     }),
     pages: ix.pages.map(p => {
       const it = p.vid ? titles[p.vid] : null;
-      return { id: p.id, ch: p.ch, title: it ? it.title : p.title, up: p.up, vid: p.vid || undefined };
+      return { id: p.id, ch: p.ch, title: it ? it.title : p.title, up: p.up,
+        vid: p.vid || undefined };
     })
   };
 }
@@ -147,7 +154,7 @@ module.exports = async function (req, res) {
       } else {
         p = ix.pages.find(x => x.id === String(b.id || ''));
         if (!p) return L.json(res, 404, { error: 'not_found' });
-        if (!p.vid && b.title !== undefined) p.title = cleanTitle(b.title) || 'Untitled';
+        if (!p.vid && b.title !== undefined) p.title = cleanTitle(b.title);
       }
       p.up = Date.now();
       await L.kv('SET', PK(uid, p.id), JSON.stringify({ blocks }));
@@ -160,16 +167,53 @@ module.exports = async function (req, res) {
       const ch = ix.chans.find(x => x.id === String(b.ch || ''));
       if (!ch || ch.vid) return L.json(res, 404, { error: 'not_found' });
       if (ix.pages.length >= MAX.pages) return L.json(res, 409, { error: 'full' });
-      const p = { id: id36(), ch: ch.id, title: cleanTitle(b.title) || 'Untitled', up: Date.now() };
+      const p = { id: id36(), ch: ch.id, title: cleanTitle(b.title), up: Date.now() };
       ix.pages.push(p);
       await L.kv('SET', PK(uid, p.id), JSON.stringify({ blocks: [] }));
       await saveIndex(uid, ix);
       return L.json(res, 200, { ok: true, page: p });
     }
 
-    if (a === 'chan') {
-      const cat = CATS.indexOf(b.cat) >= 0 ? b.cat : 'Daily';
+    if (a === 'cat') {
       const ix = await loadIndex(uid);
+      const name = cleanCat(b.name);
+      if (!name) return L.json(res, 400, { error: 'name' });
+      if (ix.cats.length >= MAX.cats) return L.json(res, 409, { error: 'full' });
+      if (ix.cats.indexOf(name) < 0) ix.cats.push(name);
+      await saveIndex(uid, ix);
+      return L.json(res, 200, { ok: true, cats: ix.cats });
+    }
+
+    if (a === 'renamecat') {
+      const ix = await loadIndex(uid);
+      const from = String(b.from || ''), to = cleanCat(b.name);
+      const i = ix.cats.indexOf(from);
+      if (i < 0 || !to) return L.json(res, 404, { error: 'not_found' });
+      ix.cats[i] = to;
+      ix.chans.forEach(c => { if (!c.vid && c.cat === from) c.cat = to; });
+      await saveIndex(uid, ix);
+      return L.json(res, 200, { ok: true, cats: ix.cats });
+    }
+
+    if (a === 'delcat') {
+      const ix = await loadIndex(uid);
+      const name = String(b.name || '');
+      if (ix.cats.indexOf(name) < 0) return L.json(res, 404, { error: 'not_found' });
+      const gone = ix.chans.filter(c => !c.vid && c.cat === name).map(c => c.id);
+      for (const p of ix.pages.filter(x => gone.indexOf(x.ch) >= 0)) {
+        await L.kv('DEL', PK(uid, p.id));
+      }
+      ix.pages = ix.pages.filter(x => gone.indexOf(x.ch) < 0);
+      ix.chans = ix.chans.filter(c => gone.indexOf(c.id) < 0);
+      ix.cats = ix.cats.filter(c => c !== name);
+      await saveIndex(uid, ix);
+      return L.json(res, 200, { ok: true });
+    }
+
+    if (a === 'chan') {
+      const ix = await loadIndex(uid);
+      // a channel sits in one of the member's categories, or on its own
+      const cat = ix.cats.indexOf(b.cat) >= 0 ? b.cat : '';
       if (ix.chans.length >= MAX.chans) return L.json(res, 409, { error: 'full' });
       const ch = { id: id36(), cat, name: slug(b.name) };
       ix.chans.push(ch);

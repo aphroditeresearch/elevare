@@ -81,15 +81,11 @@
   }
   function jix(uid) {
     if (!JRN[uid]) {
-      JRN[uid] = { chans: [
-        { id: 'c1', cat: 'Daily', name: 'session-notes' },
-        { id: 'c2', cat: 'Daily', name: 'thoughts' },
-        { id: 'c3', cat: 'Trades', name: 'trade-executions' },
-        { id: 'c4', cat: 'Mind', name: 'lessons' }],
-        pages: [{ id: 'p1', ch: 'c1', title: 'Welcome to your journal', up: Date.now() }],
-        body: { p1: [{ t: 'p', x: 'Everything you write here stays private to you.' },
-          { t: 'h', x: 'Try it' }, { t: 'li', x: 'Type / to pick a block' },
-          { t: 'todo', x: 'Write tomorrow\u2019s plan' }] } };
+      JRN[uid] = { cats: ['Trade Journal', 'Markups', 'Daily Thesis'], chans: [
+        { id: 'c1', cat: 'Trade Journal', name: 'trade-executions' },
+        { id: 'c2', cat: 'Markups', name: 'markups' },
+        { id: 'c3', cat: 'Daily Thesis', name: 'daily-thesis' }],
+        pages: [], body: {} };
     }
     return JRN[uid];
   }
@@ -98,7 +94,36 @@
     var J = jix(uid), a = b.action, i;
     function pg(id) { for (i = 0; i < J.pages.length; i++) if (J.pages[i].id === id) return J.pages[i]; }
     function byVid(v) { for (i = 0; i < J.pages.length; i++) if (J.pages[i].vid === v) return J.pages[i]; }
-    if (a === 'index') return [200, { chans: clone(J.chans), pages: clone(J.pages) }];
+    if (a === 'index') {
+      return [200, { cats: clone(J.cats), chans: clone(J.chans), pages: clone(J.pages) }];
+    }
+    if (a === 'cat') {
+      var cn = String(b.name || '').trim().slice(0, 24);
+      if (cn && J.cats.indexOf(cn) < 0) J.cats.push(cn);
+      return [200, { ok: true, cats: clone(J.cats) }];
+    }
+    if (a === 'renamecat') {
+      var ci = J.cats.indexOf(b.from), to = String(b.name || '').trim().slice(0, 24);
+      if (ci < 0 || !to) return [404, { error: 'not_found' }];
+      J.cats[ci] = to;
+      J.chans.forEach(function (c) { if (!c.vid && c.cat === b.from) c.cat = to; });
+      return [200, { ok: true, cats: clone(J.cats) }];
+    }
+    if (a === 'delcat') {
+      var gone = J.chans.filter(function (c) { return !c.vid && c.cat === b.name; })
+        .map(function (c) { return c.id; });
+      J.cats = J.cats.filter(function (c) { return c !== b.name; });
+      J.chans = J.chans.filter(function (c) { return gone.indexOf(c.id) < 0; });
+      J.pages = J.pages.filter(function (p) { return gone.indexOf(p.ch) < 0; });
+      return [200, { ok: true }];
+    }
+    if (a === 'rename') {
+      for (i = 0; i < J.chans.length; i++) {
+        if (J.chans[i].id === b.id) { J.chans[i].name = jslug(b.name);
+          return [200, { ok: true, chan: clone(J.chans[i]) }]; }
+      }
+      return [404, { error: 'not_found' }];
+    }
     if (a === 'page') {
       var p = pg(b.id); if (!p) return [404, { error: 'not_found' }];
       var o = clone(p); o.blocks = clone(J.body[p.id] || []); return [200, { page: o }];
@@ -123,17 +148,18 @@
         }
       } else {
         sp = pg(b.id); if (!sp) return [404, { error: 'not_found' }];
-        if (b.title !== undefined) sp.title = String(b.title).slice(0, 140) || 'Untitled';
+        if (b.title !== undefined) sp.title = String(b.title).slice(0, 140);
       }
       sp.up = Date.now(); J.body[sp.id] = clone(b.blocks || []);
       return [200, { ok: true, id: sp.id, ch: sp.ch, up: sp.up }];
     }
     if (a === 'newpage') {
-      var np = { id: 'p' + (++jn), ch: b.ch, title: b.title || 'Untitled', up: Date.now() };
+      var np = { id: 'p' + (++jn), ch: b.ch, title: b.title || '', up: Date.now() };
       J.pages.push(np); J.body[np.id] = []; return [200, { ok: true, page: clone(np) }];
     }
     if (a === 'chan') {
-      var nc = { id: 'c' + (++jn), cat: b.cat || 'Daily', name: jslug(b.name) };
+      var nc = { id: 'c' + (++jn), cat: J.cats.indexOf(b.cat) >= 0 ? b.cat : '',
+        name: jslug(b.name) };
       J.chans.push(nc); return [200, { ok: true, chan: clone(nc) }];
     }
     if (a === 'delpage') {

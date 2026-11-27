@@ -1453,6 +1453,15 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
 .jr-add button:hover { border-color: var(--red); color: var(--ink); }
 @media (max-width: 1100px) { .jr-rail { display: none; } }
 
+.jr-empty { margin: 2px 8px 6px 26px; color: var(--dim); font: 12px/1.5 var(--sans); }
+.jr-tools { display: flex; gap: 6px; margin-top: 18px; padding-top: 14px;
+  border-top: 1px solid var(--line); }
+.jr-tool { flex: 1; background: none; border: 1px solid var(--line2); cursor: pointer;
+  padding: 8px 6px; color: var(--muted); font: 12px var(--sans); }
+.jr-tool:hover { color: var(--ink); border-color: var(--red); }
+.jr-x.on2 { opacity: 1; color: var(--muted); }
+.jr-cat .jr-x { padding: 2px 4px; }
+.jr-cat:hover .jr-x { opacity: 1; }
 /* blocks (journal pages and the notes under videos) */
 .jb-host { display: flex; flex-direction: column; gap: 4px; }
 .jb { position: relative; display: flex; align-items: flex-start; gap: 10px; }
@@ -1726,9 +1735,11 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
               keep writing&#x2026;</p>
           </div>
           <div class="jr-none" id="jr-none" hidden>
-            <p class="jr-chan">Journal</p>
-            <h1 class="jr-h">Pick a channel</h1>
-            <p>Your notes stay private to you.</p>
+            <p class="jr-chan">Your journal</p>
+            <h1 class="jr-h">Make it yours</h1>
+            <p>Start with a category or a channel on the left, and organize it
+              however you like. Notes you write under videos show up here
+              on their own. Everything stays private to you.</p>
           </div>
         </div>
         <aside class="jr-rail" aria-label="Page tools">
@@ -2617,9 +2628,8 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     };
   }
 
-  var JR_CATS = ['Daily', 'Trades', 'Mind', 'Lectures', 'Breakdowns'];
   var JR = { ix: null, page: null, ed: null, t: null, dirty: false, busy: false,
-    shut: {}, adding: null, del: null, q: '' };
+    shut: {}, edit: null, del: null, q: '', fresh: null };
 
   function jrAgo(t) {
     if (!t) return '';
@@ -2628,10 +2638,6 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     if (s < 3600) return Math.round(s / 60) + ' min ago';
     if (s < 86400) return Math.round(s / 3600) + ' h ago';
     return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  }
-  function jrToday() {
-    return new Date().toLocaleDateString(undefined,
-      { weekday: 'long', month: 'long', day: 'numeric' });
   }
   function jrChan(id) {
     var c = JR.ix ? JR.ix.chans : [];
@@ -2662,7 +2668,7 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
         }
         pg.up = d.up;
         var ip = JR.ix && JR.ix.pages.filter(function (p) { return p.id === pg.id; })[0];
-        if (ip) { ip.up = d.up; if (!pg.vid) ip.title = $('jr-title').value || 'Untitled'; }
+        if (ip) { ip.up = d.up; if (!pg.vid) ip.title = $('jr-title').value; }
         if (JR.page === pg) jrStatus('Saved \u00b7 edited ' + jrAgo(d.up));
         jrDrawNav();
       });
@@ -2732,7 +2738,8 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       if (location.hash !== '#journal' + SEP + pg.id) {
         history.replaceState(null, '', '#journal' + SEP + pg.id);
       }
-      if (!pg.blocks || !pg.blocks.length) JR.ed.focusEnd();
+      if (JR.fresh === pg.id) { JR.fresh = null; $('jr-title').focus(); }
+      else if (!pg.blocks || !pg.blocks.length) JR.ed.focusEnd();
     });
   }
   function jrToc() {
@@ -2747,11 +2754,10 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
   }
   function jrNewPage(ch) {
     jrSave(true);
-    api('POST', '/api/journal', { action: 'newpage', ch: ch, title: jrToday() },
-      function (st, d) {
-        if (st !== 200) return;
-        JR.ix.pages.push(d.page); jrOpen(d.page.id);
-      });
+    api('POST', '/api/journal', { action: 'newpage', ch: ch }, function (st, d) {
+      if (st !== 200) return;
+      JR.ix.pages.push(d.page); JR.fresh = d.page.id; jrOpen(d.page.id);
+    });
   }
   function jrDeletePage() {
     var pg = JR.page;
@@ -2773,21 +2779,60 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       jrRoute();
     });
   }
-  function jrAddChannel(cat, input) {
-    var name = input.value.trim();
-    JR.adding = null;
-    if (!name) { jrDrawNav(); return; }
-    api('POST', '/api/journal', { action: 'chan', cat: cat, name: name }, function (st, d) {
+  // Lectures always leads (it fills itself from the notes under each lecture)
+  function jrCats() {
+    var out = ['Lectures', ''].concat(JR.ix.cats || []);
+    if (JR.ix.chans.some(function (x) { return x.vid && x.cat === 'Breakdowns'; })) {
+      out.push('Breakdowns');
+    }
+    return out;
+  }
+  function jrPost(body, cb) {
+    api('POST', '/api/journal', body, function (st, d) {
       if (st !== 200) { jrDrawNav(); return; }
+      cb(d);
+    });
+  }
+  // one inline text box at a time: a new category or channel, or a rename
+  function jrInput(holder, ph, val, done) {
+    var f = el('div', 'jr-new');
+    var inp = el('input'); inp.type = 'text'; inp.maxLength = 40;
+    inp.placeholder = ph; inp.value = val || ''; inp.setAttribute('aria-label', ph);
+    var fin = false;
+    function end(ok) {
+      if (fin) return; fin = true; JR.edit = null;
+      var v = inp.value.trim();
+      if (ok && v && v !== val) done(v); else jrDrawNav();
+    }
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); end(true); }
+      if (e.key === 'Escape') { e.preventDefault(); end(false); }
+    });
+    inp.addEventListener('blur', function () { end(true); });
+    f.appendChild(inp); holder.appendChild(f);
+    setTimeout(function () { inp.focus(); inp.select(); }, 0);
+  }
+  function jrNewChannel(cat, name) {
+    jrPost({ action: 'chan', cat: cat, name: name }, function (d) {
       JR.ix.chans.push(d.chan); jrNewPage(d.chan.id);
     });
   }
   function jrDeleteChannel(ch) {
-    api('POST', '/api/journal', { action: 'delchan', id: ch.id }, function (st) {
-      if (st !== 200) return;
+    jrPost({ action: 'delchan', id: ch.id }, function () {
       JR.ix.chans = JR.ix.chans.filter(function (c) { return c.id !== ch.id; });
       JR.ix.pages = JR.ix.pages.filter(function (p) { return p.ch !== ch.id; });
       if (JR.page && JR.page.ch === ch.id) { JR.page = null; route.id = null; }
+      JR.del = null; jrRoute();
+    });
+  }
+  function jrDeleteCat(cat) {
+    jrPost({ action: 'delcat', name: cat }, function () {
+      var gone = JR.ix.chans.filter(function (c) { return !c.vid && c.cat === cat; })
+        .map(function (c) { return c.id; });
+      JR.ix.cats = JR.ix.cats.filter(function (c) { return c !== cat; });
+      JR.ix.chans = JR.ix.chans.filter(function (c) { return gone.indexOf(c.id) < 0; });
+      JR.ix.pages = JR.ix.pages.filter(function (p) { return gone.indexOf(p.ch) < 0; });
+      if (JR.page && gone.indexOf(JR.page.ch) >= 0) { JR.page = null; route.id = null; }
       JR.del = null; jrRoute();
     });
   }
@@ -2795,10 +2840,11 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
     var nav = $('jr-nav'); clear(nav);
     if (!JR.ix) return;
     var q = JR.q;
-    JR_CATS.forEach(function (cat) {
-      var chans = JR.ix.chans.filter(function (c) { return c.cat === cat; });
-      var user = cat !== 'Lectures' && cat !== 'Breakdowns';
-      if (!chans.length && !user) return;
+    jrCats().forEach(function (cat) {
+      var auto = cat === 'Lectures' || cat === 'Breakdowns';
+      var chans = JR.ix.chans.filter(function (c) {
+        return auto ? c.vid && c.cat === cat : !c.vid && c.cat === cat;
+      });
       var shown = chans.filter(function (c) {
         if (!q) return true;
         if (c.name.indexOf(q) >= 0) return true;
@@ -2807,43 +2853,85 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
         });
       });
       if (q && !shown.length) return;
-      var head = el('div', 'jr-cat');
-      var tog = el('button', 'jr-cat-t' + (JR.shut[cat] ? ' shut' : ''), cat);
-      tog.type = 'button';
-      tog.addEventListener('click', function () { JR.shut[cat] = !JR.shut[cat]; jrDrawNav(); });
-      head.appendChild(tog);
-      if (user) {
-        var plus = el('button', 'jr-plus', '+'); plus.type = 'button';
-        plus.setAttribute('aria-label', 'New channel in ' + cat);
-        plus.addEventListener('click', function () {
-          JR.adding = cat; JR.shut[cat] = false; jrDrawNav();
-        });
-        head.appendChild(plus);
+      if (cat) {
+        var head = el('div', 'jr-cat');
+        if (JR.edit === 'cat:' + cat) {
+          jrInput(head, 'Category name', cat, function (v) {
+            jrPost({ action: 'renamecat', from: cat, name: v }, function (d) {
+              JR.ix.chans.forEach(function (c) { if (!c.vid && c.cat === cat) c.cat = v; });
+              JR.ix.cats = d.cats; jrDrawNav();
+            });
+          });
+        } else {
+          var tog = el('button', 'jr-cat-t' + (JR.shut[cat] ? ' shut' : ''), cat);
+          tog.type = 'button';
+          tog.addEventListener('click', function () {
+            JR.shut[cat] = !JR.shut[cat]; jrDrawNav();
+          });
+          if (!auto) {
+            tog.title = 'Double-click to rename';
+            tog.addEventListener('dblclick', function () { JR.edit = 'cat:' + cat; jrDrawNav(); });
+          }
+          head.appendChild(tog);
+          if (!auto) {
+            if (JR.del === 'k:' + cat) {
+              var yes = el('button', 'jr-x on', 'Delete all'); yes.type = 'button';
+              yes.addEventListener('click', function () { jrDeleteCat(cat); });
+              var no = el('button', 'jr-x on2', 'Keep'); no.type = 'button';
+              no.addEventListener('click', function () { JR.del = null; jrDrawNav(); });
+              head.appendChild(yes); head.appendChild(no);
+            } else {
+              var dx = el('button', 'jr-x', '\u00d7'); dx.type = 'button';
+              dx.setAttribute('aria-label', 'Delete category ' + cat);
+              dx.addEventListener('click', function () { JR.del = 'k:' + cat; jrDrawNav(); });
+              var plus = el('button', 'jr-plus', '+'); plus.type = 'button';
+              plus.setAttribute('aria-label', 'New channel in ' + cat);
+              plus.addEventListener('click', function () {
+                JR.edit = 'new:' + cat; JR.shut[cat] = false; jrDrawNav();
+              });
+              head.appendChild(dx); head.appendChild(plus);
+            }
+          }
+        }
+        nav.appendChild(head);
+        if (JR.shut[cat] && !q) return;
       }
-      nav.appendChild(head);
-      if (JR.shut[cat] && !q) return;
       shown.forEach(function (c) { nav.appendChild(jrChanRow(c)); });
-      if (JR.adding === cat) {
-        var f = el('div', 'jr-new');
-        var inp = el('input'); inp.type = 'text'; inp.maxLength = 40;
-        inp.placeholder = 'new-channel'; inp.setAttribute('aria-label', 'Channel name');
-        inp.addEventListener('keydown', function (e) {
-          if (e.key === 'Enter') { e.preventDefault(); jrAddChannel(cat, inp); }
-          if (e.key === 'Escape') { JR.adding = null; jrDrawNav(); }
-        });
-        inp.addEventListener('blur', function () {
-          if (JR.adding === cat) jrAddChannel(cat, inp);
-        });
-        f.appendChild(el('span', 'jr-hash', '#')); f.appendChild(inp);
-        nav.appendChild(f);
-        setTimeout(function () { inp.focus(); }, 0);
+      if (cat === 'Lectures' && !chans.length && !q) {
+        nav.appendChild(el('p', 'jr-empty', 'Notes you write under a lecture land' +
+          ' here, one channel per lecture.'));
+      }
+      if (JR.edit === 'new:' + cat) {
+        jrInput(nav, 'new-channel', '', function (v) { jrNewChannel(cat, v); });
       }
     });
+    if (JR.edit === 'newcat') {
+      jrInput(nav, 'Category name', '', function (v) {
+        jrPost({ action: 'cat', name: v }, function (d) { JR.ix.cats = d.cats; jrDrawNav(); });
+      });
+    }
+    var tools = el('div', 'jr-tools');
+    var nc = el('button', 'jr-tool', '+ Category'); nc.type = 'button';
+    nc.addEventListener('click', function () { JR.edit = 'newcat'; jrDrawNav(); });
+    var nh = el('button', 'jr-tool', '+ Channel'); nh.type = 'button';
+    nh.addEventListener('click', function () { JR.edit = 'new:'; jrDrawNav(); });
+    tools.appendChild(nc); tools.appendChild(nh);
+    nav.appendChild(tools);
   }
   function jrChanRow(c) {
     var wrap = el('div', 'jr-ch-w');
     var on = JR.page && JR.page.ch === c.id;
     var row = el('div', 'jr-ch' + (on ? ' on' : ''));
+    if (JR.edit === 'ch:' + c.id) {
+      jrInput(row, 'channel-name', c.name, function (v) {
+        jrPost({ action: 'rename', id: c.id, name: v }, function (d) {
+          c.name = d.chan.name; jrDrawNav();
+          if (on) $('jr-chan').textContent = '# ' + c.name;
+        });
+      });
+      wrap.appendChild(row);
+      return wrap;
+    }
     var a = el('button', 'jr-ch-b'); a.type = 'button';
     a.appendChild(el('span', 'jr-hash', '#'));
     a.appendChild(el('span', 'jr-ch-n', c.name));
@@ -2851,11 +2939,15 @@ body:has(#v-login.vl-play:not(.vl-live)):before { display: none; }
       var ps = jrPagesOf(c.id);
       if (ps.length) jrOpen(ps[0].id); else if (!c.vid) jrNewPage(c.id);
     });
+    if (!c.vid) {
+      a.title = 'Double-click to rename';
+      a.addEventListener('dblclick', function () { JR.edit = 'ch:' + c.id; jrDrawNav(); });
+    }
     row.appendChild(a);
     if (JR.del === 'c:' + c.id) {
       var yes = el('button', 'jr-x on', 'Delete'); yes.type = 'button';
       yes.addEventListener('click', function () { jrDeleteChannel(c); });
-      var no = el('button', 'jr-x', 'Keep'); no.type = 'button';
+      var no = el('button', 'jr-x on2', 'Keep'); no.type = 'button';
       no.addEventListener('click', function () { JR.del = null; jrDrawNav(); });
       row.appendChild(yes); row.appendChild(no);
     } else {

@@ -669,11 +669,26 @@ async function t(name, fn) {
   });
 
   console.log('Journal');
-  await t('a new journal starts with its default channels', async () => {
+  await t('a new journal starts with only the starter sections', async () => {
     const r = await member.req('POST', '/api/journal', { action: 'index' });
     assert.strictEqual(r.status, 200);
-    const names = r.data.chans.map(c => c.name);
-    ['session-notes', 'thoughts', 'trade-executions', 'lessons'].forEach(n => assert.ok(names.includes(n), n));
+    assert.deepStrictEqual(r.data.cats, ['Trade Journal', 'Markups', 'Daily Thesis']);
+    assert.deepStrictEqual(r.data.chans.map(c => c.cat + '/' + c.name),
+      ['Trade Journal/trade-executions', 'Markups/markups', 'Daily Thesis/daily-thesis']);
+    assert.strictEqual(r.data.pages.length, 0);
+  });
+  await t('members make, rename and delete their own categories', async () => {
+    const c = await member.req('POST', '/api/journal', { action: 'cat', name: 'Psychology' });
+    assert.ok(c.data.cats.includes('Psychology'));
+    const ch = await member.req('POST', '/api/journal', { action: 'chan', cat: 'Psychology', name: 'Tilt log' });
+    assert.strictEqual(ch.data.chan.cat, 'Psychology');
+    await member.req('POST', '/api/journal', { action: 'renamecat', from: 'Psychology', name: 'Mindset' });
+    let ix = await member.req('POST', '/api/journal', { action: 'index' });
+    assert.strictEqual(ix.data.chans.find(x => x.id === ch.data.chan.id).cat, 'Mindset');
+    await member.req('POST', '/api/journal', { action: 'delcat', name: 'Mindset' });
+    ix = await member.req('POST', '/api/journal', { action: 'index' });
+    assert.ok(!ix.data.cats.includes('Mindset'));
+    assert.ok(!ix.data.chans.some(x => x.id === ch.data.chan.id));
   });
   await t('notes under a video save to that video\u2019s own channel', async () => {
     const blocks = [{ t: 'h', x: 'Key idea' }, { t: 'p', x: 'Wait for the second touch.' },
@@ -690,7 +705,7 @@ async function t(name, fn) {
   });
   await t('journal pages: create, write, rename, delete', async () => {
     const ix = await member.req('POST', '/api/journal', { action: 'index' });
-    const ch = ix.data.chans.find(c => c.name === 'session-notes');
+    const ch = ix.data.chans.find(c => c.name === 'daily-thesis');
     const np = await member.req('POST', '/api/journal', { action: 'newpage', ch: ch.id, title: 'Monday' });
     const id = np.data.page.id;
     await member.req('POST', '/api/journal', { action: 'save', id, title: 'Monday open',
@@ -698,7 +713,7 @@ async function t(name, fn) {
     const pg = await member.req('POST', '/api/journal', { action: 'page', id });
     assert.strictEqual(pg.data.page.title, 'Monday open');
     assert.strictEqual(pg.data.page.blocks[1].t, 'p');   // unknown types become text
-    const nc = await member.req('POST', '/api/journal', { action: 'chan', cat: 'Mind', name: 'My Wins!' });
+    const nc = await member.req('POST', '/api/journal', { action: 'chan', cat: 'Markups', name: 'My Wins!' });
     assert.strictEqual(nc.data.chan.name, 'my-wins');
     assert.strictEqual((await member.req('POST', '/api/journal', { action: 'delpage', id })).status, 200);
     assert.strictEqual((await member.req('POST', '/api/journal', { action: 'page', id })).status, 404);
