@@ -73,6 +73,26 @@
     return 'S-' + Math.random().toString(16).slice(2, 10).toUpperCase();
   }
 
+  // ---------------- news: a sample week (the real site reads Forex Factory) ----
+  function demoNews() {
+    var mon = new Date(); mon.setUTCHours(0, 0, 0, 0);
+    mon.setUTCDate(mon.getUTCDate() - ((mon.getUTCDay() + 6) % 7));
+    function at(day, h, m) { return mon.getTime() + day * 864e5 + ((h + 5) * 60 + m) * 6e4; }
+    function ev(day, h, m, cur, impact, title, f, p) {
+      return { at: at(day, h, m), cur: cur, impact: impact, title: title, forecast: f || '',
+        previous: p || '' };
+    }
+    return { t: Date.now(), source: 'Forex Factory', next: [], items: [
+      ev(0, 10, 0, 'USD', 'High', 'ISM Manufacturing PMI', '48.6', '48.7'),
+      ev(1, 10, 0, 'USD', 'High', 'JOLTS Job Openings', '7.45M', '7.44M'),
+      ev(2, 8, 15, 'USD', 'High', 'ADP Non-Farm Employment Change', '150K', '143K'),
+      ev(2, 10, 0, 'USD', 'High', 'ISM Services PMI', '52.1', '52.0'),
+      ev(3, 8, 30, 'USD', 'Medium', 'Unemployment Claims', '221K', '219K'),
+      ev(4, 8, 30, 'USD', 'High', 'Non-Farm Employment Change', '180K', '175K'),
+      ev(4, 8, 30, 'USD', 'High', 'Unemployment Rate', '4.1%', '4.1%'),
+      ev(4, 10, 0, 'USD', 'Medium', 'Prelim UoM Consumer Sentiment', '71.0', '71.8')] };
+  }
+
   // ---------------- journal (kept in memory, per signed-in person) ----------
   var JRN = {}, JIM = {}, JWHO = {};
   function jslug(t) {
@@ -368,6 +388,7 @@
       return [200, { otp: 'demo', playbackInfo: 'demo', session: sid }];
     }
     if (path === '/api/journal') return journal(uid, b, isAdmin());
+    if (path === '/api/news') return [200, demoNews()];
     if (path === '/api/payouts') return payouts(uid, b);
     if (path === '/api/notify') {
       if (b.action === 'read') { NTR[uid] = Date.now(); return [200, { ok: true }]; }

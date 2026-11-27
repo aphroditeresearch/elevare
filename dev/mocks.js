@@ -74,6 +74,11 @@ function start(port) {
       // ---- Upstash ----
       if (p === '/redis') return send(res, 200, { result: redis(JSON.parse(raw)) });
       if (p === '/hook') { hooks.push(JSON.parse(raw)); res.writeHead(204); return res.end(); }
+      if (p.indexOf('/news/') === 0) {
+        news.hits++;
+        if (news.down) return send(res, 503, { error: 'down' });
+        return send(res, 200, p.indexOf('nextweek') > 0 ? [] : newsWeek());
+      }
       // ---- IPinfo Lite ----
       if (p.indexOf('/ipinfo/lite/') === 0) {
         const ip = decodeURIComponent(p.slice(13));
@@ -163,4 +168,31 @@ function start(port) {
   return new Promise(r => srv.listen(port, '127.0.0.1', () => r(srv)));
 }
 
-module.exports = { start, users, videos, deleted, otps, hooks, store, ACCESS };
+// a sample week for the Forex Factory feed: Monday of this week (New York)
+const news = { hits: 0, down: false };
+function newsWeek() {
+  const now = new Date();
+  const mon = new Date(now); mon.setUTCHours(0, 0, 0, 0);
+  mon.setUTCDate(mon.getUTCDate() - ((mon.getUTCDay() + 6) % 7));
+  const at = (day, hh, mm) => {
+    const d = new Date(mon); d.setUTCDate(d.getUTCDate() + day);
+    const ymd = d.toISOString().slice(0, 10);
+    return ymd + 'T' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':00-05:00';
+  };
+  return [
+    { title: 'Flash Manufacturing PMI', country: 'EUR', date: at(0, 4, 0), impact: 'Medium', forecast: '49.8', previous: '49.6' },
+    { title: 'ISM Manufacturing PMI', country: 'USD', date: at(0, 10, 0), impact: 'High', forecast: '48.6', previous: '48.7' },
+    { title: 'JOLTS Job Openings', country: 'USD', date: at(1, 10, 0), impact: 'High', forecast: '7.45M', previous: '7.44M' },
+    { title: 'ADP Non-Farm Employment Change', country: 'USD', date: at(2, 8, 15), impact: 'High', forecast: '150K', previous: '143K' },
+    { title: 'ISM Services PMI', country: 'USD', date: at(2, 10, 0), impact: 'High', forecast: '52.1', previous: '52.0' },
+    { title: 'Crude Oil Inventories', country: 'USD', date: at(2, 10, 30), impact: 'Low', forecast: '', previous: '-1.2M' },
+    { title: 'Unemployment Claims', country: 'USD', date: at(3, 8, 30), impact: 'Medium', forecast: '221K', previous: '219K' },
+    { title: 'BOE Gov Bailey Speaks', country: 'GBP', date: at(3, 7, 0), impact: 'Medium', forecast: '', previous: '' },
+    { title: 'Non-Farm Employment Change', country: 'USD', date: at(4, 8, 30), impact: 'High', forecast: '180K', previous: '175K' },
+    { title: 'Unemployment Rate', country: 'USD', date: at(4, 8, 30), impact: 'High', forecast: '4.1%', previous: '4.1%' },
+    { title: 'Prelim UoM Consumer Sentiment', country: 'USD', date: at(4, 10, 0), impact: 'Medium', forecast: '71.0', previous: '71.8' },
+    { title: 'Bank Holiday', country: 'JPY', date: at(0, 19, 0), impact: 'Holiday', forecast: '', previous: '' },
+    { title: 'Bad <b>row</b>', country: 'x', date: 'nope', impact: 'Huge' }
+  ];
+}
+module.exports = { start, users, videos, deleted, otps, hooks, store, ACCESS, news };

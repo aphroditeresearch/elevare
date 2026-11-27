@@ -1987,6 +1987,61 @@ button.jm-box:hover { border-color: var(--red); }
 .nt-tx em { color: var(--dim); font: normal 11px var(--sans); }
 .nt-empty { margin: 0; padding: 30px 18px; text-align: center; color: var(--muted);
   font: 13px var(--sans); }
+/* ---- news: this week's calendar, in New York and London time ---- */
+.nw { max-width: 1180px; margin: 0 auto; padding: 8px 0 60px; }
+.nw-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; }
+.nw-h { margin: 0; color: var(--ink); font: 700 34px "Chakra Petch", var(--sans); }
+.nw-sub { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.nw-wk { margin-left: auto; display: flex; border: 1px solid var(--line2); }
+.nw-wk button, .nw-g button { background: none; border: 0; cursor: pointer; color: var(--muted);
+  padding: 9px 14px; font: 500 14px "Chakra Petch", var(--sans); }
+.nw-wk button + button { border-left: 1px solid var(--line2); }
+.nw-wk button.on, .nw-g button.on { color: var(--ink); background: rgba(43, 132, 220, .18); }
+.nw-wk button:hover, .nw-g button:hover { color: var(--ink); }
+.nw-f { display: flex; flex-wrap: wrap; gap: 14px; margin: 22px 0 16px; }
+.nw-g { display: flex; flex-wrap: wrap; border: 1px solid var(--line); }
+.nw-g button { padding: 7px 11px; font-size: 13px; display: inline-flex; align-items: center;
+  gap: 7px; }
+.nw-dot { width: 9px; height: 9px; flex: none; }
+.nw-dot.High { background: #e5484d; }
+.nw-dot.Medium { background: #f0883e; }
+.nw-dot.Low { background: #c9a227; }
+.nw-dot.Holiday { background: none; border: 1px solid #6b7a88; }
+.nw-next { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px;
+  margin-bottom: 16px; padding: 14px 18px; border: 1px solid rgba(229, 72, 77, .45);
+  background: rgba(229, 72, 77, .07); font-size: 15px; color: var(--soft); }
+.nw-next b { color: var(--ink); font: 600 17px "Chakra Petch", var(--sans); }
+.nw-next .nw-in { color: #ff9a9e; font: 600 15px "Chakra Petch", var(--sans); }
+.nw-tab { border: 1px solid var(--line); background: #080c11; }
+.nw-row { display: grid; align-items: center; gap: 14px; padding: 10px 18px;
+  grid-template-columns: 82px 58px 44px 12px minmax(0, 1fr) 90px 90px;
+  border-top: 1px solid #10161e; font-size: 14px; color: var(--soft); }
+.nw-th { border-top: 0; padding-top: 12px; padding-bottom: 12px; color: var(--dim);
+  font: 500 12px "Chakra Petch", var(--sans); }
+.nw-day { padding: 16px 18px 8px; border-top: 1px solid var(--line2);
+  color: var(--ink); font: 600 15px "Chakra Petch", var(--sans); }
+.nw-day.today { color: #8fc8ff; }
+.nw-t { font: 600 14px "Chakra Petch", var(--sans); color: var(--ink);
+  font-variant-numeric: tabular-nums; }
+.nw-l { font: 500 14px "Chakra Petch", var(--sans); color: var(--muted);
+  font-variant-numeric: tabular-nums; }
+.nw-c { font: 600 13px "Chakra Petch", var(--sans); color: var(--soft); }
+.nw-e { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--ink); }
+.nw-n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.nw-row.past { opacity: .42; }
+.nw-row.up { background: rgba(229, 72, 77, .08); box-shadow: inset 2px 0 0 #e5484d; }
+.nw-tag { margin-left: 8px; padding: 2px 6px; border: 1px solid rgba(229, 72, 77, .6);
+  color: #ff9a9e; font: 600 11px "Chakra Petch", var(--sans); }
+.nw-empty { padding: 30px 18px; color: var(--muted); }
+.nw-src { margin: 14px 0 0; color: var(--dim); font-size: 12px; }
+/* header: the next big release */
+.nx { display: inline-flex; align-items: center; gap: 7px; margin-left: 6px;
+  padding: 0 4px; color: var(--muted); text-decoration: none;
+  font: 500 13px "Chakra Petch", var(--sans); }
+.nx:hover { color: var(--ink); }
+.nx b { color: #ff9a9e; font-weight: 600; }
+.nx .nw-dot { width: 7px; height: 7px; }
 /* ---- house style: plain and specific; no slants, glows or ghost type ---- */
 .btn:not(.vl-go), .btn.lit:not(.vl-go), .sb, .ghost {
   background: #2b84dc; color: #fff; filter: none; transform: none; box-shadow: none;
@@ -2177,10 +2232,12 @@ button.jm-box:hover { border-color: var(--red); }
       draggable="false"></a>
     <span class="live" id="live" title="Market session, New York time">
       <i></i><span id="live-t"></span></span>
+    <a class="nx" id="nx" href="#news" hidden></a>
     <nav class="nav" id="nav">
       <a href="#lectures" data-tab="lectures">Lectures</a>
       <a href="#breakdowns" data-tab="breakdowns">Breakdowns</a>
       <a href="#journal" data-tab="journal">Journal</a>
+      <a href="#news" data-tab="news">News</a>
       <a href="#payouts" data-tab="payouts">Payouts</a>
       <a href="#profile" data-tab="profile">Profile</a>
       <a href="#admin" data-tab="admin" id="nav-admin" hidden>Admin</a>
@@ -2319,6 +2376,34 @@ button.jm-box:hover { border-color: var(--red); }
             <div><h2 id="lb-mname"></h2><p id="lb-msub"></p></div></div>
           <div class="lb-mlist" id="lb-mlist"></div>
         </div>
+      </div>
+    </section>
+
+    <!-- News: this week's economic calendar -->
+    <section class="pane" id="p-news">
+      <div class="nw">
+        <header class="nw-head">
+          <div>
+            <h1 class="nw-h" id="nw-h">This week</h1>
+            <p class="nw-sub" id="nw-sub"></p>
+          </div>
+          <div class="nw-wk" role="group" aria-label="Week">
+            <button type="button" id="nw-this" class="on">This week</button>
+            <button type="button" id="nw-nextwk">Next week</button>
+          </div>
+        </header>
+        <div class="nw-f">
+          <div class="nw-g" id="nw-imp" role="group" aria-label="Impact"></div>
+          <div class="nw-g" id="nw-cur" role="group" aria-label="Currency"></div>
+        </div>
+        <div class="nw-next" id="nw-next" hidden></div>
+        <div class="nw-tab">
+          <div class="nw-row nw-th"><span>New York</span><span>London</span><span>Cur</span>
+            <span></span><span>Event</span><span>Forecast</span><span>Previous</span></div>
+          <div id="nw-list"></div>
+        </div>
+        <p class="nw-src">Calendar from Forex Factory, refreshed every 30 minutes. Times are
+          New York and London local time, daylight saving included.</p>
       </div>
     </section>
 
@@ -2932,7 +3017,7 @@ button.jm-box:hover { border-color: var(--red); }
   function parseHash() {
     var h = (location.hash || '').replace(/^#\/?/, '').split(SEP);
     var tab = h[0] || 'lectures';
-    if (!TAB_KIND[tab] && ['profile', 'admin', 'journal', 'payouts'].indexOf(tab) < 0) {
+    if (!TAB_KIND[tab] && ['profile', 'admin', 'journal', 'payouts', 'news'].indexOf(tab) < 0) {
       tab = 'lectures';
     }
     if (tab === 'admin' && !(ME && ME.isAdmin)) tab = 'lectures';
@@ -2958,6 +3043,8 @@ button.jm-box:hover { border-color: var(--red); }
     setCls($('p-profile'), 'on', route.tab === 'profile');
     setCls($('p-journal'), 'on', route.tab === 'journal');
     setCls($('p-payouts'), 'on', route.tab === 'payouts');
+    setCls($('p-news'), 'on', route.tab === 'news');
+    if (route.tab === 'news') renderNews();
     if (route.tab === 'payouts') renderBoard();
     if (route.tab === 'journal') renderJournal();
     setCls($('p-admin'), 'on', route.tab === 'admin');
@@ -4228,6 +4315,177 @@ button.jm-box:hover { border-color: var(--red); }
       if (m) mount(m);
     });
   }
+
+  // ======================================================================
+  // news: this week's economic calendar (Forex Factory), NY and London time
+  // ======================================================================
+  var NW = { d: null, t: 0, busy: false, wk: 'this', imp: null, cur: null };
+  var NW_IMP = ['High', 'Medium', 'Low', 'Holiday'];
+  var NW_CUR = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'NZD', 'CHF', 'CNY'];
+  (function () {
+    var p = null;
+    try { p = JSON.parse(localStorage.getItem('elevare.news') || 'null'); } catch (e) {}
+    NW.imp = p && p.imp ? p.imp : ['High', 'Medium'];
+    NW.cur = p && p.cur ? p.cur : ['USD'];
+  })();
+  function nwSave() {
+    try { localStorage.setItem('elevare.news', JSON.stringify({ imp: NW.imp, cur: NW.cur })); }
+    catch (e) {}
+  }
+  var NW_NY = null, NW_LDN = null, NW_DAY = null, NW_KEY = null;
+  function nwFmt() {
+    if (NW_NY) return;
+    NW_NY = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York',
+      hour: 'numeric', minute: '2-digit' });
+    NW_LDN = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London',
+      hour: '2-digit', minute: '2-digit' });
+    NW_DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York',
+      weekday: 'long', month: 'short', day: 'numeric' });
+    NW_KEY = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
+      year: 'numeric', month: '2-digit', day: '2-digit' });
+  }
+  function nwIn(ms) {
+    var m = Math.round(ms / 60000);
+    if (m < 1) return 'now';
+    if (m < 60) return 'in ' + m + 'm';
+    var h = Math.floor(m / 60);
+    if (h < 24) return 'in ' + h + 'h ' + pad2(m % 60) + 'm';
+    return 'in ' + Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
+  }
+  function nwLoad(force) {
+    if (NW.busy || (!force && NW.d && Date.now() - NW.t < 15 * 60 * 1000)) return;
+    NW.busy = true;
+    api('POST', '/api/news', {}, function (st, d) {
+      NW.busy = false;
+      if (st !== 200) { if (route.tab === 'news') renderNews(); return; }
+      NW.d = d; NW.t = Date.now();
+      nwTick();
+      if (route.tab === 'news') renderNews();
+    });
+  }
+  function nwPick(list) {
+    return (list || []).filter(function (x) {
+      return NW.imp.indexOf(x.impact) >= 0 &&
+        (NW.cur.indexOf(x.cur) >= 0 || x.cur === 'ALL' || x.cur === '');
+    });
+  }
+  // the next high-impact release in the chosen currencies
+  function nwNext() {
+    if (!NW.d) return null;
+    var now = Date.now() - 2 * 60000;
+    var all = (NW.d.items || []).concat(NW.d.next || []);
+    for (var i = 0; i < all.length; i++) {
+      var x = all[i];
+      if (x.at >= now && x.impact === 'High' && NW.cur.indexOf(x.cur) >= 0) return x;
+    }
+    return null;
+  }
+  function nwTick() {
+    var n = nwNext(), a = $('nx');
+    if (!n || n.at - Date.now() > 24 * 3600000) { a.hidden = true; return; }
+    a.hidden = false;
+    clear(a);
+    a.appendChild(el('i', 'nw-dot High'));
+    a.appendChild(document.createTextNode(n.cur + ' ' + n.title + ' '));
+    a.appendChild(el('b', null, nwIn(n.at - Date.now())));
+    a.title = 'Next high-impact release. Open the calendar.';
+  }
+  function nwButtons() {
+    var imp = $('nw-imp'); clear(imp);
+    NW_IMP.forEach(function (k) {
+      var b = el('button', NW.imp.indexOf(k) >= 0 ? 'on' : ''); b.type = 'button';
+      b.setAttribute('aria-pressed', NW.imp.indexOf(k) >= 0 ? 'true' : 'false');
+      b.appendChild(el('i', 'nw-dot ' + k)); b.appendChild(document.createTextNode(k));
+      b.addEventListener('click', function () {
+        var i = NW.imp.indexOf(k);
+        if (i >= 0) NW.imp.splice(i, 1); else NW.imp.push(k);
+        nwSave(); renderNews(); nwTick();
+      });
+      imp.appendChild(b);
+    });
+    var cur = $('nw-cur'); clear(cur);
+    var all = el('button', NW.cur.length === NW_CUR.length ? 'on' : '', 'All'); all.type = 'button';
+    all.addEventListener('click', function () {
+      NW.cur = NW.cur.length === NW_CUR.length ? ['USD'] : NW_CUR.slice();
+      nwSave(); renderNews(); nwTick();
+    });
+    cur.appendChild(all);
+    NW_CUR.forEach(function (k) {
+      var b = el('button', NW.cur.indexOf(k) >= 0 ? 'on' : '', k); b.type = 'button';
+      b.setAttribute('aria-pressed', NW.cur.indexOf(k) >= 0 ? 'true' : 'false');
+      b.addEventListener('click', function () {
+        var i = NW.cur.indexOf(k);
+        if (i >= 0) NW.cur.splice(i, 1); else NW.cur.push(k);
+        nwSave(); renderNews(); nwTick();
+      });
+      cur.appendChild(b);
+    });
+  }
+  function renderNews() {
+    nwFmt();
+    nwLoad(false);
+    nwButtons();
+    setCls($('nw-this'), 'on', NW.wk === 'this');
+    setCls($('nw-nextwk'), 'on', NW.wk === 'next');
+    $('nw-h').textContent = NW.wk === 'next' ? 'Next week' : 'This week';
+    var host = $('nw-list'); clear(host);
+    if (!NW.d) {
+      host.appendChild(el('p', 'nw-empty', NW.busy ? 'Loading the calendar\u2026' :
+        'The calendar couldn\u2019t be loaded right now. Try again in a minute.'));
+      $('nw-next').hidden = true; $('nw-sub').textContent = '';
+      return;
+    }
+    var src = NW.wk === 'next' ? NW.d.next || [] : NW.d.items || [];
+    var list = nwPick(src);
+    var hi = list.filter(function (x) { return x.impact === 'High'; }).length;
+    $('nw-sub').textContent = list.length + (list.length === 1 ? ' event' : ' events') +
+      (hi ? ', ' + hi + ' high impact' : '') + ' \u2014 updated ' + jAgo(NW.d.t);
+    var n = nwNext(), box = $('nw-next');
+    box.hidden = !n;
+    if (n) {
+      clear(box);
+      box.appendChild(el('span', null, 'Next high impact'));
+      box.appendChild(el('b', null, n.cur + ' ' + n.title));
+      box.appendChild(el('span', null, NW_DAY.format(new Date(n.at)) + ', ' +
+        NW_NY.format(new Date(n.at)) + ' New York \u00b7 ' + NW_LDN.format(new Date(n.at)) +
+        ' London'));
+      box.appendChild(el('span', 'nw-in', nwIn(n.at - Date.now())));
+    }
+    if (!list.length) {
+      host.appendChild(el('p', 'nw-empty', src.length ? 'Nothing matches these filters.' :
+        'Next week\u2019s calendar isn\u2019t out yet. It usually lands over the weekend.'));
+      return;
+    }
+    var today = NW_KEY.format(new Date()), day = null, now = Date.now();
+    list.forEach(function (x) {
+      var d = new Date(x.at), k = NW_KEY.format(d);
+      if (k !== day) {
+        day = k;
+        host.appendChild(el('div', 'nw-day' + (k === today ? ' today' : ''),
+          NW_DAY.format(d) + (k === today ? '  \u00b7  Today' : '')));
+      }
+      var up = n && x === n;
+      var row = el('div', 'nw-row' + (x.at < now - 60000 ? ' past' : '') + (up ? ' up' : ''));
+      row.appendChild(el('span', 'nw-t', NW_NY.format(d)));
+      row.appendChild(el('span', 'nw-l', NW_LDN.format(d)));
+      row.appendChild(el('span', 'nw-c', x.cur));
+      var dot = el('i', 'nw-dot ' + x.impact); dot.title = x.impact + ' impact';
+      row.appendChild(dot);
+      var e = el('span', 'nw-e', x.title);
+      if (up) e.appendChild(el('span', 'nw-tag', nwIn(x.at - now)));
+      row.appendChild(e);
+      row.appendChild(el('span', 'nw-n', x.forecast || '\u2014'));
+      row.appendChild(el('span', 'nw-n', x.previous || '\u2014'));
+      host.appendChild(row);
+    });
+  }
+  $('nw-this').addEventListener('click', function () { NW.wk = 'this'; renderNews(); });
+  $('nw-nextwk').addEventListener('click', function () { NW.wk = 'next'; renderNews(); });
+  setInterval(function () {
+    if (!ME) return;
+    nwLoad(false); nwTick();
+    if (route.tab === 'news' && !document.hidden) renderNews();
+  }, 30000);
 
   // ======================================================================
   // payouts: members submit proof, admins approve, the leaderboard shows it
@@ -6611,6 +6869,7 @@ button.jm-box:hover { border-color: var(--red); }
     DEVICE = deviceId();
     buildTiles();
     tickSession();
+    nwLoad(true);
     show('v-app');
     render();
     var first = (d.user.name || '').split(' ')[0];

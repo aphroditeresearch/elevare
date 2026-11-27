@@ -787,6 +787,37 @@ async function t(name, fn) {
     assert.strictEqual((await client().req('POST', '/api/journal', { action: 'index' })).status, 401);
   });
 
+  console.log('News');
+  await t('the week comes from the feed, cleaned (bad rows dropped, no HTML)', async () => {
+    mocks.news.hits = 0; mocks.store.delete('elevare:news:ff');
+    const r = await member.req('POST', '/api/news', {});
+    assert.strictEqual(r.status, 200);
+    assert.strictEqual(r.data.source, 'Forex Factory');
+    assert.ok(r.data.items.length >= 10);
+    assert.ok(r.data.items.every(x => x.at && x.title && !/[<>]/.test(x.title)));
+    assert.ok(!r.data.items.some(x => /Bad/.test(x.title)));
+    const nfp = r.data.items.find(x => x.title === 'Non-Farm Employment Change');
+    assert.strictEqual(nfp.cur, 'USD'); assert.strictEqual(nfp.impact, 'High');
+    assert.ok(r.data.items.every((x, i, a) => !i || a[i - 1].at <= x.at));
+  });
+  await t('the feed is asked once per 30 minutes, and kept if it goes down', async () => {
+    const before = mocks.news.hits;
+    await member.req('POST', '/api/news', {});
+    await admin.req('POST', '/api/news', {});
+    assert.strictEqual(mocks.news.hits, before);
+    const c = JSON.parse(mocks.store.get('elevare:news:ff'));
+    c.t = Date.now() - 31 * 60 * 1000; mocks.store.set('elevare:news:ff', JSON.stringify(c));
+    mocks.store.delete('elevare:news:lock');
+    mocks.news.down = true;
+    const r = await member.req('POST', '/api/news', {});
+    mocks.news.down = false;
+    assert.strictEqual(r.status, 200);
+    assert.ok(r.data.items.length >= 10);
+  });
+  await t('news needs a signed-in member', async () => {
+    assert.strictEqual((await client().req('POST', '/api/news', {})).status, 401);
+  });
+
   console.log('Payouts');
   const PNG = 'data:image/png;base64,' + Buffer.from('payout-proof-one').toString('base64');
   let poId;

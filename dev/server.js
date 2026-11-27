@@ -23,6 +23,7 @@ function mockEnv(mockPort, port) {
     DISCORD_API: 'http://127.0.0.1:' + mockPort + '/discord',
     VDOCIPHER_API: 'http://127.0.0.1:' + mockPort + '/vdo',
     IPINFO_TOKEN: 'dev', IPINFO_API: 'http://127.0.0.1:' + mockPort + '/ipinfo',
+    NEWS_API: 'http://127.0.0.1:' + mockPort + '/news',
     DISCORD_REDIRECT_URI: 'http://localhost:' + port + '/api/callback'
   });
 }
