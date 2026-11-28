@@ -182,7 +182,8 @@ module.exports = async function (req, res) {
       const uid = String(b.uid || '');
       const list = (await all()).filter(p => p.uid === uid && p.status === 'approved' && p.show)
         .sort((x, y) => (y.date > x.date ? 1 : -1))
-        .map(p => ({ id: p.id, amount: p.amount, firm: p.firm, date: p.date, n: count(p) }));
+        .map(p => ({ id: p.id, amount: p.amount, firm: p.firm, date: p.date, n: count(p),
+          parts: p.parts || null }));
       return L.json(res, 200, { list });
     }
 
