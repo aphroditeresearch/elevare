@@ -2172,6 +2172,53 @@ button.jm-box:hover { border-color: var(--red); }
 .po-strip img { width: 160px; height: 110px; object-fit: cover; cursor: zoom-in;
   border: 1px solid var(--line2); background: #030507; }
 .po-strip figcaption { color: var(--ink); font: 600 13px "Chakra Petch", var(--sans); }
+/* certificate viewer: glass over the page, image-led cards */
+.lb-modal { z-index: 800; background: rgba(3, 5, 8, .74);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1); backdrop-filter: blur(12px) saturate(1.1);
+  animation: lbfade .28s ease both; }
+@keyframes lbfade { from { opacity: 0; } to { opacity: 1; } }
+.lb-mbox { width: min(1120px, 100%); padding: 38px 42px 44px; scrollbar-width: thin;
+  background: linear-gradient(180deg, #0a0f15, #06090d); border: 1px solid var(--line2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 40px 120px -30px rgba(0, 0, 0, .9);
+  animation: lbrise .4s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes lbrise { from { opacity: 0; transform: translateY(14px) scale(.99); } }
+.lb-close { top: 16px; right: 18px; width: 40px; height: 40px; font-size: 26px;
+  border: 1px solid transparent; transition: color .2s, border-color .2s; }
+.lb-close:hover { color: var(--ink); border-color: var(--line2); }
+.lb-mhead { gap: 20px; margin-bottom: 34px; padding-bottom: 26px;
+  border-bottom: 1px solid var(--line); }
+.lb-mhead .lb-av { width: 64px; height: 64px;
+  box-shadow: 0 0 0 1px rgba(191, 226, 255, .35), 0 0 30px -6px rgba(120, 190, 255, .45); }
+.lb-mhead h2 { font-size: 30px; letter-spacing: -.005em; }
+.lb-mhead p { font-size: 14px; color: var(--soft); }
+.lb-fh { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px;
+  margin-bottom: 18px; padding-bottom: 14px; }
+.lb-fh h3 { font-size: 21px; }
+.lb-fh span { display: block; margin-top: 5px; font-size: 13px; color: var(--muted); }
+.lb-ft { color: #dff0ff; font: 600 26px "Chakra Petch", var(--sans);
+  font-variant-numeric: tabular-nums; text-shadow: 0 0 22px rgba(120, 190, 255, .25); }
+.lb-firm + .lb-firm { margin-top: 40px; }
+.lb-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; }
+.lb-cert { position: relative; display: flex; flex-direction: column; overflow: hidden;
+  background: #070b10; border: 1px solid var(--line2);
+  transition: border-color .3s ease, transform .3s ease, box-shadow .3s ease; }
+.lb-cert:hover { border-color: rgba(191, 226, 255, .45); transform: translateY(-2px);
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, .9), 0 0 0 1px rgba(191, 226, 255, .08); }
+.lb-cert img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3;
+  object-fit: contain; background: radial-gradient(circle at 50% 40%, #0b121a, #030507);
+  transition: transform .6s cubic-bezier(.2, .7, .2, 1); }
+.lb-cert:hover img { transform: scale(1.025); }
+.lb-cert figcaption { position: relative; display: flex; flex-direction: row;
+  align-items: baseline; justify-content: space-between; gap: 10px; padding: 13px 16px;
+  border-top: 1px solid var(--line); background: #080c11; }
+.lb-cert b { font-size: 20px; color: #fff; }
+.lb-cert figcaption span { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.lb-cw { display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+  text-align: right; }
+.lb-part { padding: 3px 7px; border: 1px solid rgba(191, 226, 255, .25); font-style: normal;
+  color: #dff0ff; font: 600 11px "Chakra Petch", var(--sans); letter-spacing: .04em; }
+.po-strip img { transition: border-color .2s ease; }
+.po-strip img:hover { border-color: rgba(191, 226, 255, .5); }
 /* the entrance: L V R lingers, then dissolves into the site */
 .rdy.leaving { display: flex !important; position: fixed; inset: 0; z-index: 300;
   transition: opacity 1.5s cubic-bezier(.4, 0, .2, 1); }
@@ -3148,6 +3195,7 @@ button.jm-box:hover { border-color: var(--red); }
     setCls($('p-journal'), 'on', route.tab === 'journal');
     setCls($('p-payouts'), 'on', route.tab === 'payouts');
     setCls($('p-news'), 'on', route.tab === 'news');
+    if (route.tab !== 'payouts') $('lb-modal').hidden = true;
     if (route.tab === 'news') renderNews();
     if (route.tab === 'payouts') renderBoard();
     if (route.tab === 'journal') renderJournal();
@@ -4885,6 +4933,11 @@ button.jm-box:hover { border-color: var(--red); }
     if (!LB.wired) {
       LB.wired = true;
       $('lb-close').addEventListener('click', function () { $('lb-modal').hidden = true; });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !$('lb-modal').hidden && !document.querySelector('.jlb')) {
+          $('lb-modal').hidden = true;
+        }
+      });
       $('lb-modal').addEventListener('click', function (e) {
         if (e.target === $('lb-modal')) $('lb-modal').hidden = true;
       });
@@ -4938,7 +4991,12 @@ button.jm-box:hover { border-color: var(--red); }
     $('lb-msub').textContent = money(r.total) + ' verified across ' + r.count +
       (r.count === 1 ? ' payout' : ' payouts');
     var host = $('lb-mlist'); clear(host);
-    $('lb-modal').hidden = false;
+    var md = $('lb-modal');
+    // above the header and everything else on the page
+    if (md.parentNode !== document.body) {
+      md.setAttribute('data-lvr', '1'); document.body.appendChild(md);
+    }
+    md.hidden = false;
     host.appendChild(el('p', 'pmuted', 'Loading certificates\u2026'));
     api('POST', '/api/payouts', { action: 'trader', uid: r.uid }, function (st, d) {
       clear(host);
@@ -4957,10 +5015,13 @@ button.jm-box:hover { border-color: var(--red); }
       order.forEach(function (f) {
         var sec = el('section', 'lb-firm');
         var hd = el('header', 'lb-fh');
-        hd.appendChild(el('h3', null, f.name));
-        hd.appendChild(el('span', null, money(f.total, f.total % 1 !== 0) + '  \u00b7  ' +
-          f.list.length + (f.list.length === 1 ? ' payout' : ' payouts') + '  \u00b7  ' +
-          f.certs + (f.certs === 1 ? ' certificate' : ' certificates')));
+        var ht = el('div');
+        ht.appendChild(el('h3', null, f.name));
+        ht.appendChild(el('span', null, f.list.length + (f.list.length === 1 ? ' payout' :
+          ' payouts') + '  \u00b7  ' + f.certs + (f.certs === 1 ? ' certificate' :
+          ' certificates')));
+        hd.appendChild(ht);
+        hd.appendChild(el('b', 'lb-ft', money(f.total, f.total % 1 !== 0)));
         sec.appendChild(hd);
         var grid = el('div', 'lb-grid');
         f.list.forEach(function (p) {
@@ -4975,8 +5036,16 @@ button.jm-box:hover { border-color: var(--red); }
               var cap = el('figcaption');
               var amt = p.parts && p.parts[k] !== undefined ? p.parts[k] : p.amount;
               cap.appendChild(el('b', null, money(amt, amt % 1 !== 0)));
-              cap.appendChild(el('span', null, 'Paid ' + p.date + (n > 1 ? '  \u00b7  ' + (k + 1) +
-                ' of ' + n + ' in a ' + money(p.amount, p.amount % 1 !== 0) + ' payout' : '')));
+              var dt = new Date(p.date + 'T12:00:00');
+              var when = isNaN(dt) ? p.date : dt.toLocaleDateString(undefined,
+                { month: 'short', day: 'numeric', year: 'numeric' });
+              var right = el('span', 'lb-cw');
+              if (n > 1) {
+                right.appendChild(el('i', 'lb-part', (k + 1) + ' of ' + n + ' \u00b7 ' +
+                  money(p.amount, p.amount % 1 !== 0)));
+              }
+              right.appendChild(document.createTextNode(when));
+              cap.appendChild(right);
               card.appendChild(cap);
               grid.appendChild(card);
               api('POST', '/api/payouts', { action: 'img', id: p.id, n: k }, function (s2, i2) {
